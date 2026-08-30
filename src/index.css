@@ -1,0 +1,65 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background: #F4EFEA;
+  color: #2E2A26;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mobile-app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #FFF8F0;
+  position: relative;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.07);
+  overflow-x: hidden;
+}
+
+:root {
+  --bg-base: #FFF8F0;
+  --bg-card: #FFFFFF;
+  --bg-card-soft: #FFF4EC;
+  --primary-coral: #FF6B4A;
+  --primary-deep: #E8552F;
+  --secondary-purple: #7B4FE0;
+  --accent-gold: #F4B740;
+  --accent-gold-soft: #FFF6E0;
+  --text-primary: #2E2A26;
+  --text-secondary: #8A8078;
+  --text-disabled: #C4BCB2;
+  --success-green: #3FA65C;
+  --error-alert: #D9503F;
+  --border-divider: #F0E6D8;
+}
+
+input, textarea, select {
+  font-family: 'Poppins', sans-serif;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Custom scrollbar for tables & lists */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #E0D7CC;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C4BCB2;
+}
