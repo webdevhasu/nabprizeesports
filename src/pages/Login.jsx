@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
+import { useEffect } from 'react';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,6 +12,18 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+
+  useEffect(() => {
+    getRedirectResult(auth).then((result) => {
+      if (result) {
+        navigate('/', { replace: true });
+      }
+    }).catch((err) => {
+      if (err.code !== 'auth/popup-closed-by-user') {
+        setError('Google login failed. Please try again.');
+      }
+    });
+  }, [navigate]);
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
@@ -32,8 +45,13 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      navigate('/', { replace: true });
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      if (isStandalone) {
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        await signInWithPopup(auth, googleProvider);
+        navigate('/', { replace: true });
+      }
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') {
         setError('Google login failed. Please try again.');
