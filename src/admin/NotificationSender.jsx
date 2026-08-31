@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Send, Bell, Users, Trophy, AlertCircle, Info, Target, CheckCircle2 } from 'lucide-react';
+import { Send, Bell, Trophy, AlertCircle, Info, Target, CheckCircle2 } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const notificationTypes = [
@@ -40,7 +40,6 @@ export default function NotificationSender() {
       const batch = [];
 
       for (const userDoc of usersSnap.docs) {
-        const notifRef = doc(db, 'users', userDoc.id, 'notifications', Date.now().toString());
         batch.push(addDoc(collection(db, 'users', userDoc.id, 'notifications'), {
           type,
           title: title.trim(),

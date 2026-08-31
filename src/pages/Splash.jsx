@@ -8,8 +8,9 @@ export default function Splash() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let unsubscribe;
     const timer = setTimeout(() => {
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           const docRef = doc(db, 'users', user.uid);
           const docSnap = await getDoc(docRef);
@@ -22,10 +23,12 @@ export default function Splash() {
           navigate('/login', { replace: true });
         }
       });
-      return () => unsubscribe();
     }, 1500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (unsubscribe) unsubscribe();
+    };
   }, [navigate]);
 
   return (

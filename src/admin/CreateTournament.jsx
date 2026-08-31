@@ -9,21 +9,14 @@ import {
   DollarSign,
   Calendar,
   Search,
-  Filter,
   Trophy,
-  Gamepad2,
-  CheckCircle,
   Play,
   Square,
   AlertCircle,
   Key,
   Copy,
   Check,
-  X,
-  Clock,
-  ExternalLink,
-  Shield,
-  FileText
+  X
 } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -128,8 +121,7 @@ export default function CreateTournament() {
         title: 'New Tournament Available!',
         body: `${formData.name} (${gameLabel} ${formData.matchType}) — Reward: Rs ${reward.toLocaleString()} | Register now!`,
         url: '/',
-      }).then(count => console.log(`Notifications sent to ${count} users`))
-        .catch(e => console.error('Notification error:', e));
+      }).catch(() => {});
       setShowForm(false);
       setFormData({
         name: '',

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, getDocs, count } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { Star, MessageSquare, Send, AlertTriangle, Shield } from 'lucide-react';
 import TopBar from './TopBar';

@@ -6,7 +6,7 @@ let messaging = null;
 try {
   messaging = getMessaging(app);
 } catch (e) {
-  console.log('FCM not supported in this browser');
+
 }
 
 export const requestNotificationPermission = async () => {

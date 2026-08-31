@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { db } from '../firebase/config';
 import { collection, query, onSnapshot, orderBy, doc, updateDoc, increment, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import {
@@ -7,22 +7,17 @@ import {
   Trophy,
   DollarSign,
   Gamepad2,
-  ChevronRight,
   TrendingUp,
   AlertCircle,
   Calendar,
   Plus,
   CheckCircle2,
-  XCircle,
-  Clock,
-  ArrowUpRight,
-  Bell
+  ArrowUpRight
 } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import NotificationSender from './NotificationSender';
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
   const [tournaments, setTournaments] = useState([]);
   const [users, setUsers] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
