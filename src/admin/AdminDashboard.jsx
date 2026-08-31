@@ -73,6 +73,7 @@ export default function AdminDashboard() {
       }
     } catch (e) {
       console.error('Error updating withdrawal:', e);
+      alert('Failed to process withdrawal');
     }
   };
 

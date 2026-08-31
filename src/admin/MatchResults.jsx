@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, doc, setDoc, updateDoc, increment, getDocs, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, setDoc, updateDoc, increment, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import {
   ArrowLeft,
@@ -126,13 +126,20 @@ export default function MatchResults() {
 
   const topFraggers = registeredPlayers
     .filter(p => (playerKills[p.id] || 0) > 0)
-    .sort((a, b) => (playerKills[b.id] || 0) - (a.kills || 0));
+    .sort((a, b) => (playerKills[b.id] || 0) - (playerKills[a.id] || 0));
 
   const submitWinner = async () => {
     if (!selectedTournament || !winnerId) return;
+    const existingResult = matchResultsList.find(d => d.id === selectedTournament.id);
+    if (existingResult?.winnerDeclared) {
+      alert('Winner already declared for this tournament.');
+      setSubmittingWinner(false);
+      return;
+    }
     setSubmittingWinner(true);
     try {
-      const winnerPlayer = registeredPlayers.find(p => p.id === winnerId);
+  const winnerPlayer = registeredPlayers.find(p => p.id === winnerId);
+  const existingResult = matchResultsList.find(d => d.id === selectedTournament?.id);
       if (!winnerPlayer) return;
 
       const players = registeredPlayers.map(p => ({
@@ -143,6 +150,7 @@ export default function MatchResults() {
         kills: playerKills[p.id] || 0,
         reward: p.id === winnerId ? (selectedTournament.fixedReward || 0) : 0,
         isWinner: p.id === winnerId,
+        placement: p.id === winnerId ? 1 : 0,
       }));
 
       await setDoc(doc(db, 'matchResults', selectedTournament.id), {
@@ -1006,17 +1014,17 @@ export default function MatchResults() {
 
               <button
                 onClick={submitWinner}
-                disabled={!winnerId || submittingWinner}
+                disabled={!winnerId || submittingWinner || existingResult?.winnerDeclared}
                 style={{
                   width: '100%',
                   padding: '12px',
-                  background: winnerId && !submittingWinner ? '#3FA65C' : '#C4BCB2',
+                  background: winnerId && !submittingWinner && !existingResult?.winnerDeclared ? '#3FA65C' : '#C4BCB2',
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
                   fontWeight: 700,
                   fontSize: '13px',
-                  cursor: winnerId && !submittingWinner ? 'pointer' : 'not-allowed',
+                  cursor: winnerId && !submittingWinner && !existingResult?.winnerDeclared ? 'pointer' : 'not-allowed',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1080,7 +1088,7 @@ export default function MatchResults() {
                         </div>
                       </div>
                       <div style={{ fontWeight: 800, fontSize: '13px', color: '#7B4FE0' }}>
-                        {playerKills[p.id]} kills
+                        {playerKills[p.id] || 0} kills
                       </div>
                     </div>
                   ))}

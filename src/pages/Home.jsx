@@ -26,7 +26,9 @@ export default function Home() {
         if (a.status === 'live' && b.status !== 'live') return -1;
         if (b.status === 'live' && a.status !== 'live') return 1;
 
-        if (!a.startTime || !b.startTime) return 0;
+        if (!a.startTime && !b.startTime) return 0;
+        if (!a.startTime) return 1;
+        if (!b.startTime) return -1;
         const dateA = a.startTime.toDate ? a.startTime.toDate() : new Date(a.startTime);
         const dateB = b.startTime.toDate ? b.startTime.toDate() : new Date(b.startTime);
         return dateA - dateB;

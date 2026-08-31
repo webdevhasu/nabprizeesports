@@ -151,6 +151,14 @@ export default function CreateTournament() {
   };
 
   const handleStatusChange = async (id, newStatus) => {
+    const tournament = tournaments.find(t => t.id === id);
+    if (!tournament) return;
+    const currentStatus = tournament.status;
+    const validTransitions = { upcoming: ['live'], live: ['completed'], ended: [] };
+    if (!validTransitions[currentStatus]?.includes(newStatus)) {
+      alert(`Cannot change from "${currentStatus}" to "${newStatus}"`);
+      return;
+    }
     try {
       await updateDoc(doc(db, 'tournaments', id), { status: newStatus });
     } catch (e) {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, updateDoc, increment, collection, addDoc, serverTimestamp, onSnapshot, query, where } from 'firebase/firestore';
+import { doc, updateDoc, increment, collection, addDoc, serverTimestamp, onSnapshot, query, where, runTransaction } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import TopBar from '../components/TopBar';
@@ -57,34 +57,40 @@ export default function Withdraw() {
 
     setLoading(true);
     try {
-      // Deduct from wallet
       const userRef = doc(db, 'users', auth.currentUser.uid);
-      await updateDoc(userRef, {
-        walletBalance: increment(-numAmount),
-      });
 
-      // Create withdrawal request
-      const withdrawRef = collection(db, 'withdrawals');
-      await addDoc(withdrawRef, {
-        userId: auth.currentUser.uid,
-        username: userProfile.username,
-        amount: numAmount,
-        method: method,
-        accountNumber: accountNumber,
-        status: 'pending',
-        requestedAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
-      });
+      await runTransaction(db, async (transaction) => {
+        const userSnap = await transaction.get(userRef);
+        if (!userSnap.exists()) throw new Error('User not found');
 
-      // Log transaction
-      const txnRef = collection(db, 'transactions', auth.currentUser.uid, 'history');
-      await addDoc(txnRef, {
-        type: 'debit',
-        amount: numAmount,
-        method: method,
-        description: `Withdrawal to ${method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}`,
-        timestamp: serverTimestamp(),
-        status: 'pending',
+        const currentBalance = userSnap.data().walletBalance || 0;
+        if (currentBalance < numAmount) throw new Error('Insufficient balance');
+
+        transaction.update(userRef, {
+          walletBalance: increment(-numAmount),
+        });
+
+        const withdrawRef = doc(collection(db, 'withdrawals'));
+        transaction.set(withdrawRef, {
+          userId: auth.currentUser.uid,
+          username: userProfile.username,
+          amount: numAmount,
+          method: method,
+          accountNumber: accountNumber,
+          status: 'pending',
+          requestedAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
+        });
+
+        const txnRef = doc(collection(db, 'transactions', auth.currentUser.uid, 'history'));
+        transaction.set(txnRef, {
+          type: 'debit',
+          amount: numAmount,
+          method: method,
+          description: `Withdrawal to ${method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}`,
+          timestamp: serverTimestamp(),
+          status: 'pending',
+        });
       });
 
       await refreshProfile();

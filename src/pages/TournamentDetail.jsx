@@ -76,7 +76,7 @@ export default function TournamentDetail() {
 
     const isRegOpen = diffToRegClose > 0 && (tournament.slotsFilled || 0) < tournament.maxSlots;
     const isRoomWindow = diffToRegClose <= 0 && diffToMatchStart > 0;
-    const isMatchLive = diffToMatchStart <= 0 || tournament.status === 'live';
+    const isMatchLive = tournament.status === 'live';
 
     const formatCountdown = (diffMs) => {
       if (diffMs <= 0) return '00:00';

@@ -134,7 +134,7 @@ export default function Withdrawals() {
           { label: 'Pending Requests', value: pendingCount, color: '#E88B00', bg: '#FFF8E1', icon: Clock, note: 'Requires action' },
           { label: 'Approved Payouts', value: approvedCount, color: '#3FA65C', bg: '#E8F5E9', icon: CheckCircle, note: 'Successfully cleared' },
           { label: 'Rejected Requests', value: rejectedCount, color: '#D9503F', bg: '#FFEBEE', icon: XCircle, note: 'Refunded to wallet' },
-          { label: 'Total Paid Out', value: `Rs ${totalAmount.toLocaleString()}`, color: '#7B4FE0', bg: '#F3EEFF', icon: DollarSign, note: 'Sum of approved' },
+          { label: 'Total Approved', value: `Rs ${totalAmount.toLocaleString()}`, color: '#7B4FE0', bg: '#F3EEFF', icon: DollarSign, note: 'Sum of approved' },
         ].map(s => {
           const Icon = s.icon;
           return (
