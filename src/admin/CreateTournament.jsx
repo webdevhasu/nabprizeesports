@@ -81,9 +81,9 @@ export default function CreateTournament() {
     game: 'pubg',
     matchType: 'Solo',
     tournamentType: 'Daily',
-    maxSlots: 25,
-    registrationCharge: 0,
-    fixedReward: 0,
+    maxSlots: '25',
+    registrationCharge: '',
+    fixedReward: '',
     startTime: '',
     mapName: 'Erangel',
     rules: '',
@@ -105,8 +105,15 @@ export default function CreateTournament() {
     if (!formData.name.trim()) return;
     setLoading(true);
     try {
+      const maxSlots = Number(formData.maxSlots) || 25;
+      const registrationCharge = Number(formData.registrationCharge) || 0;
+      const fixedReward = Number(formData.fixedReward) || 0;
+
       await addDoc(collection(db, 'tournaments'), {
         ...formData,
+        maxSlots,
+        registrationCharge,
+        fixedReward,
         status: 'upcoming',
         slotsFilled: 0,
         roomReleased: Boolean(formData.roomId),
@@ -115,11 +122,10 @@ export default function CreateTournament() {
 
       // Auto-notify all users about new tournament
       const gameLabel = formData.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire';
-      const reward = Number(formData.fixedReward) || 0;
       notifyAllUsers({
         type: 'tournament',
         title: 'New Tournament Available!',
-        body: `${formData.name} (${gameLabel} ${formData.matchType}) — Reward: Rs ${reward.toLocaleString()} | Register now!`,
+        body: `${formData.name} (${gameLabel} ${formData.matchType}) — Reward: Rs ${fixedReward.toLocaleString()} | Register now!`,
         url: '/',
       }).catch(() => {});
       setShowForm(false);
@@ -128,9 +134,9 @@ export default function CreateTournament() {
         game: 'pubg',
         matchType: 'Solo',
         tournamentType: 'Daily',
-        maxSlots: 25,
-        registrationCharge: 0,
-        fixedReward: 0,
+        maxSlots: '25',
+        registrationCharge: '',
+        fixedReward: '',
         startTime: '',
         mapName: 'Erangel',
         rules: '',
@@ -399,7 +405,7 @@ export default function CreateTournament() {
                   max="100"
                   placeholder="25"
                   value={formData.maxSlots}
-                  onChange={e => setFormData({ ...formData, maxSlots: parseInt(e.target.value) || 25 })}
+                  onChange={e => setFormData({ ...formData, maxSlots: e.target.value })}
                   style={inputStyle}
                   required
                 />
@@ -411,9 +417,9 @@ export default function CreateTournament() {
                 <input
                   type="number"
                   min="0"
-                  placeholder="50"
+                  placeholder="0 for Free or e.g. 50"
                   value={formData.registrationCharge}
-                  onChange={e => setFormData({ ...formData, registrationCharge: parseInt(e.target.value) || 0 })}
+                  onChange={e => setFormData({ ...formData, registrationCharge: e.target.value })}
                   style={inputStyle}
                   required
                 />
@@ -425,9 +431,9 @@ export default function CreateTournament() {
                 <input
                   type="number"
                   min="0"
-                  placeholder="200"
+                  placeholder="e.g. 200"
                   value={formData.fixedReward}
-                  onChange={e => setFormData({ ...formData, fixedReward: parseInt(e.target.value) || 0 })}
+                  onChange={e => setFormData({ ...formData, fixedReward: e.target.value })}
                   style={inputStyle}
                   required
                 />

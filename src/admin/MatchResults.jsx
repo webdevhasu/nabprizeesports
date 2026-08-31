@@ -102,14 +102,14 @@ export default function MatchResults() {
       const existing = matchResultsList.find(d => d.id === tournament.id);
       if (existing) {
         if (existing.winnerId) {
-          const matchPlayer = players.find(p => p.userId === existing.winnerId);
+          const matchPlayer = players.find(p => (p.userId && p.userId === existing.winnerId) || p.id === existing.winnerId);
           if (matchPlayer) setWinnerId(matchPlayer.id);
         }
         if (existing.players && Array.isArray(existing.players)) {
           const killsMap = {};
           existing.players.forEach(p => {
-            const registered = players.find(rp => rp.userId === p.userId);
-            if (registered) killsMap[registered.id] = p.kills || 0;
+            const registered = players.find(rp => (rp.userId && rp.userId === p.userId) || rp.id === p.userId);
+            if (registered) killsMap[registered.id] = Number(p.kills) || 0;
           });
           setPlayerKills(killsMap);
         }
@@ -122,7 +122,12 @@ export default function MatchResults() {
   };
 
   const updateKills = (playerId, kills) => {
-    setPlayerKills(prev => ({ ...prev, [playerId]: Math.max(0, parseInt(kills) || 0) }));
+    if (kills === '') {
+      setPlayerKills(prev => ({ ...prev, [playerId]: '' }));
+      return;
+    }
+    const val = Math.max(0, parseInt(kills, 10) || 0);
+    setPlayerKills(prev => ({ ...prev, [playerId]: val }));
   };
 
   const topFraggers = registeredPlayers
@@ -149,24 +154,34 @@ export default function MatchResults() {
         return;
       }
 
-      const players = registeredPlayers.map(p => ({
-        userId: p.userId,
-        username: p.username,
-        ign: p.ign || '',
-        gameUid: p.uid || '',
-        kills: playerKills[p.id] || 0,
-        reward: p.id === winnerId ? (selectedTournament.fixedReward || 0) : 0,
-        isWinner: p.id === winnerId,
-        placement: p.id === winnerId ? 1 : 0,
-      }));
+      const winnerTargetUid = winnerPlayer.userId || winnerPlayer.id;
+      const prizeAmount = Number(selectedTournament.fixedReward) || 0;
+      const winnerKillsCount = Number(playerKills[winnerId]) || 0;
+
+      const players = registeredPlayers.map(p => {
+        const pUid = p.userId || p.id;
+        const isWinner = p.id === winnerId;
+        const killsCount = Number(playerKills[p.id]) || 0;
+        return {
+          userId: pUid,
+          username: p.username || 'Player',
+          ign: p.ign || '',
+          gameUid: p.uid || p.gameUid || '',
+          uid: p.uid || p.gameUid || '',
+          kills: killsCount,
+          reward: isWinner ? prizeAmount : 0,
+          isWinner,
+          placement: isWinner ? 1 : 0,
+        };
+      });
 
       await setDoc(doc(db, 'matchResults', selectedTournament.id), {
         tournamentName: selectedTournament.name,
         game: selectedTournament.game,
         players,
         winnerDeclared: true,
-        winnerId: winnerPlayer.userId,
-        winnerUsername: winnerPlayer.username,
+        winnerId: winnerTargetUid,
+        winnerUsername: winnerPlayer.username || 'Winner',
         submittedAt: serverTimestamp(),
       }, { merge: true });
 
@@ -176,16 +191,16 @@ export default function MatchResults() {
       });
 
       // Update winner user profile stats
-      await updateDoc(doc(db, 'users', winnerPlayer.userId), {
-        walletBalance: increment(selectedTournament.fixedReward || 0),
+      await updateDoc(doc(db, 'users', winnerTargetUid), {
+        walletBalance: increment(prizeAmount),
         totalWins: increment(1),
-        totalKills: increment(playerKills[winnerId] || 0),
+        totalKills: increment(winnerKillsCount),
       });
 
       // Log transaction in winner's history ledger
-      await addDoc(collection(db, 'transactions', winnerPlayer.userId, 'history'), {
+      await addDoc(collection(db, 'transactions', winnerTargetUid, 'history'), {
         type: 'credit',
-        amount: selectedTournament.fixedReward || 0,
+        amount: prizeAmount,
         description: `Prize Won: ${selectedTournament.name}`,
         timestamp: serverTimestamp(),
         status: 'completed',
@@ -193,7 +208,7 @@ export default function MatchResults() {
 
       // Update kill stats for other participants
       for (const player of players) {
-        if (player.kills > 0 && player.userId !== winnerPlayer.userId) {
+        if (player.kills > 0 && player.userId !== winnerTargetUid) {
           await updateDoc(doc(db, 'users', player.userId), {
             totalKills: increment(player.kills),
           });
@@ -201,16 +216,16 @@ export default function MatchResults() {
       }
 
       // Auto-notify winner
-      notifyUser(winnerPlayer.userId, {
+      notifyUser(winnerTargetUid, {
         type: 'winner',
         title: 'Congratulations, Champion!',
-        body: `You won Rs ${(selectedTournament.fixedReward || 0).toLocaleString()} in "${selectedTournament.name}"! Reward has been credited to your wallet.`,
+        body: `You won Rs ${prizeAmount.toLocaleString()} in "${selectedTournament.name}"! Reward has been credited to your wallet.`,
         url: '/rewards',
       }).catch(() => {});
 
       // Auto-notify all other participants
       const otherPlayerUids = players
-        .filter(p => p.userId !== winnerPlayer.userId)
+        .filter(p => p.userId !== winnerTargetUid)
         .map(p => p.userId);
       if (otherPlayerUids.length > 0) {
         notifyMultipleUsers(otherPlayerUids, {
@@ -221,10 +236,10 @@ export default function MatchResults() {
         }).catch(() => {});
       }
 
-      alert(`Winner assigned! @${winnerPlayer.username} won Rs ${selectedTournament.fixedReward}. All-Time Champions list has been updated.`);
+      alert(`Winner assigned! @${winnerPlayer.username} won Rs ${prizeAmount}. All-Time Champions list has been updated.`);
     } catch (error) {
       console.error('Error submitting winner:', error);
-      alert('Error declaring winner');
+      alert('Error declaring winner: ' + (error.message || 'Unknown error'));
     }
     setSubmittingWinner(false);
   };
@@ -240,16 +255,30 @@ export default function MatchResults() {
     try {
       const fraggerData = topFraggers.slice(0, 10).map((p, i) => ({
         rank: i + 1,
-        userId: p.userId,
-        username: p.username,
+        userId: p.userId || p.id,
+        username: p.username || 'Player',
         ign: p.ign || '',
-        gameUid: p.uid || '',
-        kills: playerKills[p.id] || 0,
+        gameUid: p.uid || p.gameUid || '',
+        kills: Number(playerKills[p.id]) || 0,
+      }));
+
+      // Also ensure players array with kills is stored so Hall of Fame aggregates properly
+      const players = registeredPlayers.map(p => ({
+        userId: p.userId || p.id,
+        username: p.username || 'Player',
+        ign: p.ign || '',
+        gameUid: p.uid || p.gameUid || '',
+        uid: p.uid || p.gameUid || '',
+        kills: Number(playerKills[p.id]) || 0,
+        reward: p.id === winnerId ? (Number(selectedTournament.fixedReward) || 0) : 0,
+        isWinner: p.id === winnerId,
+        placement: p.id === winnerId ? 1 : 0,
       }));
 
       await setDoc(doc(db, 'matchResults', selectedTournament.id), {
         tournamentName: selectedTournament.name,
         game: selectedTournament.game,
+        players,
         topFraggers: fraggerData,
         fraggersSubmitted: true,
         submittedAt: serverTimestamp(),
@@ -269,7 +298,7 @@ export default function MatchResults() {
       alert(`Top ${fraggerData.length} Fraggers submitted for Hall of Fame!`);
     } catch (error) {
       console.error('Error submitting fraggers:', error);
-      alert('Error submitting fraggers');
+      alert('Error submitting fraggers: ' + (error.message || 'Unknown error'));
     }
     setSubmittingFraggers(false);
   };

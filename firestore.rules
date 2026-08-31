@@ -2,17 +2,25 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users - owner can read/write, others can read
+    // Admin helper
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'nabprize.official@gmail.com' ||
+        request.auth.token.admin == true
+      );
+    }
+
+    // Users - owner can read/write, admin can write (for winner reward credits, stats increment, refunding rejected withdrawals, banning/unbanning)
     match /users/{uid} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
-      allow create: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow create: if request.auth != null && (request.auth.uid == uid || isAdmin());
 
       // Notifications - owner can read, anyone authenticated can create (for admin/system)
       match /notifications/{notifId} {
-        allow read: if request.auth != null && request.auth.uid == uid;
+        allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
         allow create: if request.auth != null;
-        allow update: if request.auth != null && request.auth.uid == uid;
+        allow update: if request.auth != null && (request.auth.uid == uid || isAdmin());
       }
     }
 
@@ -36,10 +44,10 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // Transactions - owner can read/write
+    // Transactions - owner can read/write, admin can write
     match /transactions/{userId}/{document=**} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
       allow create: if request.auth != null;
     }
 
