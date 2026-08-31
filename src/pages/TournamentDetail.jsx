@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, onSnapshot, runTransaction, serverTimestamp, increment } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
+import { useServerTime } from '../hooks/useServerTime';
 import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { sounds } from '../utils/sounds';
@@ -11,6 +12,7 @@ import { Clock, Users, Shield, X, Key, Copy, Check, Lock, Sparkles, Play, AlertC
 export default function TournamentDetail() {
   const { id } = useParams();
   const { userProfile, refreshProfile } = useAuth();
+  const { getNow } = useServerTime();
 
   const [tournament, setTournament] = useState(null);
   const [registeredPlayers, setRegisteredPlayers] = useState([]);
@@ -22,13 +24,13 @@ export default function TournamentDetail() {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState('');
   const [copiedField, setCopiedField] = useState(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(() => getNow());
 
-  // Keep a 1-second interval ticker for exact countdowns
+  // Tick every second using server-corrected time (anti-cheat)
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    const timer = setInterval(() => setCurrentTime(getNow()), 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [getNow]);
 
   useEffect(() => {
     const docRef = doc(db, 'tournaments', id);
@@ -72,12 +74,23 @@ export default function TournamentDetail() {
     // 10 minutes room joining window
     const matchStartDate = new Date(regCloseDate.getTime() + 10 * 60 * 1000);
 
-    const now = currentTime.getTime();
+    const now = currentTime; // already a ms number from getNow()
     const diffToRegClose = regCloseDate.getTime() - now;
     const diffToMatchStart = matchStartDate.getTime() - now;
 
     const regCloseStr = regCloseDate.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true }) + ' PKT';
     const matchStartStr = matchStartDate.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true }) + ' PKT';
+
+    // Smart day label: Today / Tomorrow / Sep 3
+    const serverNowDate = new Date(now);
+    const todayStr = serverNowDate.toDateString();
+    const tomorrowDate = new Date(serverNowDate); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const tomorrowStr = tomorrowDate.toDateString();
+    const matchDateStr = regCloseDate.toDateString();
+    let dayLabel;
+    if (matchDateStr === todayStr) dayLabel = 'Today';
+    else if (matchDateStr === tomorrowStr) dayLabel = 'Tomorrow';
+    else dayLabel = regCloseDate.toLocaleDateString('en-PK', { month: 'short', day: 'numeric' });
 
     const isRegOpen = diffToRegClose > 0 && (tournament.slotsFilled || 0) < tournament.maxSlots;
     const isRoomWindow = diffToRegClose <= 0 && diffToMatchStart > 0;
@@ -97,6 +110,7 @@ export default function TournamentDetail() {
       matchStartDate,
       regCloseStr,
       matchStartStr,
+      dayLabel,
       isRegOpen,
       isRoomWindow,
       isMatchLive,
@@ -342,7 +356,7 @@ export default function TournamentDetail() {
                     Registration Closes
                   </span>
                   <span style={{ fontSize: '12px', fontWeight: 700, color: '#E8552F' }}>
-                    {timeline?.regCloseStr || 'TBD'}
+                    {timeline ? `${timeline.dayLabel} • ${timeline.regCloseStr}` : 'TBD'}
                   </span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#8A8078' }}>
@@ -406,7 +420,7 @@ export default function TournamentDetail() {
                     Match Starts / Goes Live
                   </span>
                   <span style={{ fontSize: '12px', fontWeight: 700, color: '#3FA65C' }}>
-                    {timeline?.matchStartStr || 'TBD'}
+                    {timeline ? `${timeline.dayLabel} • ${timeline.matchStartStr}` : 'TBD'}
                   </span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#8A8078' }}>
