@@ -29,15 +29,29 @@ export default function InstallAppBanner() {
     const isIosDevice = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
     setIsIOS(isIosDevice);
 
-    // Listen for Android / Chrome install event
+    // Read initial global prompt if already available
+    if (window.__np_deferred_prompt) {
+      setDeferredPrompt(window.__np_deferred_prompt);
+    }
+
+    // Listen for custom ready event or direct beforeinstallprompt event
+    const handlePromptReady = () => {
+      if (window.__np_deferred_prompt) {
+        setDeferredPrompt(window.__np_deferred_prompt);
+      }
+    };
+
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
+      window.__np_deferred_prompt = e;
       setDeferredPrompt(e);
     };
 
+    window.addEventListener('np_prompt_ready', handlePromptReady);
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     return () => {
+      window.removeEventListener('np_prompt_ready', handlePromptReady);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
@@ -48,14 +62,17 @@ export default function InstallAppBanner() {
       return;
     }
 
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+    const promptToUse = deferredPrompt || window.__np_deferred_prompt;
+
+    if (promptToUse) {
+      promptToUse.prompt();
+      const { outcome } = await promptToUse.userChoice;
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
+        window.__np_deferred_prompt = null;
       }
     } else {
-      alert('To install, tap your browser menu (⋮) and choose "Install App" or "Add to Home Screen".');
+      setShowIOSModal(true);
     }
   };
 
