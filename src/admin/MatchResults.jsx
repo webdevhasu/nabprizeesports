@@ -139,8 +139,7 @@ export default function MatchResults() {
     }
     setSubmittingWinner(true);
     try {
-  const winnerPlayer = registeredPlayers.find(p => p.id === winnerId);
-  const existingResult = matchResultsList.find(d => d.id === selectedTournament?.id);
+      const winnerPlayer = registeredPlayers.find(p => p.id === winnerId);
       if (!winnerPlayer) return;
 
       const players = registeredPlayers.map(p => ({
