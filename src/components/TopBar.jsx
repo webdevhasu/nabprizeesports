@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Bell } from 'lucide-react';
 
-export default function TopBar({ title, rightAction, showBack = false }) {
+export default function TopBar({ title, rightAction, showBack = false, showNotification = false, unreadCount = 0, onNotificationClick }) {
   const navigate = useNavigate();
 
   return (
@@ -48,7 +48,31 @@ export default function TopBar({ title, rightAction, showBack = false }) {
           {title}
         </h1>
       </div>
-      {rightAction && <div>{rightAction}</div>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {showNotification && (
+          <button
+            onClick={onNotificationClick}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '4px', position: 'relative', display: 'flex',
+            }}
+          >
+            <Bell size={22} color="#2E2A26" />
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute', top: '-2px', right: '-2px',
+                background: '#FF6B4A', color: '#FFF', fontSize: '10px', fontWeight: 700,
+                minWidth: '18px', height: '18px', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '2px solid #FFF', padding: '0 4px',
+              }}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+        )}
+        {rightAction && <div>{rightAction}</div>}
+      </div>
     </div>
   );
 }

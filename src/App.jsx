@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { NotificationProvider } from './hooks/useNotifications';
 import BottomNav from './components/BottomNav';
 import Splash from './pages/Splash';
 import Login from './pages/Login';
@@ -128,6 +129,7 @@ function PublicRoute({ children }) {
 export default function App() {
   return (
     <AuthProvider>
+      <NotificationProvider>
       <Routes>
         {/* Splash */}
         <Route path="/splash" element={<UserShell><Splash /></UserShell>} />
@@ -165,6 +167,7 @@ export default function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

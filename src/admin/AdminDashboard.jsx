@@ -15,9 +15,11 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  ArrowUpRight
+  ArrowUpRight,
+  Bell
 } from 'lucide-react';
 import AdminLayout from './AdminLayout';
+import NotificationSender from './NotificationSender';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -271,6 +273,9 @@ export default function AdminDashboard() {
               When a tournament ends, switch its status to <strong>Live</strong> or <strong>Completed</strong> and navigate to <strong>Match Results</strong> to declare winners. Player wallet balances update automatically upon submission.
             </p>
           </div>
+
+          {/* Notification Sender */}
+          <NotificationSender />
         </div>
 
         {/* Right Column: Tournaments & Pending Withdrawals */}

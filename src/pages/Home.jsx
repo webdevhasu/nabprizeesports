@@ -3,13 +3,16 @@ import { Link } from 'react-router-dom';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
+import { useNotifications } from '../hooks/useNotifications';
 import TopBar from '../components/TopBar';
 import TournamentCard from '../components/TournamentCard';
 import LoadingSpinner from '../components/LoadingSpinner';
+import NotificationPanel from '../components/NotificationPanel';
 import { Trophy, Target, Gamepad2, Eye, EyeOff, Plus, ArrowUpRight, Flame, Sparkles } from 'lucide-react';
 
 export default function Home() {
   const { userProfile } = useAuth();
+  const { unreadCount, showPanel, setShowPanel } = useNotifications();
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +60,11 @@ export default function Home() {
     <>
       <TopBar
         title="NabPrize Esports"
+        showNotification
+        unreadCount={unreadCount}
+        onNotificationClick={() => setShowPanel(true)}
       />
+      <NotificationPanel isOpen={showPanel} onClose={() => setShowPanel(false)} />
 
       <div style={{ padding: '16px 16px 40px' }}>
         
