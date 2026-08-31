@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, writeBatch, deleteDoc, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase/config';
 import { requestNotificationPermission, onMessageListener } from '../firebase/messaging';
@@ -103,9 +103,24 @@ export function NotificationProvider({ children }) {
     await batch.commit();
   }, [notifications]);
 
+  const clearOne = useCallback(async (notifId) => {
+    const user = auth.currentUser;
+    if (!user) return;
+    await deleteDoc(doc(db, 'users', user.uid, 'notifications', notifId));
+  }, []);
+
+  const clearAll = useCallback(async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const snap = await getDocs(collection(db, 'users', user.uid, 'notifications'));
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  }, []);
+
   const value = {
     notifications, unreadCount, permission, showPanel, foregroundPayload,
-    setShowPanel, requestPermission, markAsRead, markAllRead,
+    setShowPanel, requestPermission, markAsRead, markAllRead, clearOne, clearAll,
   };
 
   return (

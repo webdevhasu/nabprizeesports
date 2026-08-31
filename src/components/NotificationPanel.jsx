@@ -1,5 +1,5 @@
 import { useNotifications } from '../hooks/useNotifications';
-import { Bell, BellOff, CheckCheck, X, Trophy, Target, CreditCard, AlertCircle, Info } from 'lucide-react';
+import { Bell, BellOff, CheckCheck, X, Trash2, Trophy, Target, CreditCard, AlertCircle, Info } from 'lucide-react';
 
 function timeAgo(date) {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -21,7 +21,7 @@ const iconMap = {
 };
 
 export default function NotificationPanel({ isOpen, onClose }) {
-  const { notifications, unreadCount, markAsRead, markAllRead, permission, requestPermission } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllRead, clearOne, clearAll, permission, requestPermission } = useNotifications();
 
   if (!isOpen) return null;
 
@@ -51,14 +51,24 @@ export default function NotificationPanel({ isOpen, onClose }) {
               }}>{unreadCount}</span>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {unreadCount > 0 && (
-              <button onClick={markAllRead} style={{
-                background: 'none', border: 'none', cursor: 'pointer', color: '#FF6B4A',
-                fontSize: '12px', fontWeight: 600, padding: '4px 8px',
-              }}>
-                <CheckCheck size={16} /> Mark all read
-              </button>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {notifications.length > 0 && (
+              <>
+                {unreadCount > 0 && (
+                  <button onClick={markAllRead} style={{
+                    background: 'none', border: 'none', cursor: 'pointer', color: '#FF6B4A',
+                    fontSize: '11px', fontWeight: 600, padding: '4px 8px', whiteSpace: 'nowrap',
+                  }}>
+                    <CheckCheck size={14} /> Read all
+                  </button>
+                )}
+                <button onClick={() => { if (confirm('Clear all notifications?')) clearAll(); }} style={{
+                  background: 'none', border: 'none', cursor: 'pointer', color: '#D9503F',
+                  fontSize: '11px', fontWeight: 600, padding: '4px 8px', whiteSpace: 'nowrap',
+                }}>
+                  <Trash2 size={14} /> Clear all
+                </button>
+              </>
             )}
             <button onClick={onClose} style={{
               background: 'none', border: 'none', cursor: 'pointer', color: '#8A8078',
@@ -138,6 +148,18 @@ export default function NotificationPanel({ isOpen, onClose }) {
                     background: '#FF6B4A', flexShrink: 0, marginTop: '6px',
                   }} />
                 )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); clearOne(n.id); }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#C4BCB2', padding: '2px', flexShrink: 0, marginTop: '2px',
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#D9503F'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#C4BCB2'}
+                >
+                  <X size={14} />
+                </button>
               </div>
             ))
           )}
