@@ -23,6 +23,8 @@ import MatchResults from './admin/MatchResults';
 import AdminHallOfFame from './admin/AdminHallOfFame';
 import Withdrawals from './admin/Withdrawals';
 import UserManagement from './admin/UserManagement';
+import AdminReports from './admin/AdminReports';
+import Reviews from './components/Reviews';
 
 function UserShell({ children }) {
   return (
@@ -154,6 +156,7 @@ export default function App() {
         <Route path="/transactions" element={<ProtectedRoute><UserShell><NavLayout><TransactionHistory /></NavLayout></UserShell></ProtectedRoute>} />
         <Route path="/terms" element={<ProtectedRoute><UserShell><NavLayout><Terms /></NavLayout></UserShell></ProtectedRoute>} />
         <Route path="/how-it-works" element={<ProtectedRoute><UserShell><NavLayout><HowItWorks /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/reviews" element={<ProtectedRoute><UserShell><NavLayout><Reviews /></NavLayout></UserShell></ProtectedRoute>} />
 
         {/* Admin routes (no mobile shell constraint - full desktop responsive) */}
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -163,6 +166,7 @@ export default function App() {
         <Route path="/admin/hall-of-fame" element={<AdminHallOfFame />} />
         <Route path="/admin/withdrawals" element={<Withdrawals />} />
         <Route path="/admin/users" element={<UserManagement />} />
+        <Route path="/admin/reports" element={<AdminReports />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -111,6 +111,7 @@ export default function Profile() {
     { label: 'Edit PUBG & Free Fire Game IDs', action: openGameIdsModal },
     { label: 'Transaction History', to: '/transactions' },
     { label: 'Terms & Conditions', to: '/terms' },
+    { label: 'Reviews', to: '/reviews' },
     { label: 'Privacy Policy', action: () => setShowPrivacyModal(true) },
     { label: 'How It Works', to: '/how-it-works' },
     { label: 'Support & Community Help', action: () => setShowSupportModal(true) },

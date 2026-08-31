@@ -15,7 +15,8 @@ import {
   Crown,
   ExternalLink,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  AlertTriangle
 } from 'lucide-react';
 
 const navItems = [
@@ -25,6 +26,7 @@ const navItems = [
   { to: '/admin/hall-of-fame', label: 'All-Time Hall of Fame', icon: Crown },
   { to: '/admin/withdrawals', label: 'Withdrawals', icon: DollarSign, hasBadge: true },
   { to: '/admin/users', label: 'User Management', icon: Users },
+  { to: '/admin/reports', label: 'Reports', icon: AlertTriangle, hasBadge: true },
 ];
 
 export default function AdminLayout({ children, title, subtitle, actions }) {
@@ -32,11 +34,20 @@ export default function AdminLayout({ children, title, subtitle, actions }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingWithdrawals, setPendingWithdrawals] = useState(0);
+  const [pendingReports, setPendingReports] = useState(0);
 
   useEffect(() => {
     const q = query(collection(db, 'withdrawals'), where('status', '==', 'pending'));
     const unsub = onSnapshot(q, (snap) => {
       setPendingWithdrawals(snap.size);
+    }, () => {});
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, 'reports'), where('status', '==', 'pending'));
+    const unsub = onSnapshot(q, (snap) => {
+      setPendingReports(snap.size);
     }, () => {});
     return unsub;
   }, []);
@@ -174,7 +185,9 @@ export default function AdminLayout({ children, title, subtitle, actions }) {
               >
                 <Icon size={18} color={isActive ? '#FF6B4A' : '#8A8078'} />
                 <span style={{ flex: 1 }}>{item.label}</span>
-                {item.hasBadge && pendingWithdrawals > 0 && (
+                {item.hasBadge && (
+                  (item.to === '/admin/reports' ? pendingReports : pendingWithdrawals) > 0
+                ) && (
                   <span style={{
                     background: '#D9503F',
                     color: '#FFFFFF',
@@ -183,7 +196,7 @@ export default function AdminLayout({ children, title, subtitle, actions }) {
                     padding: '2px 7px',
                     borderRadius: '12px',
                   }}>
-                    {pendingWithdrawals}
+                    {item.to === '/admin/reports' ? pendingReports : pendingWithdrawals}
                   </span>
                 )}
                 {isActive && <ChevronRight size={14} color="#FF6B4A" />}
