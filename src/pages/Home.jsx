@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, query, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { collection, collectionGroup, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../hooks/useNotifications';
 import TopBar from '../components/TopBar';
@@ -18,6 +18,7 @@ export default function Home() {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterGame, setFilterGame] = useState('all');
+  const [registeredIds, setRegisteredIds] = useState(new Set());
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'tournaments'), (snapshot) => {
@@ -45,6 +46,29 @@ export default function Home() {
     });
     return unsubscribe;
   }, []);
+
+  // Fetch tournaments the current user has registered for
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+    getDocs(
+      collectionGroup(db, 'players')
+        // collectionGroup queries require a composite index if filtered;
+        // here we query all player docs where userId matches
+        // Note: Firestore collectionGroup on 'players' must be allowed in rules
+    ).then((snap) => {
+      const ids = new Set();
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.userId === user.uid || docSnap.id === user.uid) {
+          // parent path: tournaments/{tournamentId}/players/{userId}
+          const tournamentId = docSnap.ref.parent.parent?.id;
+          if (tournamentId) ids.add(tournamentId);
+        }
+      });
+      setRegisteredIds(ids);
+    }).catch(console.error);
+  }, [userProfile]);
 
   const stats = [
     { icon: <Trophy size={18} color="#FF6B4A" />, value: userProfile?.totalWins || 0, label: 'Wins', bg: '#FFF0EC' },
@@ -291,6 +315,7 @@ export default function Home() {
               <TournamentCard
                 key={tournament.id}
                 tournament={tournament}
+                isRegistered={registeredIds.has(tournament.id)}
               />
             ))}
           </div>
