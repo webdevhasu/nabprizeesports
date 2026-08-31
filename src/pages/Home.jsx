@@ -8,6 +8,7 @@ import TopBar from '../components/TopBar';
 import TournamentCard from '../components/TournamentCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NotificationPanel from '../components/NotificationPanel';
+import InstallAppBanner from '../components/InstallAppBanner';
 import { Trophy, Target, Gamepad2, Eye, EyeOff, Plus, ArrowUpRight, Flame, Sparkles } from 'lucide-react';
 
 export default function Home() {
@@ -68,6 +69,9 @@ export default function Home() {
 
       <div style={{ padding: '16px 16px 40px' }}>
         
+        {/* PWA Install App Prompt Banner */}
+        <InstallAppBanner />
+
         {/* Modern Wallet Card */}
         <div style={{
           background: 'linear-gradient(135deg, #1E1B18 0%, #362E27 100%)',
