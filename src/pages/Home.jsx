@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, doc, getDoc, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../hooks/useNotifications';
@@ -9,16 +9,43 @@ import TournamentCard from '../components/TournamentCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NotificationPanel from '../components/NotificationPanel';
 import InstallAppBanner from '../components/InstallAppBanner';
-import { Trophy, Target, Gamepad2, Eye, EyeOff, Plus, ArrowUpRight, Flame, Sparkles } from 'lucide-react';
+import { Trophy, Target, Gamepad2, Eye, EyeOff, Plus, ArrowUpRight } from 'lucide-react';
+
+// Shimmer for dark backgrounds (wallet card)
+function Shimmer({ width = '100%', height = '20px', radius = '8px', style = {} }) {
+  return (
+    <div style={{
+      width, height, borderRadius: radius,
+      background: 'linear-gradient(90deg, rgba(255,255,255,0.07) 25%, rgba(255,255,255,0.16) 50%, rgba(255,255,255,0.07) 75%)',
+      backgroundSize: '200% 100%',
+      animation: 'shimmer 1.4s infinite',
+      ...style,
+    }} />
+  );
+}
+
+// Shimmer for light backgrounds (stats cards)
+function ShimmerLight({ width = '100%', height = '20px', radius = '8px', style = {} }) {
+  return (
+    <div style={{
+      width, height, borderRadius: radius,
+      background: 'linear-gradient(90deg, #F0ECE4 25%, #E4DDD3 50%, #F0ECE4 75%)',
+      backgroundSize: '200% 100%',
+      animation: 'shimmer 1.4s infinite',
+      ...style,
+    }} />
+  );
+}
 
 export default function Home() {
-  const { userProfile } = useAuth();
+  const { userProfile, loading: authLoading } = useAuth();
   const { unreadCount, showPanel, setShowPanel } = useNotifications();
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterGame, setFilterGame] = useState('all');
   const [registeredIds, setRegisteredIds] = useState(new Set());
+  const [registeredLoading, setRegisteredLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'tournaments'), (snapshot) => {
@@ -47,11 +74,28 @@ export default function Home() {
     return unsubscribe;
   }, []);
 
-  // For each tournament, check if the current user has a player doc
+  // Check per-tournament registration — waits until auth + tournaments are both ready
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user || tournaments.length === 0) return;
+    // Still waiting for auth state
+    if (authLoading) return;
 
+    const user = auth.currentUser;
+    if (!user) {
+      setRegisteredIds(new Set());
+      setRegisteredLoading(false);
+      return;
+    }
+
+    // Tournaments not yet loaded
+    if (loading) return;
+
+    // Tournaments loaded but empty
+    if (tournaments.length === 0) {
+      setRegisteredLoading(false);
+      return;
+    }
+
+    setRegisteredLoading(true);
     const checkRegistrations = async () => {
       const ids = new Set();
       await Promise.all(
@@ -63,15 +107,17 @@ export default function Home() {
         })
       );
       setRegisteredIds(ids);
+      setRegisteredLoading(false);
     };
-
     checkRegistrations();
-  }, [tournaments, userProfile]);
+  }, [tournaments, loading, authLoading]);
 
+  // null = still loading (show shimmer); number = loaded
+  const profileReady = !authLoading;
   const stats = [
-    { icon: <Trophy size={18} color="#FF6B4A" />, value: userProfile?.totalWins || 0, label: 'Wins', bg: '#FFF0EC' },
-    { icon: <Target size={18} color="#7B4FE0" />, value: userProfile?.totalKills || 0, label: 'Kills', bg: '#F3EEFF' },
-    { icon: <Gamepad2 size={18} color="#2E2A26" />, value: userProfile?.tournamentsPlayed || 0, label: 'Played', bg: '#F0ECE4' },
+    { icon: <Trophy size={18} color="#FF6B4A" />, value: profileReady ? (userProfile?.totalWins || 0) : null, label: 'Wins', bg: '#FFF0EC' },
+    { icon: <Target size={18} color="#7B4FE0" />, value: profileReady ? (userProfile?.totalKills || 0) : null, label: 'Kills', bg: '#F3EEFF' },
+    { icon: <Gamepad2 size={18} color="#2E2A26" />, value: profileReady ? (userProfile?.tournamentsPlayed || 0) : null, label: 'Played', bg: '#F0ECE4' },
   ];
 
   const filteredTournaments = tournaments.filter(t => {
@@ -81,6 +127,7 @@ export default function Home() {
 
   return (
     <>
+      <style>{`@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
       <TopBar
         title="NabPrize Esports"
         showNotification
@@ -148,8 +195,16 @@ export default function Home() {
             marginBottom: '18px',
             letterSpacing: '-0.5px',
             wordBreak: 'break-word',
+            minHeight: '38px',
+            display: 'flex',
+            alignItems: 'center',
           }}>
-            {balanceVisible ? `Rs ${(userProfile?.walletBalance || 0).toLocaleString()}` : 'Rs ••••••'}
+            {!profileReady
+              ? <Shimmer width="140px" height="34px" radius="10px" />
+              : balanceVisible
+                ? `Rs ${(userProfile?.walletBalance || 0).toLocaleString()}`
+                : 'Rs ••••••'
+            }
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -226,9 +281,10 @@ export default function Home() {
               }}>
                 {s.icon}
               </div>
-              <div style={{ fontWeight: 800, fontSize: '17px', color: '#2E2A26', lineHeight: 1.1 }}>
-                {s.value}
-              </div>
+              {s.value === null
+                ? <ShimmerLight width="40px" height="20px" radius="6px" style={{ margin: '0 auto 2px' }} />
+                : <div style={{ fontWeight: 800, fontSize: '17px', color: '#2E2A26', lineHeight: 1.1 }}>{s.value}</div>
+              }
               <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px', fontWeight: 500 }}>
                 {s.label}
               </div>
@@ -313,7 +369,7 @@ export default function Home() {
               <TournamentCard
                 key={tournament.id}
                 tournament={tournament}
-                isRegistered={registeredIds.has(tournament.id)}
+                isRegistered={registeredLoading ? null : registeredIds.has(tournament.id)}
               />
             ))}
           </div>

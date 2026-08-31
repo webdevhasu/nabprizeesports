@@ -3,6 +3,8 @@ import { Trophy, Users, DollarSign, Clock, MapPin, ShieldCheck, ChevronRight, Za
 import { FaFire } from 'react-icons/fa';
 
 export default function TournamentCard({ tournament, isRegistered = false }) {
+  // isRegistered can be: null (still loading), true (registered), false (not registered)
+  const registrationLoading = isRegistered === null;
   const isLive = tournament.status === 'live';
   const slotsFilled = tournament.slotsFilled || 0;
   const maxSlots = tournament.maxSlots || 25;
@@ -289,51 +291,63 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
           </div>
 
           {/* Action Button */}
-          <div style={{
-            width: '100%',
-            padding: '11px 14px',
-            borderRadius: '10px',
-            fontWeight: 700,
-            fontSize: '13px',
-            textAlign: 'center',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            background: isRegistered
-              ? '#E8F5E9'
-              : timing.isLiveMatch
-              ? '#3FA65C'
-              : timing.isRoomWindow
-              ? '#E88B00'
-              : isFull
-              ? '#EBE4DA'
-              : '#FF6B4A',
-            color: isRegistered
-              ? '#2E7D32'
-              : isFull
-              ? '#8A8078'
-              : '#FFFFFF',
-            border: isRegistered ? '1.5px solid #C8E6C9' : 'none',
-            boxShadow: (!isRegistered && !isFull)
-              ? '0 2px 8px rgba(255, 107, 74, 0.25)'
-              : 'none',
-          }}>
-            {isRegistered ? (
-              <span>✓ Registered (View Room ID)</span>
-            ) : timing.isLiveMatch ? (
-              <span>Match Live — View Details</span>
-            ) : timing.isRoomWindow ? (
-              <span>Room Open (10m) — View</span>
-            ) : isFull ? (
-              <span>Tournament Full</span>
-            ) : (
-              <>
-                <span>Join Tournament</span>
-                <ChevronRight size={16} />
-              </>
-            )}
-          </div>
+          {registrationLoading ? (
+            // Shimmer skeleton — prevents flashing "Join Tournament" before check completes
+            <div style={{
+              width: '100%',
+              height: '42px',
+              borderRadius: '10px',
+              background: 'linear-gradient(90deg, #F0ECE4 25%, #E4DDD3 50%, #F0ECE4 75%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 1.4s infinite',
+            }} />
+          ) : (
+            <div style={{
+              width: '100%',
+              padding: '11px 14px',
+              borderRadius: '10px',
+              fontWeight: 700,
+              fontSize: '13px',
+              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              background: isRegistered
+                ? '#E8F5E9'
+                : timing.isLiveMatch
+                ? '#3FA65C'
+                : timing.isRoomWindow
+                ? '#E88B00'
+                : isFull
+                ? '#EBE4DA'
+                : '#FF6B4A',
+              color: isRegistered
+                ? '#2E7D32'
+                : isFull
+                ? '#8A8078'
+                : '#FFFFFF',
+              border: isRegistered ? '1.5px solid #C8E6C9' : 'none',
+              boxShadow: (!isRegistered && !isFull)
+                ? '0 2px 8px rgba(255, 107, 74, 0.25)'
+                : 'none',
+            }}>
+              {isRegistered ? (
+                <span>✓ Registered (View Room ID)</span>
+              ) : timing.isLiveMatch ? (
+                <span>Match Live — View Details</span>
+              ) : timing.isRoomWindow ? (
+                <span>Room Open (10m) — View</span>
+              ) : isFull ? (
+                <span>Tournament Full</span>
+              ) : (
+                <>
+                  <span>Join Tournament</span>
+                  <ChevronRight size={16} />
+                </>
+              )}
+            </div>
+          )}
 
         </div>
       </div>
