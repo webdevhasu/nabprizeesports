@@ -22,6 +22,7 @@ import {
 import { FaMedal, FaTrophy, FaExclamationTriangle } from 'react-icons/fa';
 import AdminLayout from './AdminLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { notifyMultipleUsers, notifyUser } from '../utils/notify';
 
 const inputStyle = {
   width: '100%',
@@ -193,6 +194,27 @@ export default function MatchResults() {
         }
       }
 
+      // Auto-notify winner
+      notifyUser(winnerPlayer.userId, {
+        type: 'winner',
+        title: 'Congratulations, Champion!',
+        body: `You won Rs ${(selectedTournament.fixedReward || 0).toLocaleString()} in "${selectedTournament.name}"! Reward has been credited to your wallet.`,
+        url: '/rewards',
+      }).catch(() => {});
+
+      // Auto-notify all other participants
+      const otherPlayerUids = players
+        .filter(p => p.userId !== winnerPlayer.userId)
+        .map(p => p.userId);
+      if (otherPlayerUids.length > 0) {
+        notifyMultipleUsers(otherPlayerUids, {
+          type: 'tournament',
+          title: 'Match Results Declared',
+          body: `Results for "${selectedTournament.name}" are out. Winner: @${winnerPlayer.username}. Check Hall of Fame!`,
+          url: '/hall-of-fame',
+        }).catch(() => {});
+      }
+
       alert(`Winner assigned! @${winnerPlayer.username} won Rs ${selectedTournament.fixedReward}. All-Time Champions list has been updated.`);
     } catch (error) {
       console.error('Error submitting winner:', error);
@@ -221,6 +243,17 @@ export default function MatchResults() {
         fraggersSubmitted: true,
         submittedAt: serverTimestamp(),
       }, { merge: true });
+
+      // Auto-notify top fraggers
+      const fraggerUids = fraggerData.map(f => f.userId);
+      if (fraggerUids.length > 0) {
+        notifyMultipleUsers(fraggerUids, {
+          type: 'winner',
+          title: 'Top Fragger Recognition!',
+          body: `You made it to the Top Fraggers leaderboard for "${selectedTournament.name}"! Check Hall of Fame.`,
+          url: '/hall-of-fame',
+        }).catch(() => {});
+      }
 
       alert(`Top ${fraggerData.length} Fraggers submitted for Hall of Fame!`);
     } catch (error) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { notifyAllUsers, notifyMultipleUsers } from '../utils/notify';
 import {
   Plus,
   Trash2,
@@ -118,6 +119,16 @@ export default function CreateTournament() {
         roomReleased: Boolean(formData.roomId),
         createdAt: serverTimestamp(),
       });
+
+      // Auto-notify all users about new tournament
+      const gameLabel = formData.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire';
+      const reward = Number(formData.fixedReward) || 0;
+      notifyAllUsers({
+        type: 'tournament',
+        title: 'New Tournament Available!',
+        body: `${formData.name} (${gameLabel} ${formData.matchType}) — Reward: Rs ${reward.toLocaleString()} | Register now!`,
+        url: '/',
+      }).catch(() => {});
       setShowForm(false);
       setFormData({
         name: '',
@@ -183,6 +194,22 @@ export default function CreateTournament() {
         roomPassword: modalPassword.trim(),
         roomReleased: true,
       });
+
+      // Auto-notify registered players about Room ID
+      try {
+        const playersSnap = await getDocs(collection(db, 'tournaments', roomModalTournament.id, 'players'));
+        const playerUids = playersSnap.docs.map(d => d.data().userId).filter(Boolean);
+        if (playerUids.length > 0) {
+          notifyMultipleUsers(playerUids, {
+            type: 'tournament',
+            title: 'Room ID Available!',
+            body: `Room ID & Password for "${roomModalTournament.name}" is now live. Join quickly!`,
+            url: `/tournament/${roomModalTournament.id}`,
+          }).catch(() => {});
+        }
+      } catch (e) {
+        console.error('Room notify error:', e);
+      }
       setRoomModalTournament(null);
     } catch (err) {
       console.error('Error saving room details:', err);
