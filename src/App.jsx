@@ -146,7 +146,7 @@ function AdminRoute({ children }) {
   }
   if (!currentUser) return <Navigate to="/admin/login" replace />;
   // Only allow admin email addresses
-  const adminEmails = ['admin@nabprize.com', 'hasnain@nabprize.com', 'nabprize.official@gmail.com'];
+  const adminEmails = ['nabprize.official@gmail.com'];
   if (!adminEmails.includes(currentUser.email)) {
     return <Navigate to="/" replace />;
   }
