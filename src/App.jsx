@@ -145,10 +145,10 @@ function AdminRoute({ children }) {
     );
   }
   if (!currentUser) return <Navigate to="/admin/login" replace />;
-  // Only allow admin email addresses
-  const adminEmails = ['nabprize.official@gmail.com'];
-  if (!adminEmails.includes(currentUser.email)) {
-    return <Navigate to="/" replace />;
+  const isAdminVerified = sessionStorage.getItem('adminVerified') === 'true';
+  if (!isAdminVerified || currentUser.email !== 'nabprize.official@gmail.com') {
+    sessionStorage.removeItem('adminVerified');
+    return <Navigate to="/admin/login" replace />;
   }
   return children;
 }

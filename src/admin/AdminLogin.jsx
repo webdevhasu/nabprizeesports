@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { ShieldCheck, Lock, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 
@@ -16,7 +16,14 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      if (cred.user.email !== 'nabprize.official@gmail.com') {
+        setError('Unauthorized. Only admin account allowed.');
+        await signOut(auth);
+        setLoading(false);
+        return;
+      }
+      sessionStorage.setItem('adminVerified', 'true');
       navigate('/admin', { replace: true });
     } catch (err) {
       console.error('Admin login error:', err);

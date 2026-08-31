@@ -54,6 +54,7 @@ export default function AdminLayout({ children, title, subtitle, actions }) {
 
   const handleSignOut = async () => {
     try {
+      sessionStorage.removeItem('adminVerified');
       await signOut(auth);
       navigate('/admin/login', { replace: true });
     } catch (err) {
