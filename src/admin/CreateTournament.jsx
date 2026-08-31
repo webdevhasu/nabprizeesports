@@ -16,7 +16,14 @@ import {
   Key,
   Copy,
   Check,
-  X
+  X,
+  Edit3,
+  Star,
+  Sparkles,
+  BookmarkPlus,
+  Clock,
+  ArrowRight,
+  ShieldAlert
 } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -55,12 +62,75 @@ const cardStyle = {
   boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
 };
 
+const DEFAULT_STARTER_PRESETS = [
+  {
+    id: 'starter-pubg-solo',
+    presetName: 'PUBG Solo Daily',
+    name: 'PUBG Solo Daily Match',
+    game: 'pubg',
+    matchType: 'Solo',
+    tournamentType: 'Daily',
+    maxSlots: '25',
+    registrationCharge: '50',
+    fixedReward: '200',
+    mapName: 'Erangel',
+    rules: 'No teaming, no hacks/cheats. Emulators strictly banned. Room ID & Password released 10 mins before match.',
+    isStarter: true,
+  },
+  {
+    id: 'starter-pubg-squad',
+    presetName: 'PUBG Squad Showdown',
+    name: 'PUBG Squad Battle',
+    game: 'pubg',
+    matchType: 'Squad',
+    tournamentType: 'Daily',
+    maxSlots: '25',
+    registrationCharge: '200',
+    fixedReward: '1000',
+    mapName: 'Erangel',
+    rules: 'Squad team match. All 4 team members must be ready. No emulator allowed.',
+    isStarter: true,
+  },
+  {
+    id: 'starter-ff-solo',
+    presetName: 'Free Fire Solo Daily',
+    name: 'Free Fire Solo Rush',
+    game: 'freefire',
+    matchType: 'Solo',
+    tournamentType: 'Daily',
+    maxSlots: '25',
+    registrationCharge: '30',
+    fixedReward: '150',
+    mapName: 'Bermuda',
+    rules: 'Gun properties OFF, Character skills ON. No hack/script allowed. Instant DQ for rule breakers.',
+    isStarter: true,
+  },
+  {
+    id: 'starter-weekly-champ',
+    presetName: 'Weekly Championship',
+    name: 'Weekly Mega Championship',
+    game: 'pubg',
+    matchType: 'Squad',
+    tournamentType: 'Weekly Championship',
+    maxSlots: '25',
+    registrationCharge: '100',
+    fixedReward: '2500',
+    mapName: 'Erangel',
+    rules: 'Major Weekly Tournament. High rewards. Screenshot proof mandatory for winners.',
+    isStarter: true,
+  },
+];
+
 export default function CreateTournament() {
   const [tournaments, setTournaments] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingTournament, setEditingTournament] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateSuccessMsg, setTemplateSuccessMsg] = useState('');
   
   // Room ID & Password Modal State
   const [roomModalTournament, setRoomModalTournament] = useState(null);
@@ -76,6 +146,7 @@ export default function CreateTournament() {
   const [copiedPlayerUid, setCopiedPlayerUid] = useState(null);
   const [copiedAllRoster, setCopiedAllRoster] = useState(false);
 
+  // Form State
   const [formData, setFormData] = useState({
     name: '',
     game: 'pubg',
@@ -89,18 +160,89 @@ export default function CreateTournament() {
     rules: '',
     roomId: '',
     roomPassword: '',
+    status: 'upcoming',
   });
 
+  // Realtime Tournaments Listener
   useEffect(() => {
-    const unsub = onSnapshot(
+    const unsubTournaments = onSnapshot(
       query(collection(db, 'tournaments'), orderBy('createdAt', 'desc')),
       (snap) => setTournaments(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      () => {}
+      (err) => console.error('Tournaments sync error:', err)
     );
-    return unsub;
+
+    // Realtime Templates / Presets Listener
+    const unsubTemplates = onSnapshot(
+      collection(db, 'tournamentTemplates'),
+      (snap) => {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setTemplates(list);
+      },
+      (err) => console.error('Templates sync error:', err)
+    );
+
+    return () => {
+      unsubTournaments();
+      unsubTemplates();
+    };
   }, []);
 
-  const handleCreate = async (e) => {
+  // Combine user-created templates with default starter presets
+  const allTemplates = [
+    ...templates,
+    ...DEFAULT_STARTER_PRESETS.filter(sp => !templates.some(t => t.presetName === sp.presetName))
+  ];
+
+  const handleStartCreate = () => {
+    setEditingTournament(null);
+    setFormData({
+      name: '',
+      game: 'pubg',
+      matchType: 'Solo',
+      tournamentType: 'Daily',
+      maxSlots: '25',
+      registrationCharge: '',
+      fixedReward: '',
+      startTime: '',
+      mapName: 'Erangel',
+      rules: '',
+      roomId: '',
+      roomPassword: '',
+      status: 'upcoming',
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleStartEdit = (t) => {
+    setEditingTournament(t);
+    setFormData({
+      name: t.name || '',
+      game: t.game || 'pubg',
+      matchType: t.matchType || 'Solo',
+      tournamentType: t.tournamentType || 'Daily',
+      maxSlots: t.maxSlots !== undefined ? t.maxSlots.toString() : '25',
+      registrationCharge: t.registrationCharge !== undefined ? t.registrationCharge.toString() : '',
+      fixedReward: t.fixedReward !== undefined ? t.fixedReward.toString() : '',
+      startTime: t.startTime || '',
+      mapName: t.mapName || 'Erangel',
+      rules: t.rules || '',
+      roomId: t.roomId || '',
+      roomPassword: t.roomPassword || '',
+      status: t.status || 'upcoming',
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setEditingTournament(null);
+    setTemplateSuccessMsg('');
+  };
+
+  // Submit Handler: Supports both Create and Update
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
     setLoading(true);
@@ -109,26 +251,53 @@ export default function CreateTournament() {
       const registrationCharge = Number(formData.registrationCharge) || 0;
       const fixedReward = Number(formData.fixedReward) || 0;
 
-      await addDoc(collection(db, 'tournaments'), {
-        ...formData,
-        maxSlots,
-        registrationCharge,
-        fixedReward,
-        status: 'upcoming',
-        slotsFilled: 0,
-        roomReleased: Boolean(formData.roomId),
-        createdAt: serverTimestamp(),
-      });
+      if (editingTournament) {
+        // UPDATE EXISTING TOURNAMENT
+        await updateDoc(doc(db, 'tournaments', editingTournament.id), {
+          name: formData.name.trim(),
+          game: formData.game,
+          matchType: formData.matchType,
+          tournamentType: formData.tournamentType,
+          maxSlots,
+          registrationCharge,
+          fixedReward,
+          startTime: formData.startTime,
+          mapName: formData.mapName,
+          rules: formData.rules,
+          roomId: formData.roomId || '',
+          roomPassword: formData.roomPassword || '',
+          roomReleased: Boolean(formData.roomId),
+          status: formData.status || editingTournament.status || 'upcoming',
+          updatedAt: serverTimestamp(),
+        });
 
-      // Auto-notify all users about new tournament
-      const gameLabel = formData.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire';
-      notifyAllUsers({
-        type: 'tournament',
-        title: 'New Tournament Available!',
-        body: `${formData.name} (${gameLabel} ${formData.matchType}) — Reward: Rs ${fixedReward.toLocaleString()} | Register now!`,
-        url: '/',
-      }).catch(() => {});
+        alert(`Tournament "${formData.name}" updated successfully!`);
+      } else {
+        // CREATE NEW TOURNAMENT
+        await addDoc(collection(db, 'tournaments'), {
+          ...formData,
+          name: formData.name.trim(),
+          maxSlots,
+          registrationCharge,
+          fixedReward,
+          status: 'upcoming',
+          slotsFilled: 0,
+          roomReleased: Boolean(formData.roomId),
+          createdAt: serverTimestamp(),
+        });
+
+        // Auto-notify all users about new tournament
+        const gameLabel = formData.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire';
+        notifyAllUsers({
+          type: 'tournament',
+          title: 'New Tournament Available!',
+          body: `${formData.name} (${gameLabel} ${formData.matchType}) — Reward: Rs ${fixedReward.toLocaleString()} | Register now!`,
+          url: '/',
+        }).catch(() => {});
+      }
+
       setShowForm(false);
+      setEditingTournament(null);
       setFormData({
         name: '',
         game: 'pubg',
@@ -142,12 +311,102 @@ export default function CreateTournament() {
         rules: '',
         roomId: '',
         roomPassword: '',
+        status: 'upcoming',
       });
     } catch (error) {
-      console.error('Error creating tournament:', error);
-      alert('Failed to create tournament');
+      console.error('Error saving tournament:', error);
+      alert('Failed to save tournament: ' + error.message);
     }
     setLoading(false);
+  };
+
+  // Quick Apply Favorite Preset
+  const handleApplyPreset = (preset) => {
+    setFormData(prev => ({
+      ...prev,
+      name: preset.name || prev.name,
+      game: preset.game || 'pubg',
+      matchType: preset.matchType || 'Solo',
+      tournamentType: preset.tournamentType || 'Daily',
+      maxSlots: preset.maxSlots !== undefined ? preset.maxSlots.toString() : '25',
+      registrationCharge: preset.registrationCharge !== undefined ? preset.registrationCharge.toString() : '',
+      fixedReward: preset.fixedReward !== undefined ? preset.fixedReward.toString() : '',
+      mapName: preset.mapName || 'Erangel',
+      rules: preset.rules || '',
+    }));
+    setTemplateSuccessMsg(`Loaded preset "${preset.presetName || preset.name}"! Set the match time and publish.`);
+    setTimeout(() => setTemplateSuccessMsg(''), 4000);
+  };
+
+  // Save current Form as Favorite Preset Template
+  const handleSaveAsPreset = async () => {
+    if (!formData.name.trim()) {
+      alert('Please enter a Tournament Title first before saving as template.');
+      return;
+    }
+    const presetName = prompt('Enter a name for this Favorite Template / Preset:', `${formData.name} (${formData.matchType})`);
+    if (!presetName || !presetName.trim()) return;
+
+    setSavingTemplate(true);
+    try {
+      await addDoc(collection(db, 'tournamentTemplates'), {
+        presetName: presetName.trim(),
+        name: formData.name.trim(),
+        game: formData.game,
+        matchType: formData.matchType,
+        tournamentType: formData.tournamentType,
+        maxSlots: formData.maxSlots || '25',
+        registrationCharge: formData.registrationCharge || '0',
+        fixedReward: formData.fixedReward || '0',
+        mapName: formData.mapName || 'Erangel',
+        rules: formData.rules || '',
+        createdAt: serverTimestamp(),
+      });
+      setTemplateSuccessMsg(`⭐ Template "${presetName}" saved to Favorites! You can quick-fill it anytime.`);
+      setTimeout(() => setTemplateSuccessMsg(''), 4000);
+    } catch (err) {
+      console.error('Error saving template:', err);
+      alert('Failed to save template: ' + err.message);
+    }
+    setSavingTemplate(false);
+  };
+
+  // Save an existing Tournament from Table directly as Template
+  const handleSaveTournamentAsTemplate = async (t) => {
+    const defaultName = `${t.name} (Preset)`;
+    const presetName = prompt('Save this Tournament as Favorite Template / Preset:', defaultName);
+    if (!presetName || !presetName.trim()) return;
+
+    try {
+      await addDoc(collection(db, 'tournamentTemplates'), {
+        presetName: presetName.trim(),
+        name: t.name,
+        game: t.game || 'pubg',
+        matchType: t.matchType || 'Solo',
+        tournamentType: t.tournamentType || 'Daily',
+        maxSlots: t.maxSlots ? t.maxSlots.toString() : '25',
+        registrationCharge: t.registrationCharge !== undefined ? t.registrationCharge.toString() : '0',
+        fixedReward: t.fixedReward !== undefined ? t.fixedReward.toString() : '0',
+        mapName: t.mapName || 'Erangel',
+        rules: t.rules || '',
+        createdAt: serverTimestamp(),
+      });
+      alert(`⭐ Template "${presetName}" saved successfully!`);
+    } catch (err) {
+      console.error('Error saving template:', err);
+      alert('Failed to save template: ' + err.message);
+    }
+  };
+
+  // Delete Custom Template
+  const handleDeleteTemplate = async (tplId, tplName) => {
+    if (window.confirm(`Delete preset "${tplName}" from Favorites?`)) {
+      try {
+        await deleteDoc(doc(db, 'tournamentTemplates', tplId));
+      } catch (err) {
+        console.error('Delete template error:', err);
+      }
+    }
   };
 
   const handleDelete = async (id, name) => {
@@ -294,48 +553,217 @@ export default function CreateTournament() {
   return (
     <AdminLayout
       title="Tournament Management"
-      subtitle="Click on any tournament to view joined player rosters, configure Room ID & Passwords, and manage matches"
+      subtitle="Create, edit, and organize tournaments with 1-click Favorite Templates, instant Room ID release, and player rosters"
       actions={
-        <button
-          onClick={() => setShowForm(!showForm)}
-          style={{
-            padding: '8px 18px',
-            background: showForm ? '#F0ECE4' : '#FF6B4A',
-            color: showForm ? '#2E2A26' : '#FFFFFF',
-            border: 'none',
-            borderRadius: '8px',
-            fontWeight: 600,
-            fontSize: '13px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: showForm ? 'none' : '0 2px 6px rgba(255, 107, 74, 0.25)',
-          }}
-        >
-          <Plus size={16} />
-          {showForm ? 'Cancel Form' : 'New Tournament'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={showForm ? handleCancelForm : handleStartCreate}
+            style={{
+              padding: '8px 18px',
+              background: showForm ? '#F0ECE4' : '#FF6B4A',
+              color: showForm ? '#2E2A26' : '#FFFFFF',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 600,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: showForm ? 'none' : '0 2px 6px rgba(255, 107, 74, 0.25)',
+            }}
+          >
+            {showForm ? <X size={16} /> : <Plus size={16} />}
+            {showForm ? (editingTournament ? 'Cancel Edit' : 'Close Form') : 'New Tournament'}
+          </button>
+        </div>
       }
     >
-      {/* Create Form */}
+      {/* Create / Edit Form Card */}
       {showForm && (
-        <div style={{ ...cardStyle, marginBottom: '28px', border: '2px solid #FFDACF' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div style={{
+          ...cardStyle,
+          marginBottom: '28px',
+          border: editingTournament ? '2px solid #F4B740' : '2px solid #FFDACF',
+          background: '#FFFFFF',
+          boxShadow: editingTournament ? '0 4px 20px rgba(244, 183, 64, 0.15)' : '0 4px 20px rgba(255, 107, 74, 0.12)',
+        }}>
+          
+          {/* Header Banner */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '18px',
+            flexWrap: 'wrap',
+            gap: '12px',
+            paddingBottom: '14px',
+            borderBottom: '1px solid #F0ECE4',
+          }}>
             <div>
-              <h3 style={{ fontWeight: 700, fontSize: '18px', color: '#2E2A26', margin: 0 }}>
-                Create New Tournament
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {editingTournament ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#E88B00', fontWeight: 800, fontSize: '18px' }}>
+                    <Edit3 size={20} />
+                    <span>Editing Tournament: {editingTournament.name}</span>
+                  </div>
+                ) : (
+                  <h3 style={{ fontWeight: 800, fontSize: '18px', color: '#2E2A26', margin: 0 }}>
+                    Create New Tournament
+                  </h3>
+                )}
+              </div>
               <p style={{ fontSize: '12px', color: '#8A8078', margin: '4px 0 0' }}>
-                Match timeline: Registration closes at selected time (e.g. 8:00 PM PKT). 10 mins room joining window opens, match starts at 8:10 PM PKT.
+                {editingTournament
+                  ? 'Update tournament info, timings, prize reward, or room credentials without affecting registered players.'
+                  : 'Fill the details below, or 1-click apply any of your Favorite Presets to save time.'}
               </p>
             </div>
-            <span style={{ fontSize: '12px', background: '#FFF0EC', color: '#FF6B4A', fontWeight: 600, padding: '4px 10px', borderRadius: '8px' }}>
-              Status: Upcoming
-            </span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {editingTournament ? (
+                <span style={{
+                  fontSize: '12px',
+                  background: '#FFF6E0',
+                  color: '#E88B00',
+                  fontWeight: 700,
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  border: '1px solid #FFE4A0',
+                }}>
+                  Status: {formData.status?.toUpperCase() || 'UPCOMING'}
+                </span>
+              ) : (
+                <span style={{
+                  fontSize: '12px',
+                  background: '#FFF0EC',
+                  color: '#FF6B4A',
+                  fontWeight: 600,
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                }}>
+                  Status: Upcoming
+                </span>
+              )}
+            </div>
           </div>
 
-          <form onSubmit={handleCreate}>
+          {/* Quick Favorite Presets Bar */}
+          <div style={{
+            background: '#FAF8F5',
+            border: '1px solid #EBE4DA',
+            borderRadius: '12px',
+            padding: '12px 14px',
+            marginBottom: '20px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#2E2A26' }}>
+                <Star size={15} color="#F4B740" fill="#F4B740" />
+                <span>Quick Fill from Favorite Presets:</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveAsPreset}
+                disabled={savingTemplate}
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #F4B740',
+                  color: '#E88B00',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <BookmarkPlus size={13} />
+                {savingTemplate ? 'Saving...' : '⭐ Save Form as New Favorite Preset'}
+              </button>
+            </div>
+
+            {templateSuccessMsg && (
+              <div style={{
+                background: '#E8F5E9',
+                color: '#2E7D32',
+                fontSize: '12px',
+                fontWeight: 600,
+                padding: '6px 10px',
+                borderRadius: '6px',
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}>
+                <Check size={14} /> {templateSuccessMsg}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {allTemplates.map((tpl) => (
+                <div
+                  key={tpl.id || tpl.presetName}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    background: '#FFFFFF',
+                    border: '1px solid #E0D7CC',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleApplyPreset(tpl)}
+                    title={`Click to fill: Fee Rs ${tpl.registrationCharge || 0} • Reward Rs ${tpl.fixedReward || 0} • ${tpl.matchType} • ${tpl.mapName}`}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      padding: '6px 10px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#2E2A26',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Sparkles size={12} color="#F4B740" />
+                    <span>{tpl.presetName || tpl.name}</span>
+                    <span style={{ color: '#8A8078', fontSize: '10px' }}>
+                      (Rs {tpl.registrationCharge || 0}/{tpl.fixedReward || 0})
+                    </span>
+                  </button>
+                  {!tpl.isStarter && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTemplate(tpl.id, tpl.presetName)}
+                      title="Remove this preset"
+                      style={{
+                        border: 'none',
+                        borderLeft: '1px solid #EBE4DA',
+                        background: 'none',
+                        padding: '6px 8px',
+                        cursor: 'pointer',
+                        color: '#A69E94',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit}>
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -470,9 +898,25 @@ export default function CreateTournament() {
                 </select>
               </div>
 
-              {/* Room ID & Password (Optional at creation) */}
+              {/* Status Selector (Only when editing) */}
+              {editingTournament && (
+                <div>
+                  <label style={labelStyle}>Match Status *</label>
+                  <select
+                    value={formData.status || 'upcoming'}
+                    onChange={e => setFormData({ ...formData, status: e.target.value })}
+                    style={inputStyle}
+                  >
+                    <option value="upcoming">Upcoming (Registration Open)</option>
+                    <option value="live">Live (Match in Progress)</option>
+                    <option value="completed">Completed (Ended)</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Room ID & Password */}
               <div>
-                <label style={labelStyle}>Initial Custom Room ID (Optional)</label>
+                <label style={labelStyle}>Custom Room ID (Optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. 5928192"
@@ -480,11 +924,11 @@ export default function CreateTournament() {
                   onChange={e => setFormData({ ...formData, roomId: e.target.value })}
                   style={inputStyle}
                 />
-                <p style={helpStyle}>Can also be added later from the table</p>
+                <p style={helpStyle}>Can also be set or updated later from the table</p>
               </div>
 
               <div>
-                <label style={labelStyle}>Initial Room Password (Optional)</label>
+                <label style={labelStyle}>Room Password (Optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. 1234"
@@ -507,40 +951,87 @@ export default function CreateTournament() {
               </div>
 
               {/* Submit Buttons */}
-              <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <div style={{
+                gridColumn: '1 / -1',
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginTop: '12px',
+                paddingTop: '16px',
+                borderTop: '1px solid #F0ECE4',
+                flexWrap: 'wrap',
+              }}>
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={handleSaveAsPreset}
+                  disabled={savingTemplate}
                   style={{
-                    padding: '12px 24px',
-                    background: '#F0ECE4',
-                    color: '#5E5851',
-                    border: 'none',
+                    padding: '10px 16px',
+                    background: '#FFF8E1',
+                    color: '#E88B00',
+                    border: '1px solid #FFE082',
                     borderRadius: '8px',
-                    fontWeight: 600,
-                    fontSize: '14px',
+                    fontWeight: 700,
+                    fontSize: '13px',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
                   }}
                 >
-                  Cancel
+                  <Star size={15} fill="#E88B00" />
+                  {savingTemplate ? 'Saving...' : 'Save as Favorite Template'}
                 </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    padding: '12px 32px',
-                    background: '#3FA65C',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 2px 6px rgba(63, 166, 92, 0.3)',
-                  }}
-                >
-                  {loading ? 'Publishing...' : 'Publish Tournament'}
-                </button>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleCancelForm}
+                    style={{
+                      padding: '12px 24px',
+                      background: '#F0ECE4',
+                      color: '#5E5851',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    style={{
+                      padding: '12px 32px',
+                      background: editingTournament ? '#E88B00' : '#3FA65C',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      boxShadow: editingTournament ? '0 2px 8px rgba(232, 139, 0, 0.35)' : '0 2px 8px rgba(63, 166, 92, 0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    {loading ? (
+                      'Saving...'
+                    ) : editingTournament ? (
+                      <>
+                        <Check size={16} /> Update Tournament
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={16} /> Publish Tournament
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -769,6 +1260,48 @@ export default function CreateTournament() {
                       {/* Controls */}
                       <td style={{ padding: '14px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                          {/* EDIT TOURNAMENT BUTTON */}
+                          <button
+                            onClick={() => handleStartEdit(t)}
+                            title="Edit Tournament Details & Dates"
+                            style={{
+                              padding: '6px 10px',
+                              background: '#FFF8E1',
+                              color: '#E88B00',
+                              border: '1px solid #FFE082',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <Edit3 size={12} /> Edit
+                          </button>
+
+                          {/* SAVE AS TEMPLATE BUTTON */}
+                          <button
+                            onClick={() => handleSaveTournamentAsTemplate(t)}
+                            title="Save this tournament config as a Favorite Preset"
+                            style={{
+                              padding: '6px 8px',
+                              background: '#FAF8F5',
+                              color: '#8A8078',
+                              border: '1px solid #EBE4DA',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <Star size={12} color="#F4B740" fill="#F4B740" />
+                          </button>
+
                           {t.status === 'upcoming' && (
                             <button
                               onClick={() => handleStatusChange(t.id, 'live')}
@@ -787,7 +1320,7 @@ export default function CreateTournament() {
                                 gap: '4px',
                               }}
                             >
-                              <Play size={12} /> Go Live
+                              <Play size={12} /> Live
                             </button>
                           )}
 
@@ -809,7 +1342,7 @@ export default function CreateTournament() {
                                 gap: '4px',
                               }}
                             >
-                              <Square size={12} /> End Match
+                              <Square size={12} /> End
                             </button>
                           )}
 
