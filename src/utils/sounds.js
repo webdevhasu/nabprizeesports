@@ -3,6 +3,7 @@ let ctx = null;
 
 function getCtx() {
   if (!ctx) ctx = new AudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
   return ctx;
 }
 

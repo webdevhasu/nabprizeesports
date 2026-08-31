@@ -48,8 +48,13 @@ export default function Profile() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const handleSignOut = async () => {
-    await signOut(auth);
-    navigate('/login', { replace: true });
+    try {
+      await signOut(auth);
+      navigate('/login', { replace: true });
+    } catch (e) {
+      console.error('Sign out error:', e);
+      alert('Failed to sign out. Please try again.');
+    }
   };
 
   const handleSaveUsername = async (e) => {
@@ -314,7 +319,7 @@ export default function Profile() {
             { label: 'Tournaments Played', value: userProfile?.tournamentsPlayed || 0, color: '#2E2A26', bg: '#F8F6F1' },
             {
               label: 'Win Rate',
-              value: userProfile?.tournamentsPlayed ? `${Math.round((userProfile.totalWins / userProfile.tournamentsPlayed) * 100)}%` : '0%',
+              value: userProfile?.tournamentsPlayed ? `${Math.round(((userProfile.totalWins || 0) / userProfile.tournamentsPlayed) * 100)}%` : '0%',
               color: '#3FA65C',
               bg: '#E8F5E9'
             },

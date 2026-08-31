@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, writeBatch, deleteDoc, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, writeBatch, deleteDoc, getDocs, arrayUnion } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase/config';
 import { requestNotificationPermission, onMessageListener } from '../firebase/messaging';
@@ -76,7 +76,7 @@ export function NotificationProvider({ children }) {
       const user = auth.currentUser;
       if (user) {
         await updateDoc(doc(db, 'users', user.uid), {
-          fcmTokens: [token],
+          fcmTokens: arrayUnion(token),
         }).catch(() => {});
       }
     }

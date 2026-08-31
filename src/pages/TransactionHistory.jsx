@@ -11,7 +11,10 @@ export default function TransactionHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      setLoading(false);
+      return;
+    }
     const q = query(
       collection(db, 'transactions', auth.currentUser.uid, 'history'),
       orderBy('timestamp', 'desc')

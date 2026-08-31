@@ -1,11 +1,9 @@
-import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { firebaseConfig } from './config';
+import app from './config';
 
 let messaging = null;
 
 try {
-  const app = initializeApp(firebaseConfig);
   messaging = getMessaging(app);
 } catch (e) {
   console.log('FCM not supported in this browser');

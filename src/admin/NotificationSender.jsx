@@ -31,7 +31,7 @@ export default function NotificationSender() {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !body.trim()) return;
+    if (!title.trim() || !body.trim() || sending) return;
 
     setSending(true);
     try {

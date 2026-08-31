@@ -15,7 +15,10 @@ export default function Rewards() {
   const [gameFilter, setGameFilter] = useState('all');
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      setLoading(false);
+      return;
+    }
 
     // Listen to all matchResults where current user is a winner
     const unsubscribe = onSnapshot(

@@ -128,6 +128,31 @@ function PublicRoute({ children }) {
   return children;
 }
 
+function AdminRoute({ children }) {
+  const { currentUser, loading } = useAuth();
+  if (loading) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FFF8F0' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px', height: '40px', border: '3px solid #F0E6D8',
+            borderTop: '3px solid #FF6B4A', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite', margin: '0 auto',
+          }} />
+          <p style={{ marginTop: '16px', fontSize: '13px', color: '#8A8078', fontWeight: 500 }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  if (!currentUser) return <Navigate to="/admin/login" replace />;
+  // Only allow admin email addresses
+  const adminEmails = ['admin@nabprize.com', 'hasnain@nabprize.com'];
+  if (!adminEmails.includes(currentUser.email)) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -160,13 +185,13 @@ export default function App() {
 
         {/* Admin routes (no mobile shell constraint - full desktop responsive) */}
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/tournaments" element={<CreateTournament />} />
-        <Route path="/admin/match-results" element={<MatchResults />} />
-        <Route path="/admin/hall-of-fame" element={<AdminHallOfFame />} />
-        <Route path="/admin/withdrawals" element={<Withdrawals />} />
-        <Route path="/admin/users" element={<UserManagement />} />
-        <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/tournaments" element={<AdminRoute><CreateTournament /></AdminRoute>} />
+        <Route path="/admin/match-results" element={<AdminRoute><MatchResults /></AdminRoute>} />
+        <Route path="/admin/hall-of-fame" element={<AdminRoute><AdminHallOfFame /></AdminRoute>} />
+        <Route path="/admin/withdrawals" element={<AdminRoute><Withdrawals /></AdminRoute>} />
+        <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+        <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
