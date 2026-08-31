@@ -6,8 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { sounds } from '../utils/sounds';
-import { Clock, Users, Shield, X, Key, Copy, Check, Lock, Sparkles, Play, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-import ReportModal from '../components/ReportModal';
+import { Clock, Users, Shield, X, Key, Copy, Check, Lock, Sparkles, Play, AlertCircle, Info } from 'lucide-react';
 
 export default function TournamentDetail() {
   const { id } = useParams();
@@ -24,7 +23,6 @@ export default function TournamentDetail() {
   const [joinError, setJoinError] = useState('');
   const [copiedField, setCopiedField] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [showReport, setShowReport] = useState(false);
 
   // Keep a 1-second interval ticker for exact countdowns
   useEffect(() => {
@@ -667,20 +665,6 @@ export default function TournamentDetail() {
           <span style={{ fontSize: '12px', color: '#3FA65C', fontWeight: 600 }}>100% Fair Play Verified</span>
           <span style={{ fontSize: '11px', color: '#8A8078' }}>— Manual score validation by admins</span>
         </div>
-
-        {/* Report Suspicious Player */}
-        <button
-          onClick={() => setShowReport(true)}
-          style={{
-            width: '100%', padding: '12px', background: '#FFFFFF', border: '1px solid #EBE4DA',
-            borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-            gap: '8px', marginTop: '10px',
-          }}
-        >
-          <AlertTriangle size={14} color="#D9503F" />
-          <span style={{ fontSize: '12px', color: '#D9503F', fontWeight: 600 }}>Report Suspicious Player</span>
-        </button>
-        <ReportModal isOpen={showReport} onClose={() => setShowReport(false)} />
 
       </div>
 

@@ -233,10 +233,17 @@ export default function AdminReports() {
                     <div style={{ fontSize: '13px', color: '#5E5851', lineHeight: 1.5 }}>{selectedReport.details}</div>
                   </div>
                 )}
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600 }}>TOURNAMENT</div>
+                  <div style={{ fontSize: '13px', color: '#2E2A26', fontWeight: 600 }}>{selectedReport.tournamentName || 'N/A'}</div>
+                </div>
+                <div style={{ marginBottom: '14px' }}>
                   <div style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600 }}>REPORTED BY</div>
-                  <div style={{ fontSize: '13px', color: '#5E5851' }}>{selectedReport.reporterName}</div>
-                  <div style={{ fontSize: '11px', color: '#C4BCB2' }}>
+                  <div style={{ fontSize: '13px', color: '#2E2A26', fontWeight: 600 }}>{selectedReport.reporterName}</div>
+                  {selectedReport.reporterEmail && (
+                    <div style={{ fontSize: '12px', color: '#5E5851' }}>{selectedReport.reporterEmail}</div>
+                  )}
+                  <div style={{ fontSize: '11px', color: '#C4BCB2', marginTop: '2px' }}>
                     {selectedReport.createdAt?.toDate ? selectedReport.createdAt.toDate().toLocaleString() : 'Just now'}
                   </div>
                 </div>

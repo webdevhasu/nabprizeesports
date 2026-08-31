@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
-import { X, AlertTriangle, Search, Shield, Send } from 'lucide-react';
+import { X, AlertTriangle, Shield, Send, Target, ChevronDown } from 'lucide-react';
 
 const reasons = [
   'Suspicious aim / aimbot',
@@ -14,6 +14,8 @@ const reasons = [
 ];
 
 export default function ReportModal({ isOpen, onClose }) {
+  const [recentTournaments, setRecentTournaments] = useState([]);
+  const [selectedTournament, setSelectedTournament] = useState('');
   const [suspectName, setSuspectName] = useState('');
   const [suspectUid, setSuspectUid] = useState('');
   const [reason, setReason] = useState('');
@@ -22,17 +24,46 @@ export default function ReportModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
 
-  if (!isOpen) return null;
+  // Fetch today's recent tournaments
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchTournaments = async () => {
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const q = query(
+          collection(db, 'tournaments'),
+          orderBy('createdAt', 'desc'),
+          limit(20)
+        );
+        const snap = await getDocs(q);
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Show recent ones (last 3 days) so user can pick the relevant one
+        const threeDaysAgo = new Date(Date.now() - 3 * 86400000);
+        const recent = list.filter(t => {
+          const created = t.createdAt?.toDate?.() || (t.startTime ? new Date(t.startTime) : null);
+          return created && created >= threeDaysAgo;
+        });
+        setRecentTournaments(recent.length > 0 ? recent : list.slice(0, 5));
+      } catch (e) {
+        console.error('Error fetching tournaments:', e);
+      }
+    };
+    fetchTournaments();
+  }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
+    if (!selectedTournament) {
+      setError('Please select the tournament.');
+      return;
+    }
     if (!suspectName.trim() || !suspectUid.trim() || !reason) {
       setError('Please fill in all required fields.');
       return;
     }
-
     if (suspectUid.trim().length < 4) {
       setError('Game UID must be at least 4 characters.');
       return;
@@ -44,7 +75,7 @@ export default function ReportModal({ isOpen, onClose }) {
       return;
     }
 
-    // Check for duplicate report (same reporter + same UID in last 24h)
+    // Duplicate check - same reporter + same UID in last 24h
     const oneDayAgo = new Date(Date.now() - 86400000);
     const dupCheck = query(
       collection(db, 'reports'),
@@ -63,9 +94,13 @@ export default function ReportModal({ isOpen, onClose }) {
 
     setSubmitting(true);
     try {
+      const tournament = recentTournaments.find(t => t.id === selectedTournament);
       await addDoc(collection(db, 'reports'), {
         reporterUid: user.uid,
         reporterName: user.displayName || 'Anonymous',
+        reporterEmail: user.email || '',
+        tournamentId: selectedTournament,
+        tournamentName: tournament?.name || 'Unknown',
         suspectName: suspectName.trim(),
         suspectUid: suspectUid.trim(),
         reason,
@@ -82,6 +117,7 @@ export default function ReportModal({ isOpen, onClose }) {
   };
 
   const handleClose = () => {
+    setSelectedTournament('');
     setSuspectName('');
     setSuspectUid('');
     setReason('');
@@ -90,6 +126,8 @@ export default function ReportModal({ isOpen, onClose }) {
     setError('');
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div style={{
@@ -116,7 +154,7 @@ export default function ReportModal({ isOpen, onClose }) {
               <AlertTriangle size={18} color="#D9503F" />
             </div>
             <h3 style={{ fontWeight: 700, fontSize: '16px', color: '#2E2A26', margin: 0 }}>
-              Report Suspicious Player
+              Report Player
             </h3>
           </div>
           <button onClick={handleClose} style={{
@@ -150,6 +188,35 @@ export default function ReportModal({ isOpen, onClose }) {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
+
+              {/* Tournament Selector */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>
+                  Select Tournament *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Target size={14} color="#A69E94" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <select
+                    value={selectedTournament}
+                    onChange={e => setSelectedTournament(e.target.value)}
+                    style={{
+                      width: '100%', padding: '10px 32px 10px 34px', borderRadius: '8px',
+                      border: '1px solid #D9D3CC', fontSize: '13px', boxSizing: 'border-box',
+                      outline: 'none', appearance: 'none', background: '#FAFAFA', cursor: 'pointer',
+                      color: selectedTournament ? '#2E2A26' : '#8A8078',
+                    }}
+                  >
+                    <option value="">Choose a recent tournament...</option>
+                    {recentTournaments.map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.game === 'pubg' ? 'PUBG' : 'FF'} {t.matchType})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} color="#8A8078" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                </div>
+              </div>
+
               {/* Suspect In-Game Name */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>
@@ -243,13 +310,13 @@ export default function ReportModal({ isOpen, onClose }) {
 
               <button
                 type="submit"
-                disabled={submitting || !suspectName.trim() || !suspectUid.trim() || !reason}
+                disabled={submitting || !selectedTournament || !suspectName.trim() || !suspectUid.trim() || !reason}
                 style={{
                   width: '100%', padding: '12px', borderRadius: '10px', border: 'none',
                   fontWeight: 700, fontSize: '13px',
-                  background: submitting || !suspectName.trim() || !suspectUid.trim() || !reason ? '#C4BCB2' : '#D9503F',
+                  background: submitting || !selectedTournament || !suspectName.trim() || !suspectUid.trim() || !reason ? '#C4BCB2' : '#D9503F',
                   color: '#FFF',
-                  cursor: submitting || !suspectName.trim() || !suspectUid.trim() || !reason ? 'not-allowed' : 'pointer',
+                  cursor: submitting || !selectedTournament || !suspectName.trim() || !suspectUid.trim() || !reason ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 }}
               >

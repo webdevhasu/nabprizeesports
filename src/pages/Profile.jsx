@@ -6,6 +6,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import TopBar from '../components/TopBar';
+import ReportModal from '../components/ReportModal';
 import {
   Settings,
   ChevronRight,
@@ -43,6 +44,7 @@ export default function Profile() {
 
   // Support & Policy Modals
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const handleSignOut = async () => {
@@ -114,6 +116,7 @@ export default function Profile() {
     { label: 'Reviews', to: '/reviews' },
     { label: 'Privacy Policy', action: () => setShowPrivacyModal(true) },
     { label: 'How It Works', to: '/how-it-works' },
+    { label: 'Report Suspicious Player', action: () => setShowReportModal(true), color: '#D9503F' },
     { label: 'Support & Community Help', action: () => setShowSupportModal(true) },
   ];
 
@@ -346,12 +349,12 @@ export default function Profile() {
             ) : (
               <button key={item.label} onClick={item.action} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 16px', textDecoration: 'none', color: '#2E2A26',
+                padding: '14px 16px', textDecoration: 'none', color: item.color || '#2E2A26',
                 borderBottom: i < menuItems.length - 1 ? '1px solid #F0ECE4' : 'none',
                 background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left',
               }}>
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>{item.label}</span>
-                <ChevronRight size={16} color="#A69E94" />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: item.color || '#2E2A26' }}>{item.label}</span>
+                <ChevronRight size={16} color={item.color || '#A69E94'} />
               </button>
             )
           ))}
@@ -586,6 +589,8 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      <ReportModal isOpen={showReportModal} onClose={() => setShowReportModal(false)} />
 
     </>
   );
