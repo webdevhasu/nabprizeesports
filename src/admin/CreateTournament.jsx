@@ -128,7 +128,8 @@ export default function CreateTournament() {
         title: 'New Tournament Available!',
         body: `${formData.name} (${gameLabel} ${formData.matchType}) — Reward: Rs ${reward.toLocaleString()} | Register now!`,
         url: '/',
-      }).catch(() => {});
+      }).then(count => console.log(`Notifications sent to ${count} users`))
+        .catch(e => console.error('Notification error:', e));
       setShowForm(false);
       setFormData({
         name: '',

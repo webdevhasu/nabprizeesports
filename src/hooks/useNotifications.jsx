@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase/config';
 import { requestNotificationPermission, onMessageListener } from '../firebase/messaging';
 
@@ -20,30 +21,43 @@ export function NotificationProvider({ children }) {
     setPermission(Notification?.permission || 'default');
   }, []);
 
-  // Listen to notifications from Firestore
+  // Listen to notifications from Firestore — use onAuthStateChanged to avoid race condition
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
+    let unsub = () => {};
 
-    const q = query(
-      collection(db, 'users', user.uid, 'notifications'),
-      orderBy('createdAt', 'desc')
-    );
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      unsub();
+      if (!user) {
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
 
-    const unsub = onSnapshot(q, (snap) => {
-      const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setNotifications(notifs);
-      setUnreadCount(notifs.filter(n => !n.read).length);
-    }, () => {});
+      const q = query(
+        collection(db, 'users', user.uid, 'notifications'),
+        orderBy('createdAt', 'desc')
+      );
 
-    return unsub;
+      unsub = onSnapshot(q, (snap) => {
+        const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setNotifications(notifs);
+        setUnreadCount(notifs.filter(n => !n.read).length);
+      }, (err) => {
+        console.error('Notifications listener error:', err);
+      });
+    });
+
+    return () => {
+      unsub();
+      unsubAuth();
+    };
   }, []);
 
   // Listen for foreground messages
   useEffect(() => {
     const unsubscribe = onMessageListener((payload) => {
       setForegroundPayload(payload);
-      if (Notification.permission === 'granted') {
+      if (Notification?.permission === 'granted') {
         const { title, body, url } = payload.data || {};
         new Notification(title || 'NabPrize Esports', {
           body: body || 'New notification',
