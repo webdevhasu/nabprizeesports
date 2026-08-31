@@ -11,6 +11,15 @@ window.addEventListener('beforeinstallprompt', (e) => {
   window.dispatchEvent(new CustomEvent('np_prompt_ready'));
 });
 
+// Disable long-press native popup menu across PWA (preserves form inputs)
+window.addEventListener('contextmenu', (e) => {
+  const tag = e.target?.tagName?.toLowerCase();
+  const isEditable = e.target?.isContentEditable;
+  if (tag !== 'input' && tag !== 'textarea' && !isEditable) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>

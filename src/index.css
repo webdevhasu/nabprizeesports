@@ -3,6 +3,13 @@
   padding: 0;
   box-sizing: border-box;
   font-family: 'Poppins', sans-serif;
+  -webkit-touch-callout: none; /* Disables iOS long-press callout menus */
+  -webkit-user-select: none;   /* Disables text selection */
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -42,10 +49,23 @@ body {
   --border-divider: #F0E6D8;
 }
 
-input, textarea, select {
+/* Allow text typing and selection only in form inputs */
+input, textarea, select, [contenteditable="true"] {
   font-family: 'Poppins', sans-serif;
-  user-select: text;
-  -webkit-user-select: text;
+  -webkit-touch-callout: default !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Prevent image dragging / ghosting on long press */
+img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
 }
 
 /* Custom scrollbar for tables & lists */
