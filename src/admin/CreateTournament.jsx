@@ -23,7 +23,9 @@ import {
   BookmarkPlus,
   Clock,
   ArrowRight,
-  ShieldAlert
+  Layers,
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -122,6 +124,9 @@ const DEFAULT_STARTER_PRESETS = [
 ];
 
 export default function CreateTournament() {
+  // Main Tab State: 'tournaments' or 'favorites'
+  const [activeMainTab, setActiveMainTab] = useState('tournaments');
+
   const [tournaments, setTournaments] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -131,6 +136,21 @@ export default function CreateTournament() {
   const [loading, setLoading] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [templateSuccessMsg, setTemplateSuccessMsg] = useState('');
+
+  // New Preset Modal State (in Favorites tab)
+  const [showCreatePresetModal, setShowCreatePresetModal] = useState(false);
+  const [presetModalData, setPresetModalData] = useState({
+    presetName: '',
+    name: '',
+    game: 'pubg',
+    matchType: 'Solo',
+    tournamentType: 'Daily',
+    maxSlots: '25',
+    registrationCharge: '50',
+    fixedReward: '200',
+    mapName: 'Erangel',
+    rules: '',
+  });
   
   // Room ID & Password Modal State
   const [roomModalTournament, setRoomModalTournament] = useState(null);
@@ -210,6 +230,7 @@ export default function CreateTournament() {
       roomPassword: '',
       status: 'upcoming',
     });
+    setActiveMainTab('tournaments');
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -231,6 +252,7 @@ export default function CreateTournament() {
       roomPassword: t.roomPassword || '',
       status: t.status || 'upcoming',
     });
+    setActiveMainTab('tournaments');
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -334,8 +356,11 @@ export default function CreateTournament() {
       mapName: preset.mapName || 'Erangel',
       rules: preset.rules || '',
     }));
-    setTemplateSuccessMsg(`Loaded preset "${preset.presetName || preset.name}"! Set the match time and publish.`);
-    setTimeout(() => setTemplateSuccessMsg(''), 4000);
+    setActiveMainTab('tournaments');
+    setShowForm(true);
+    setTemplateSuccessMsg(`⭐ Loaded template "${preset.presetName || preset.name}"! Pick the match time and click Publish.`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => setTemplateSuccessMsg(''), 5000);
   };
 
   // Save current Form as Favorite Preset Template
@@ -362,7 +387,7 @@ export default function CreateTournament() {
         rules: formData.rules || '',
         createdAt: serverTimestamp(),
       });
-      setTemplateSuccessMsg(`⭐ Template "${presetName}" saved to Favorites! You can quick-fill it anytime.`);
+      setTemplateSuccessMsg(`⭐ Template "${presetName}" saved to Favorites Tab!`);
       setTimeout(() => setTemplateSuccessMsg(''), 4000);
     } catch (err) {
       console.error('Error saving template:', err);
@@ -391,10 +416,49 @@ export default function CreateTournament() {
         rules: t.rules || '',
         createdAt: serverTimestamp(),
       });
-      alert(`⭐ Template "${presetName}" saved successfully!`);
+      alert(`⭐ Template "${presetName}" saved successfully in Favorites tab!`);
     } catch (err) {
       console.error('Error saving template:', err);
       alert('Failed to save template: ' + err.message);
+    }
+  };
+
+  // Create new Template directly from Favorites Tab Modal
+  const handleCreatePresetFromModal = async (e) => {
+    e.preventDefault();
+    if (!presetModalData.presetName.trim() || !presetModalData.name.trim()) return;
+
+    try {
+      await addDoc(collection(db, 'tournamentTemplates'), {
+        presetName: presetModalData.presetName.trim(),
+        name: presetModalData.name.trim(),
+        game: presetModalData.game,
+        matchType: presetModalData.matchType,
+        tournamentType: presetModalData.tournamentType,
+        maxSlots: presetModalData.maxSlots || '25',
+        registrationCharge: presetModalData.registrationCharge || '0',
+        fixedReward: presetModalData.fixedReward || '0',
+        mapName: presetModalData.mapName || 'Erangel',
+        rules: presetModalData.rules || '',
+        createdAt: serverTimestamp(),
+      });
+      setShowCreatePresetModal(false);
+      setPresetModalData({
+        presetName: '',
+        name: '',
+        game: 'pubg',
+        matchType: 'Solo',
+        tournamentType: 'Daily',
+        maxSlots: '25',
+        registrationCharge: '50',
+        fixedReward: '200',
+        mapName: 'Erangel',
+        rules: '',
+      });
+      alert('⭐ New Favorite Template added successfully!');
+    } catch (err) {
+      console.error('Error creating template:', err);
+      alert('Failed to create template: ' + err.message);
     }
   };
 
@@ -553,449 +617,1295 @@ export default function CreateTournament() {
   return (
     <AdminLayout
       title="Tournament Management"
-      subtitle="Create, edit, and organize tournaments with 1-click Favorite Templates, instant Room ID release, and player rosters"
+      subtitle="Manage live tournaments, edit parameters, and quick-launch matches with Favorite Presets"
       actions={
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={showForm ? handleCancelForm : handleStartCreate}
-            style={{
-              padding: '8px 18px',
-              background: showForm ? '#F0ECE4' : '#FF6B4A',
-              color: showForm ? '#2E2A26' : '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: 600,
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: showForm ? 'none' : '0 2px 6px rgba(255, 107, 74, 0.25)',
-            }}
-          >
-            {showForm ? <X size={16} /> : <Plus size={16} />}
-            {showForm ? (editingTournament ? 'Cancel Edit' : 'Close Form') : 'New Tournament'}
-          </button>
-        </div>
-      }
-    >
-      {/* Create / Edit Form Card */}
-      {showForm && (
-        <div style={{
-          ...cardStyle,
-          marginBottom: '28px',
-          border: editingTournament ? '2px solid #F4B740' : '2px solid #FFDACF',
-          background: '#FFFFFF',
-          boxShadow: editingTournament ? '0 4px 20px rgba(244, 183, 64, 0.15)' : '0 4px 20px rgba(255, 107, 74, 0.12)',
-        }}>
-          
-          {/* Header Banner */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '18px',
-            flexWrap: 'wrap',
-            gap: '12px',
-            paddingBottom: '14px',
-            borderBottom: '1px solid #F0ECE4',
-          }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {editingTournament ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#E88B00', fontWeight: 800, fontSize: '18px' }}>
-                    <Edit3 size={20} />
-                    <span>Editing Tournament: {editingTournament.name}</span>
-                  </div>
-                ) : (
-                  <h3 style={{ fontWeight: 800, fontSize: '18px', color: '#2E2A26', margin: 0 }}>
-                    Create New Tournament
-                  </h3>
-                )}
-              </div>
-              <p style={{ fontSize: '12px', color: '#8A8078', margin: '4px 0 0' }}>
-                {editingTournament
-                  ? 'Update tournament info, timings, prize reward, or room credentials without affecting registered players.'
-                  : 'Fill the details below, or 1-click apply any of your Favorite Presets to save time.'}
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {editingTournament ? (
-                <span style={{
-                  fontSize: '12px',
-                  background: '#FFF6E0',
-                  color: '#E88B00',
-                  fontWeight: 700,
-                  padding: '4px 10px',
-                  borderRadius: '8px',
-                  border: '1px solid #FFE4A0',
-                }}>
-                  Status: {formData.status?.toUpperCase() || 'UPCOMING'}
-                </span>
-              ) : (
-                <span style={{
-                  fontSize: '12px',
-                  background: '#FFF0EC',
-                  color: '#FF6B4A',
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: '8px',
-                }}>
-                  Status: Upcoming
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Favorite Presets Bar */}
-          <div style={{
-            background: '#FAF8F5',
-            border: '1px solid #EBE4DA',
-            borderRadius: '12px',
-            padding: '12px 14px',
-            marginBottom: '20px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#2E2A26' }}>
-                <Star size={15} color="#F4B740" fill="#F4B740" />
-                <span>Quick Fill from Favorite Presets:</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleSaveAsPreset}
-                disabled={savingTemplate}
-                style={{
-                  background: '#FFFFFF',
-                  border: '1px solid #F4B740',
-                  color: '#E88B00',
-                  borderRadius: '6px',
-                  padding: '4px 10px',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <BookmarkPlus size={13} />
-                {savingTemplate ? 'Saving...' : '⭐ Save Form as New Favorite Preset'}
-              </button>
-            </div>
-
-            {templateSuccessMsg && (
-              <div style={{
-                background: '#E8F5E9',
-                color: '#2E7D32',
-                fontSize: '12px',
+          {activeMainTab === 'tournaments' ? (
+            <button
+              onClick={showForm ? handleCancelForm : handleStartCreate}
+              style={{
+                padding: '8px 18px',
+                background: showForm ? '#F0ECE4' : '#FF6B4A',
+                color: showForm ? '#2E2A26' : '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
                 fontWeight: 600,
-                padding: '6px 10px',
-                borderRadius: '6px',
-                marginBottom: '8px',
+                fontSize: '13px',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-              }}>
-                <Check size={14} /> {templateSuccessMsg}
-              </div>
-            )}
+                boxShadow: showForm ? 'none' : '0 2px 6px rgba(255, 107, 74, 0.25)',
+              }}
+            >
+              {showForm ? <X size={16} /> : <Plus size={16} />}
+              {showForm ? (editingTournament ? 'Cancel Edit' : 'Close Form') : 'New Tournament'}
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowCreatePresetModal(true)}
+              style={{
+                padding: '8px 18px',
+                background: '#E88B00',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 6px rgba(232, 139, 0, 0.3)',
+              }}
+            >
+              <BookmarkPlus size={16} />
+              + Add Favorite Preset
+            </button>
+          )}
+        </div>
+      }
+    >
+      {/* TOP NAVIGATION TABS (TOURNAMENTS vs FAVORITES) */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        marginBottom: '22px',
+        background: '#FFFFFF',
+        padding: '8px',
+        borderRadius: '12px',
+        border: '1px solid #EBE4DA',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.02)',
+      }}>
+        <button
+          onClick={() => setActiveMainTab('tournaments')}
+          style={{
+            flex: 1,
+            padding: '10px 18px',
+            borderRadius: '9px',
+            fontWeight: 700,
+            fontSize: '13px',
+            cursor: 'pointer',
+            border: 'none',
+            background: activeMainTab === 'tournaments' ? '#FF6B4A' : 'transparent',
+            color: activeMainTab === 'tournaments' ? '#FFFFFF' : '#5E5851',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease',
+            boxShadow: activeMainTab === 'tournaments' ? '0 2px 8px rgba(255, 107, 74, 0.25)' : 'none',
+          }}
+        >
+          <Trophy size={16} />
+          <span>Tournaments & Matches ({tournaments.length})</span>
+        </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              {allTemplates.map((tpl) => (
-                <div
-                  key={tpl.id || tpl.presetName}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    background: '#FFFFFF',
-                    border: '1px solid #E0D7CC',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-                  }}
-                >
+        <button
+          onClick={() => setActiveMainTab('favorites')}
+          style={{
+            flex: 1,
+            padding: '10px 18px',
+            borderRadius: '9px',
+            fontWeight: 700,
+            fontSize: '13px',
+            cursor: 'pointer',
+            border: 'none',
+            background: activeMainTab === 'favorites' ? '#E88B00' : 'transparent',
+            color: activeMainTab === 'favorites' ? '#FFFFFF' : '#5E5851',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease',
+            boxShadow: activeMainTab === 'favorites' ? '0 2px 8px rgba(232, 139, 0, 0.25)' : 'none',
+          }}
+        >
+          <Star size={16} fill={activeMainTab === 'favorites' ? '#FFFFFF' : '#F4B740'} color={activeMainTab === 'favorites' ? '#FFFFFF' : '#F4B740'} />
+          <span>⭐ Favorite Presets & Templates ({allTemplates.length})</span>
+        </button>
+      </div>
+
+      {/* TAB 1: TOURNAMENTS & MATCHES */}
+      {activeMainTab === 'tournaments' && (
+        <>
+          {/* Create / Edit Form Card */}
+          {showForm && (
+            <div style={{
+              ...cardStyle,
+              marginBottom: '28px',
+              border: editingTournament ? '2px solid #F4B740' : '2px solid #FFDACF',
+              background: '#FFFFFF',
+              boxShadow: editingTournament ? '0 4px 20px rgba(244, 183, 64, 0.15)' : '0 4px 20px rgba(255, 107, 74, 0.12)',
+            }}>
+              
+              {/* Header Banner */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '18px',
+                flexWrap: 'wrap',
+                gap: '12px',
+                paddingBottom: '14px',
+                borderBottom: '1px solid #F0ECE4',
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {editingTournament ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#E88B00', fontWeight: 800, fontSize: '18px' }}>
+                        <Edit3 size={20} />
+                        <span>Editing Tournament: {editingTournament.name}</span>
+                      </div>
+                    ) : (
+                      <h3 style={{ fontWeight: 800, fontSize: '18px', color: '#2E2A26', margin: 0 }}>
+                        Create New Tournament
+                      </h3>
+                    )}
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#8A8078', margin: '4px 0 0' }}>
+                    {editingTournament
+                      ? 'Update tournament info, timings, prize reward, or room credentials without affecting registered players.'
+                      : 'Fill details below, or pick any of your saved Favorite Presets for 1-click publishing.'}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {editingTournament ? (
+                    <span style={{
+                      fontSize: '12px',
+                      background: '#FFF6E0',
+                      color: '#E88B00',
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid #FFE4A0',
+                    }}>
+                      Status: {formData.status?.toUpperCase() || 'UPCOMING'}
+                    </span>
+                  ) : (
+                    <span style={{
+                      fontSize: '12px',
+                      background: '#FFF0EC',
+                      color: '#FF6B4A',
+                      fontWeight: 600,
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                    }}>
+                      Status: Upcoming
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Favorite Presets Bar */}
+              <div style={{
+                background: '#FAF8F5',
+                border: '1px solid #EBE4DA',
+                borderRadius: '12px',
+                padding: '12px 14px',
+                marginBottom: '20px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#2E2A26' }}>
+                    <Star size={15} color="#F4B740" fill="#F4B740" />
+                    <span>Quick Fill from Favorite Presets:</span>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => handleApplyPreset(tpl)}
-                    title={`Click to fill: Fee Rs ${tpl.registrationCharge || 0} • Reward Rs ${tpl.fixedReward || 0} • ${tpl.matchType} • ${tpl.mapName}`}
+                    onClick={handleSaveAsPreset}
+                    disabled={savingTemplate}
                     style={{
-                      border: 'none',
-                      background: 'none',
-                      padding: '6px 10px',
+                      background: '#FFFFFF',
+                      border: '1px solid #F4B740',
+                      color: '#E88B00',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
                       fontSize: '11px',
-                      fontWeight: 600,
-                      color: '#2E2A26',
+                      fontWeight: 700,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '4px',
                     }}
                   >
-                    <Sparkles size={12} color="#F4B740" />
-                    <span>{tpl.presetName || tpl.name}</span>
-                    <span style={{ color: '#8A8078', fontSize: '10px' }}>
-                      (Rs {tpl.registrationCharge || 0}/{tpl.fixedReward || 0})
-                    </span>
+                    <BookmarkPlus size={13} />
+                    {savingTemplate ? 'Saving...' : '⭐ Save Form as Favorite Preset'}
                   </button>
-                  {!tpl.isStarter && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteTemplate(tpl.id, tpl.presetName)}
-                      title="Remove this preset"
+                </div>
+
+                {templateSuccessMsg && (
+                  <div style={{
+                    background: '#E8F5E9',
+                    color: '#2E7D32',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    padding: '6px 10px',
+                    borderRadius: '6px',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}>
+                    <Check size={14} /> {templateSuccessMsg}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  {allTemplates.map((tpl) => (
+                    <div
+                      key={tpl.id || tpl.presetName}
                       style={{
-                        border: 'none',
-                        borderLeft: '1px solid #EBE4DA',
-                        background: 'none',
-                        padding: '6px 8px',
-                        cursor: 'pointer',
-                        color: '#A69E94',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
+                        background: '#FFFFFF',
+                        border: '1px solid #E0D7CC',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                       }}
                     >
-                      <X size={12} />
-                    </button>
-                  )}
+                      <button
+                        type="button"
+                        onClick={() => handleApplyPreset(tpl)}
+                        title={`Click to fill: Fee Rs ${tpl.registrationCharge || 0} • Reward Rs ${tpl.fixedReward || 0} • ${tpl.matchType} • ${tpl.mapName}`}
+                        style={{
+                          border: 'none',
+                          background: 'none',
+                          padding: '6px 10px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          color: '#2E2A26',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <Sparkles size={12} color="#F4B740" />
+                        <span>{tpl.presetName || tpl.name}</span>
+                        <span style={{ color: '#8A8078', fontSize: '10px' }}>
+                          (Rs {tpl.registrationCharge || 0}/{tpl.fixedReward || 0})
+                        </span>
+                      </button>
+                      {!tpl.isStarter && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTemplate(tpl.id, tpl.presetName)}
+                          title="Remove this preset"
+                          style={{
+                            border: 'none',
+                            borderLeft: '1px solid #EBE4DA',
+                            background: 'none',
+                            padding: '6px 8px',
+                            cursor: 'pointer',
+                            color: '#A69E94',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleSubmit}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: '18px',
+                }}>
+
+                  {/* Tournament Name */}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Tournament Title *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. PUBG Daily Showdown - Match #12"
+                      value={formData.name}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                      required
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  {/* Game */}
+                  <div>
+                    <label style={labelStyle}>Game Title *</label>
+                    <select
+                      value={formData.game}
+                      onChange={e => setFormData({ ...formData, game: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="pubg">PUBG Mobile</option>
+                      <option value="freefire">Free Fire</option>
+                    </select>
+                  </div>
+
+                  {/* Match Type */}
+                  <div>
+                    <label style={labelStyle}>Match Format *</label>
+                    <select
+                      value={formData.matchType}
+                      onChange={e => setFormData({ ...formData, matchType: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="Solo">Solo (1 vs All)</option>
+                      <option value="Duo">Duo (Team of 2)</option>
+                      <option value="Squad">Squad (Team of 4)</option>
+                    </select>
+                  </div>
+
+                  {/* Tournament Type */}
+                  <div>
+                    <label style={labelStyle}>Category / Schedule *</label>
+                    <select
+                      value={formData.tournamentType}
+                      onChange={e => setFormData({ ...formData, tournamentType: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="Daily">Daily Match</option>
+                      <option value="Weekly Championship">Weekly Championship</option>
+                      <option value="Special Cup">Special Cup</option>
+                    </select>
+                  </div>
+
+                  {/* Max Slots */}
+                  <div>
+                    <label style={labelStyle}>Maximum Player Slots *</label>
+                    <input
+                      type="number"
+                      min="2"
+                      max="100"
+                      placeholder="25"
+                      value={formData.maxSlots}
+                      onChange={e => setFormData({ ...formData, maxSlots: e.target.value })}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+
+                  {/* Registration Charge */}
+                  <div>
+                    <label style={labelStyle}>Registration Fee per Player (PKR) *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0 for Free or e.g. 50"
+                      value={formData.registrationCharge}
+                      onChange={e => setFormData({ ...formData, registrationCharge: e.target.value })}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+
+                  {/* Fixed Reward */}
+                  <div>
+                    <label style={labelStyle}>Winner Prize Reward (PKR) *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="e.g. 200"
+                      value={formData.fixedReward}
+                      onChange={e => setFormData({ ...formData, fixedReward: e.target.value })}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+
+                  {/* Start Time (Registration Close Time) */}
+                  <div>
+                    <label style={labelStyle}>Registration Close Time (PKT) *</label>
+                    <input
+                      type="datetime-local"
+                      value={formData.startTime}
+                      onChange={e => setFormData({ ...formData, startTime: e.target.value })}
+                      style={inputStyle}
+                      required
+                    />
+                    <p style={helpStyle}>Room opens at this time for 10 mins before match starts</p>
+                  </div>
+
+                  {/* Map */}
+                  <div>
+                    <label style={labelStyle}>Map Arena *</label>
+                    <select
+                      value={formData.mapName}
+                      onChange={e => setFormData({ ...formData, mapName: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="Erangel">Erangel (PUBG)</option>
+                      <option value="Miramar">Miramar (PUBG)</option>
+                      <option value="Sanhok">Sanhok (PUBG)</option>
+                      <option value="Livik">Livik (PUBG)</option>
+                      <option value="Bermuda">Bermuda (Free Fire)</option>
+                      <option value="Purgatory">Purgatory (Free Fire)</option>
+                      <option value="Kalahari">Kalahari (Free Fire)</option>
+                    </select>
+                  </div>
+
+                  {/* Status Selector (Only when editing) */}
+                  {editingTournament && (
+                    <div>
+                      <label style={labelStyle}>Match Status *</label>
+                      <select
+                        value={formData.status || 'upcoming'}
+                        onChange={e => setFormData({ ...formData, status: e.target.value })}
+                        style={inputStyle}
+                      >
+                        <option value="upcoming">Upcoming (Registration Open)</option>
+                        <option value="live">Live (Match in Progress)</option>
+                        <option value="completed">Completed (Ended)</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Room ID & Password */}
+                  <div>
+                    <label style={labelStyle}>Custom Room ID (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 5928192"
+                      value={formData.roomId}
+                      onChange={e => setFormData({ ...formData, roomId: e.target.value })}
+                      style={inputStyle}
+                    />
+                    <p style={helpStyle}>Can also be set or updated later from the table</p>
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Room Password (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 1234"
+                      value={formData.roomPassword}
+                      onChange={e => setFormData({ ...formData, roomPassword: e.target.value })}
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  {/* Rules / Description */}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Custom Rules (Optional)</label>
+                    <textarea
+                      placeholder="e.g. No teaming, no hacks. Room ID & Password will be released 10 minutes before match start."
+                      value={formData.rules}
+                      onChange={e => setFormData({ ...formData, rules: e.target.value })}
+                      rows={2}
+                      style={{ ...inputStyle, resize: 'vertical' }}
+                    />
+                  </div>
+
+                  {/* Submit Buttons */}
+                  <div style={{
+                    gridColumn: '1 / -1',
+                    display: 'flex',
+                    gap: '12px',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginTop: '12px',
+                    paddingTop: '16px',
+                    borderTop: '1px solid #F0ECE4',
+                    flexWrap: 'wrap',
+                  }}>
+                    <button
+                      type="button"
+                      onClick={handleSaveAsPreset}
+                      disabled={savingTemplate}
+                      style={{
+                        padding: '10px 16px',
+                        background: '#FFF8E1',
+                        color: '#E88B00',
+                        border: '1px solid #FFE082',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <Star size={15} fill="#E88B00" />
+                      {savingTemplate ? 'Saving...' : 'Save as Favorite Template'}
+                    </button>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={handleCancelForm}
+                        style={{
+                          padding: '12px 24px',
+                          background: '#F0ECE4',
+                          color: '#5E5851',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontWeight: 600,
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        style={{
+                          padding: '12px 32px',
+                          background: editingTournament ? '#E88B00' : '#3FA65C',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          fontSize: '14px',
+                          cursor: loading ? 'not-allowed' : 'pointer',
+                          boxShadow: editingTournament ? '0 2px 8px rgba(232, 139, 0, 0.35)' : '0 2px 8px rgba(63, 166, 92, 0.35)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        {loading ? (
+                          'Saving...'
+                        ) : editingTournament ? (
+                          <>
+                            <Check size={16} /> Update Tournament
+                          </>
+                        ) : (
+                          <>
+                            <Plus size={16} /> Publish Tournament
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Main Tournaments Table View */}
+          <div style={cardStyle}>
+            
+            {/* Controls Bar: Search & Status Filters */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '14px',
+              marginBottom: '20px',
+            }}>
+              <div style={{ position: 'relative', width: '100%', maxWidth: '360px' }}>
+                <Search size={16} color="#A69E94" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  placeholder="Search by name, game, mode, or Room ID..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{ ...inputStyle, paddingLeft: '36px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12px', color: '#8A8078', fontWeight: 600 }}>Filter:</span>
+                {[
+                  { key: 'all', label: 'All' },
+                  { key: 'upcoming', label: 'Upcoming' },
+                  { key: 'live', label: 'Live' },
+                  { key: 'completed', label: 'Completed' },
+                ].map(f => (
+                  <button
+                    key={f.key}
+                    onClick={() => setStatusFilter(f.key)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border: statusFilter === f.key ? '1px solid #FF6B4A' : '1px solid #E8E2DA',
+                      background: statusFilter === f.key ? '#FF6B4A' : '#FFFFFF',
+                      color: statusFilter === f.key ? '#FFFFFF' : '#8A8078',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Responsive Table Container */}
+            <div style={{ overflowX: 'auto', width: '100%' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '950px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #F0ECE4', background: '#FCFAF7' }}>
+                    <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Tournament (Click for Players)</th>
+                    <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Timeline (PKT)</th>
+                    <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Room ID & Pass</th>
+                    <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Joined Players</th>
+                    <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Fee / Reward</th>
+                    <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Status</th>
+                    <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Controls</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTournaments.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#8A8078' }}>
+                        No tournaments match your search or filter criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredTournaments.map(t => {
+                      const schedule = formatSchedulePKT(t.startTime);
+
+                      return (
+                        <tr
+                          key={t.id}
+                          style={{
+                            borderBottom: '1px solid #F0ECE4',
+                            transition: 'background 0.15s ease',
+                          }}
+                        >
+                          {/* Tournament Name & Format */}
+                          <td style={{ padding: '14px' }}>
+                            <div
+                              onClick={() => openPlayersModal(t)}
+                              title="Click to view joined players roster"
+                              style={{
+                                fontWeight: 700,
+                                color: '#FF6B4A',
+                                fontSize: '14px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                              }}
+                            >
+                              <span>{t.name}</span>
+                              <Users size={14} color="#FF6B4A" />
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
+                              {t.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire'} • {t.matchType} • {t.mapName || 'Erangel'}
+                            </div>
+                          </td>
+
+                          {/* PKT Timeline */}
+                          <td style={{ padding: '14px' }}>
+                            {typeof schedule === 'object' ? (
+                              <div>
+                                <div style={{ fontSize: '12px', fontWeight: 600, color: '#2E2A26' }}>
+                                  Reg Closes: <span style={{ color: '#E8552F' }}>{schedule.regCloseTime}</span>
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#3FA65C', marginTop: '2px', fontWeight: 600 }}>
+                                  Match Starts: {schedule.matchStartTime}
+                                </div>
+                                <div style={{ fontSize: '10px', color: '#A69E94' }}>{schedule.dateStr} (10m room window)</div>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: '#A69E94' }}>TBD</span>
+                            )}
+                          </td>
+
+                          {/* Room ID & Pass Column */}
+                          <td style={{ padding: '14px' }}>
+                            {t.roomId ? (
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
+                                    ID: {t.roomId}
+                                  </span>
+                                  <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#3FA65C', padding: '1px 6px', borderRadius: '6px', fontWeight: 700 }}>
+                                    Live
+                                  </span>
+                                </div>
+                                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
+                                  Pass: {t.roomPassword || 'None'}
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#E88B00', fontSize: '11px', fontWeight: 600 }}>
+                                <AlertCircle size={13} />
+                                <span>Room Not Set</span>
+                              </div>
+                            )}
+                            {(t.status === 'upcoming' || t.status === 'live') && (
+                            <button
+                              onClick={() => openRoomModal(t)}
+                              style={{
+                                marginTop: '6px',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid #EBE4DA',
+                                background: '#FAF8F5',
+                                color: '#FF6B4A',
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <Key size={11} /> {t.roomId ? 'Edit Room Details' : '+ Set Room ID & Pass'}
+                            </button>
+                            )}
+                          </td>
+
+                          {/* Joined Players Column */}
+                          <td style={{ padding: '14px', textAlign: 'center' }}>
+                            <button
+                              onClick={() => openPlayersModal(t)}
+                              style={{
+                                background: '#FFF0EC',
+                                border: '1px solid #FFDACF',
+                                borderRadius: '8px',
+                                padding: '6px 10px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '2px',
+                              }}
+                            >
+                              <div style={{ fontWeight: 800, color: '#FF6B4A', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Users size={13} />
+                                <span>{t.slotsFilled || 0} / {t.maxSlots}</span>
+                              </div>
+                              <span style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600 }}>
+                                View Players →
+                              </span>
+                            </button>
+                          </td>
+
+                          {/* Fee & Reward */}
+                          <td style={{ padding: '14px', textAlign: 'center' }}>
+                            <div style={{ fontWeight: 600, color: '#5E5851' }}>Rs {t.registrationCharge}</div>
+                            <div style={{ fontWeight: 800, color: '#FF6B4A', fontSize: '13px' }}>
+                              Reward: Rs {t.fixedReward}
+                            </div>
+                          </td>
+
+                          {/* Status */}
+                          <td style={{ padding: '14px', textAlign: 'center' }}>
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              padding: '4px 10px',
+                              borderRadius: '8px',
+                              background: t.status === 'live' ? '#E8F5E9' : t.status === 'upcoming' ? '#FFF8E1' : '#F0ECE4',
+                              color: t.status === 'live' ? '#3FA65C' : t.status === 'upcoming' ? '#E88B00' : '#8A8078',
+                            }}>
+                              {t.status?.toUpperCase()}
+                            </span>
+                          </td>
+
+                          {/* Controls */}
+                          <td style={{ padding: '14px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                              {/* EDIT TOURNAMENT BUTTON */}
+                              <button
+                                onClick={() => handleStartEdit(t)}
+                                title="Edit Tournament Details & Dates"
+                                style={{
+                                  padding: '6px 10px',
+                                  background: '#FFF8E1',
+                                  color: '#E88B00',
+                                  border: '1px solid #FFE082',
+                                  borderRadius: '6px',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <Edit3 size={12} /> Edit
+                              </button>
+
+                              {/* SAVE AS TEMPLATE BUTTON */}
+                              <button
+                                onClick={() => handleSaveTournamentAsTemplate(t)}
+                                title="Save this tournament config as a Favorite Preset"
+                                style={{
+                                  padding: '6px 8px',
+                                  background: '#FAF8F5',
+                                  color: '#8A8078',
+                                  border: '1px solid #EBE4DA',
+                                  borderRadius: '6px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <Star size={12} color="#F4B740" fill="#F4B740" />
+                              </button>
+
+                              {t.status === 'upcoming' && (
+                                <button
+                                  onClick={() => handleStatusChange(t.id, 'live')}
+                                  title="Start Match (Go Live)"
+                                  style={{
+                                    padding: '6px 10px',
+                                    background: '#3FA65C',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  <Play size={12} /> Live
+                                </button>
+                              )}
+
+                              {t.status === 'live' && (
+                                <button
+                                  onClick={() => handleStatusChange(t.id, 'completed')}
+                                  title="End Match"
+                                  style={{
+                                    padding: '6px 10px',
+                                    background: '#7B4FE0',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  <Square size={12} /> End
+                                </button>
+                              )}
+
+                              <button
+                                onClick={() => handleDelete(t.id, t.name)}
+                                title="Delete Tournament"
+                                style={{
+                                  padding: '6px 8px',
+                                  background: '#FFEBEE',
+                                  color: '#D9503F',
+                                  border: '1px solid #FFCDD2',
+                                  borderRadius: '6px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
+        </>
+      )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: '18px',
-            }}>
-
-              {/* Tournament Name */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelStyle}>Tournament Title *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. PUBG Daily Showdown - Match #12"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  style={inputStyle}
-                />
+      {/* TAB 2: FAVORITE PRESETS & TEMPLATES (DEDICATED VIEW) */}
+      {activeMainTab === 'favorites' && (
+        <div>
+          {/* Favorites Header Banner */}
+          <div style={{
+            background: 'linear-gradient(135deg, #FFF9ED 0%, #FFF3DC 100%)',
+            borderRadius: '16px',
+            padding: '24px',
+            border: '1px solid #FFE4A0',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px',
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Star size={24} color="#E88B00" fill="#F4B740" />
+                <h2 style={{ fontWeight: 800, fontSize: '20px', color: '#2E2A26', margin: 0 }}>
+                  Favorite Tournament Presets
+                </h2>
               </div>
+              <p style={{ fontSize: '13px', color: '#5E5851', margin: '6px 0 0', maxWidth: '650px', lineHeight: 1.4 }}>
+                Instant 1-click tournament creation. All entry charges, rewards, slots, map, and rules are pre-filled. Just pick the date & launch!
+              </p>
+            </div>
 
-              {/* Game */}
-              <div>
-                <label style={labelStyle}>Game Title *</label>
-                <select
-                  value={formData.game}
-                  onChange={e => setFormData({ ...formData, game: e.target.value })}
-                  style={inputStyle}
-                >
-                  <option value="pubg">PUBG Mobile</option>
-                  <option value="freefire">Free Fire</option>
-                </select>
-              </div>
-
-              {/* Match Type */}
-              <div>
-                <label style={labelStyle}>Match Format *</label>
-                <select
-                  value={formData.matchType}
-                  onChange={e => setFormData({ ...formData, matchType: e.target.value })}
-                  style={inputStyle}
-                >
-                  <option value="Solo">Solo (1 vs All)</option>
-                  <option value="Duo">Duo (Team of 2)</option>
-                  <option value="Squad">Squad (Team of 4)</option>
-                </select>
-              </div>
-
-              {/* Tournament Type */}
-              <div>
-                <label style={labelStyle}>Category / Schedule *</label>
-                <select
-                  value={formData.tournamentType}
-                  onChange={e => setFormData({ ...formData, tournamentType: e.target.value })}
-                  style={inputStyle}
-                >
-                  <option value="Daily">Daily Match</option>
-                  <option value="Weekly Championship">Weekly Championship</option>
-                  <option value="Special Cup">Special Cup</option>
-                </select>
-              </div>
-
-              {/* Max Slots */}
-              <div>
-                <label style={labelStyle}>Maximum Player Slots *</label>
-                <input
-                  type="number"
-                  min="2"
-                  max="100"
-                  placeholder="25"
-                  value={formData.maxSlots}
-                  onChange={e => setFormData({ ...formData, maxSlots: e.target.value })}
-                  style={inputStyle}
-                  required
-                />
-              </div>
-
-              {/* Registration Charge */}
-              <div>
-                <label style={labelStyle}>Registration Fee per Player (PKR) *</label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="0 for Free or e.g. 50"
-                  value={formData.registrationCharge}
-                  onChange={e => setFormData({ ...formData, registrationCharge: e.target.value })}
-                  style={inputStyle}
-                  required
-                />
-              </div>
-
-              {/* Fixed Reward */}
-              <div>
-                <label style={labelStyle}>Winner Prize Reward (PKR) *</label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="e.g. 200"
-                  value={formData.fixedReward}
-                  onChange={e => setFormData({ ...formData, fixedReward: e.target.value })}
-                  style={inputStyle}
-                  required
-                />
-              </div>
-
-              {/* Start Time (Registration Close Time) */}
-              <div>
-                <label style={labelStyle}>Registration Close Time (PKT) *</label>
-                <input
-                  type="datetime-local"
-                  value={formData.startTime}
-                  onChange={e => setFormData({ ...formData, startTime: e.target.value })}
-                  style={inputStyle}
-                  required
-                />
-                <p style={helpStyle}>Room opens at this time for 10 mins before match starts</p>
-              </div>
-
-              {/* Map */}
-              <div>
-                <label style={labelStyle}>Map Arena *</label>
-                <select
-                  value={formData.mapName}
-                  onChange={e => setFormData({ ...formData, mapName: e.target.value })}
-                  style={inputStyle}
-                >
-                  <option value="Erangel">Erangel (PUBG)</option>
-                  <option value="Miramar">Miramar (PUBG)</option>
-                  <option value="Sanhok">Sanhok (PUBG)</option>
-                  <option value="Livik">Livik (PUBG)</option>
-                  <option value="Bermuda">Bermuda (Free Fire)</option>
-                  <option value="Purgatory">Purgatory (Free Fire)</option>
-                  <option value="Kalahari">Kalahari (Free Fire)</option>
-                </select>
-              </div>
-
-              {/* Status Selector (Only when editing) */}
-              {editingTournament && (
-                <div>
-                  <label style={labelStyle}>Match Status *</label>
-                  <select
-                    value={formData.status || 'upcoming'}
-                    onChange={e => setFormData({ ...formData, status: e.target.value })}
-                    style={inputStyle}
-                  >
-                    <option value="upcoming">Upcoming (Registration Open)</option>
-                    <option value="live">Live (Match in Progress)</option>
-                    <option value="completed">Completed (Ended)</option>
-                  </select>
-                </div>
-              )}
-
-              {/* Room ID & Password */}
-              <div>
-                <label style={labelStyle}>Custom Room ID (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 5928192"
-                  value={formData.roomId}
-                  onChange={e => setFormData({ ...formData, roomId: e.target.value })}
-                  style={inputStyle}
-                />
-                <p style={helpStyle}>Can also be set or updated later from the table</p>
-              </div>
-
-              <div>
-                <label style={labelStyle}>Room Password (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 1234"
-                  value={formData.roomPassword}
-                  onChange={e => setFormData({ ...formData, roomPassword: e.target.value })}
-                  style={inputStyle}
-                />
-              </div>
-
-              {/* Rules / Description */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelStyle}>Custom Rules (Optional)</label>
-                <textarea
-                  placeholder="e.g. No teaming, no hacks. Room ID & Password will be released 10 minutes before match start."
-                  value={formData.rules}
-                  onChange={e => setFormData({ ...formData, rules: e.target.value })}
-                  rows={2}
-                  style={{ ...inputStyle, resize: 'vertical' }}
-                />
-              </div>
-
-              {/* Submit Buttons */}
-              <div style={{
-                gridColumn: '1 / -1',
+            <button
+              onClick={() => setShowCreatePresetModal(true)}
+              style={{
+                padding: '10px 20px',
+                background: '#E88B00',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '13px',
+                cursor: 'pointer',
                 display: 'flex',
-                gap: '12px',
-                justifyContent: 'space-between',
                 alignItems: 'center',
-                marginTop: '12px',
-                paddingTop: '16px',
-                borderTop: '1px solid #F0ECE4',
-                flexWrap: 'wrap',
-              }}>
+                gap: '8px',
+                boxShadow: '0 3px 10px rgba(232, 139, 0, 0.3)',
+              }}
+            >
+              <Plus size={16} /> + Create New Preset
+            </button>
+          </div>
+
+          {/* Presets Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: '18px',
+          }}>
+            {allTemplates.map((tpl) => (
+              <div
+                key={tpl.id || tpl.presetName}
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: '16px',
+                  border: '1px solid #EBE4DA',
+                  padding: '20px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  position: 'relative',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                }}
+              >
+                <div>
+                  {/* Preset Badges */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        background: tpl.game === 'pubg' ? '#FFF0EC' : '#F3EEFF',
+                        color: tpl.game === 'pubg' ? '#FF6B4A' : '#7B4FE0',
+                      }}>
+                        {tpl.game === 'pubg' ? 'PUBG' : 'FREE FIRE'}
+                      </span>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E5851', background: '#F0ECE4', padding: '3px 8px', borderRadius: '6px' }}>
+                        {tpl.matchType} • {tpl.mapName}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {tpl.isStarter ? (
+                        <span style={{ fontSize: '10px', background: '#FFF6E0', color: '#E88B00', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                          STARTER
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteTemplate(tpl.id, tpl.presetName)}
+                          title="Delete Preset"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#D9503F',
+                            padding: '4px',
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Preset Title */}
+                  <h3 style={{ fontWeight: 800, fontSize: '16px', color: '#2E2A26', margin: '0 0 6px' }}>
+                    {tpl.presetName || tpl.name}
+                  </h3>
+                  <p style={{ fontSize: '12px', color: '#8A8078', margin: '0 0 14px' }}>
+                    Default Title: <em>"{tpl.name}"</em>
+                  </p>
+
+                  {/* Metrics Box */}
+                  <div style={{
+                    background: '#FAF8F5',
+                    borderRadius: '10px',
+                    padding: '10px 12px',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gap: '8px',
+                    border: '1px solid #F0ECE4',
+                    marginBottom: '14px',
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Entry Fee</div>
+                      <div style={{ fontWeight: 800, fontSize: '14px', color: '#2E2A26', marginTop: '2px' }}>
+                        {Number(tpl.registrationCharge) > 0 ? `Rs ${tpl.registrationCharge}` : 'FREE'}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Prize Pool</div>
+                      <div style={{ fontWeight: 800, fontSize: '14px', color: '#FF6B4A', marginTop: '2px' }}>
+                        Rs {tpl.fixedReward || 0}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Slots</div>
+                      <div style={{ fontWeight: 800, fontSize: '14px', color: '#2E2A26', marginTop: '2px' }}>
+                        {tpl.maxSlots || 25}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rules preview */}
+                  {tpl.rules && (
+                    <div style={{ fontSize: '11px', color: '#8A8078', marginBottom: '16px', lineHeight: 1.4, maxHeight: '36px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <strong>Rules:</strong> {tpl.rules}
+                    </div>
+                  )}
+                </div>
+
+                {/* Big Action Button */}
                 <button
-                  type="button"
-                  onClick={handleSaveAsPreset}
-                  disabled={savingTemplate}
+                  onClick={() => handleApplyPreset(tpl)}
                   style={{
-                    padding: '10px 16px',
-                    background: '#FFF8E1',
-                    color: '#E88B00',
-                    border: '1px solid #FFE082',
-                    borderRadius: '8px',
+                    width: '100%',
+                    padding: '11px',
+                    background: '#FF6B4A',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '10px',
                     fontWeight: 700,
                     fontSize: '13px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '6px',
+                    boxShadow: '0 3px 10px rgba(255, 107, 74, 0.25)',
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  <Star size={15} fill="#E88B00" />
-                  {savingTemplate ? 'Saving...' : 'Save as Favorite Template'}
+                  <Zap size={15} />
+                  <span>Use Template & Publish Tournament</span>
                 </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-                <div style={{ display: 'flex', gap: '10px' }}>
+      {/* CREATE NEW PRESET MODAL */}
+      {showCreatePresetModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.55)',
+          backdropFilter: 'blur(3px)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+        }} onClick={() => setShowCreatePresetModal(false)}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '18px',
+              padding: '28px',
+              width: '100%',
+              maxWidth: '560px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.18)',
+              border: '1px solid #EBE4DA',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Star size={20} color="#E88B00" fill="#F4B740" />
+                <h3 style={{ fontWeight: 800, fontSize: '18px', color: '#2E2A26', margin: 0 }}>
+                  Create Favorite Preset Template
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowCreatePresetModal(false)}
+                style={{
+                  background: '#F0ECE4',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '30px',
+                  height: '30px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2E2A26',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePresetFromModal}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={labelStyle}>Favorite Preset Name (for your dashboard) *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. PUBG Solo Daily Rs 50"
+                    value={presetModalData.presetName}
+                    onChange={e => setPresetModalData({ ...presetModalData, presetName: e.target.value })}
+                    required
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Default Tournament Title *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. PUBG Daily Showdown - Match"
+                    value={presetModalData.name}
+                    onChange={e => setPresetModalData({ ...presetModalData, name: e.target.value })}
+                    required
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={labelStyle}>Game Title *</label>
+                    <select
+                      value={presetModalData.game}
+                      onChange={e => setPresetModalData({ ...presetModalData, game: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="pubg">PUBG Mobile</option>
+                      <option value="freefire">Free Fire</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Match Format *</label>
+                    <select
+                      value={presetModalData.matchType}
+                      onChange={e => setPresetModalData({ ...presetModalData, matchType: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="Solo">Solo</option>
+                      <option value="Duo">Duo</option>
+                      <option value="Squad">Squad</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={labelStyle}>Entry Fee (PKR)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={presetModalData.registrationCharge}
+                      onChange={e => setPresetModalData({ ...presetModalData, registrationCharge: e.target.value })}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Prize Reward (PKR)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={presetModalData.fixedReward}
+                      onChange={e => setPresetModalData({ ...presetModalData, fixedReward: e.target.value })}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Max Slots</label>
+                    <input
+                      type="number"
+                      min="2"
+                      max="100"
+                      value={presetModalData.maxSlots}
+                      onChange={e => setPresetModalData({ ...presetModalData, maxSlots: e.target.value })}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Map Arena</label>
+                  <select
+                    value={presetModalData.mapName}
+                    onChange={e => setPresetModalData({ ...presetModalData, mapName: e.target.value })}
+                    style={inputStyle}
+                  >
+                    <option value="Erangel">Erangel (PUBG)</option>
+                    <option value="Miramar">Miramar (PUBG)</option>
+                    <option value="Sanhok">Sanhok (PUBG)</option>
+                    <option value="Livik">Livik (PUBG)</option>
+                    <option value="Bermuda">Bermuda (Free Fire)</option>
+                    <option value="Purgatory">Purgatory (Free Fire)</option>
+                    <option value="Kalahari">Kalahari (Free Fire)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Custom Rules (Optional)</label>
+                  <textarea
+                    placeholder="Rules for this preset..."
+                    value={presetModalData.rules}
+                    onChange={e => setPresetModalData({ ...presetModalData, rules: e.target.value })}
+                    rows={2}
+                    style={{ ...inputStyle, resize: 'vertical' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
                   <button
                     type="button"
-                    onClick={handleCancelForm}
+                    onClick={() => setShowCreatePresetModal(false)}
                     style={{
-                      padding: '12px 24px',
+                      padding: '10px 18px',
                       background: '#F0ECE4',
                       color: '#5E5851',
                       border: 'none',
                       borderRadius: '8px',
                       fontWeight: 600,
-                      fontSize: '14px',
+                      fontSize: '13px',
                       cursor: 'pointer',
                     }}
                   >
@@ -1003,378 +1913,26 @@ export default function CreateTournament() {
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
                     style={{
-                      padding: '12px 32px',
-                      background: editingTournament ? '#E88B00' : '#3FA65C',
+                      padding: '10px 24px',
+                      background: '#E88B00',
                       color: '#FFFFFF',
                       border: 'none',
                       borderRadius: '8px',
                       fontWeight: 700,
-                      fontSize: '14px',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      boxShadow: editingTournament ? '0 2px 8px rgba(232, 139, 0, 0.35)' : '0 2px 8px rgba(63, 166, 92, 0.35)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(232, 139, 0, 0.35)',
                     }}
                   >
-                    {loading ? (
-                      'Saving...'
-                    ) : editingTournament ? (
-                      <>
-                        <Check size={16} /> Update Tournament
-                      </>
-                    ) : (
-                      <>
-                        <Plus size={16} /> Publish Tournament
-                      </>
-                    )}
+                    Save Favorite Preset
                   </button>
                 </div>
               </div>
-
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       )}
-
-      {/* Main Tournaments Table View */}
-      <div style={cardStyle}>
-        
-        {/* Controls Bar: Search & Status Filters */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '14px',
-          marginBottom: '20px',
-        }}>
-          <div style={{ position: 'relative', width: '100%', maxWidth: '360px' }}>
-            <Search size={16} color="#A69E94" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input
-              type="text"
-              placeholder="Search by name, game, mode, or Room ID..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ ...inputStyle, paddingLeft: '36px' }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '12px', color: '#8A8078', fontWeight: 600 }}>Filter:</span>
-            {[
-              { key: 'all', label: 'All' },
-              { key: 'upcoming', label: 'Upcoming' },
-              { key: 'live', label: 'Live' },
-              { key: 'completed', label: 'Completed' },
-            ].map(f => (
-              <button
-                key={f.key}
-                onClick={() => setStatusFilter(f.key)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: statusFilter === f.key ? '1px solid #FF6B4A' : '1px solid #E8E2DA',
-                  background: statusFilter === f.key ? '#FF6B4A' : '#FFFFFF',
-                  color: statusFilter === f.key ? '#FFFFFF' : '#8A8078',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Responsive Table Container */}
-        <div style={{ overflowX: 'auto', width: '100%' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '950px' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #F0ECE4', background: '#FCFAF7' }}>
-                <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Tournament (Click for Players)</th>
-                <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Timeline (PKT)</th>
-                <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Room ID & Pass</th>
-                <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Joined Players</th>
-                <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Fee / Reward</th>
-                <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Status</th>
-                <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>Controls</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTournaments.length === 0 ? (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#8A8078' }}>
-                    No tournaments match your search or filter criteria.
-                  </td>
-                </tr>
-              ) : (
-                filteredTournaments.map(t => {
-                  const schedule = formatSchedulePKT(t.startTime);
-
-                  return (
-                    <tr
-                      key={t.id}
-                      style={{
-                        borderBottom: '1px solid #F0ECE4',
-                        transition: 'background 0.15s ease',
-                      }}
-                    >
-                      {/* Tournament Name & Format (Clickable to view players) */}
-                      <td style={{ padding: '14px' }}>
-                        <div
-                          onClick={() => openPlayersModal(t)}
-                          title="Click to view joined players roster"
-                          style={{
-                            fontWeight: 700,
-                            color: '#FF6B4A',
-                            fontSize: '14px',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                          }}
-                        >
-                          <span>{t.name}</span>
-                          <Users size={14} color="#FF6B4A" />
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
-                          {t.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire'} • {t.matchType} • {t.mapName || 'Erangel'}
-                        </div>
-                      </td>
-
-                      {/* PKT Timeline */}
-                      <td style={{ padding: '14px' }}>
-                        {typeof schedule === 'object' ? (
-                          <div>
-                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#2E2A26' }}>
-                              Reg Closes: <span style={{ color: '#E8552F' }}>{schedule.regCloseTime}</span>
-                            </div>
-                            <div style={{ fontSize: '11px', color: '#3FA65C', marginTop: '2px', fontWeight: 600 }}>
-                              Match Starts: {schedule.matchStartTime}
-                            </div>
-                            <div style={{ fontSize: '10px', color: '#A69E94' }}>{schedule.dateStr} (10m room window)</div>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: '11px', color: '#A69E94' }}>TBD</span>
-                        )}
-                      </td>
-
-                      {/* Room ID & Pass Column */}
-                      <td style={{ padding: '14px' }}>
-                        {t.roomId ? (
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
-                                ID: {t.roomId}
-                              </span>
-                              <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#3FA65C', padding: '1px 6px', borderRadius: '6px', fontWeight: 700 }}>
-                                Live
-                              </span>
-                            </div>
-                            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
-                              Pass: {t.roomPassword || 'None'}
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#E88B00', fontSize: '11px', fontWeight: 600 }}>
-                            <AlertCircle size={13} />
-                            <span>Room Not Set</span>
-                          </div>
-                        )}
-                        {(t.status === 'upcoming' || t.status === 'live') && (
-                        <button
-                          onClick={() => openRoomModal(t)}
-                          style={{
-                            marginTop: '6px',
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            border: '1px solid #EBE4DA',
-                            background: '#FAF8F5',
-                            color: '#FF6B4A',
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                          }}
-                        >
-                          <Key size={11} /> {t.roomId ? 'Edit Room Details' : '+ Set Room ID & Pass'}
-                        </button>
-                        )}
-                      </td>
-
-                      {/* Joined Players Column */}
-                      <td style={{ padding: '14px', textAlign: 'center' }}>
-                        <button
-                          onClick={() => openPlayersModal(t)}
-                          style={{
-                            background: '#FFF0EC',
-                            border: '1px solid #FFDACF',
-                            borderRadius: '8px',
-                            padding: '6px 10px',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '2px',
-                          }}
-                        >
-                          <div style={{ fontWeight: 800, color: '#FF6B4A', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Users size={13} />
-                            <span>{t.slotsFilled || 0} / {t.maxSlots}</span>
-                          </div>
-                          <span style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600 }}>
-                            View Players →
-                          </span>
-                        </button>
-                      </td>
-
-                      {/* Fee & Reward */}
-                      <td style={{ padding: '14px', textAlign: 'center' }}>
-                        <div style={{ fontWeight: 600, color: '#5E5851' }}>Rs {t.registrationCharge}</div>
-                        <div style={{ fontWeight: 800, color: '#FF6B4A', fontSize: '13px' }}>
-                          Reward: Rs {t.fixedReward}
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td style={{ padding: '14px', textAlign: 'center' }}>
-                        <span style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          padding: '4px 10px',
-                          borderRadius: '8px',
-                          background: t.status === 'live' ? '#E8F5E9' : t.status === 'upcoming' ? '#FFF8E1' : '#F0ECE4',
-                          color: t.status === 'live' ? '#3FA65C' : t.status === 'upcoming' ? '#E88B00' : '#8A8078',
-                        }}>
-                          {t.status?.toUpperCase()}
-                        </span>
-                      </td>
-
-                      {/* Controls */}
-                      <td style={{ padding: '14px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                          {/* EDIT TOURNAMENT BUTTON */}
-                          <button
-                            onClick={() => handleStartEdit(t)}
-                            title="Edit Tournament Details & Dates"
-                            style={{
-                              padding: '6px 10px',
-                              background: '#FFF8E1',
-                              color: '#E88B00',
-                              border: '1px solid #FFE082',
-                              borderRadius: '6px',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <Edit3 size={12} /> Edit
-                          </button>
-
-                          {/* SAVE AS TEMPLATE BUTTON */}
-                          <button
-                            onClick={() => handleSaveTournamentAsTemplate(t)}
-                            title="Save this tournament config as a Favorite Preset"
-                            style={{
-                              padding: '6px 8px',
-                              background: '#FAF8F5',
-                              color: '#8A8078',
-                              border: '1px solid #EBE4DA',
-                              borderRadius: '6px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <Star size={12} color="#F4B740" fill="#F4B740" />
-                          </button>
-
-                          {t.status === 'upcoming' && (
-                            <button
-                              onClick={() => handleStatusChange(t.id, 'live')}
-                              title="Start Match (Go Live)"
-                              style={{
-                                padding: '6px 10px',
-                                background: '#3FA65C',
-                                color: '#FFFFFF',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                              }}
-                            >
-                              <Play size={12} /> Live
-                            </button>
-                          )}
-
-                          {t.status === 'live' && (
-                            <button
-                              onClick={() => handleStatusChange(t.id, 'completed')}
-                              title="End Match"
-                              style={{
-                                padding: '6px 10px',
-                                background: '#7B4FE0',
-                                color: '#FFFFFF',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                              }}
-                            >
-                              <Square size={12} /> End
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => handleDelete(t.id, t.name)}
-                            title="Delete Tournament"
-                            style={{
-                              padding: '6px 8px',
-                              background: '#FFEBEE',
-                              color: '#D9503F',
-                              border: '1px solid #FFCDD2',
-                              borderRadius: '6px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       {/* JOINED PLAYERS ROSTER MODAL */}
       {playersModalTournament && (
