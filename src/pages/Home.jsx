@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, collectionGroup, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../hooks/useNotifications';
@@ -47,28 +47,26 @@ export default function Home() {
     return unsubscribe;
   }, []);
 
-  // Fetch tournaments the current user has registered for
+  // For each tournament, check if the current user has a player doc
   useEffect(() => {
     const user = auth.currentUser;
-    if (!user) return;
-    getDocs(
-      collectionGroup(db, 'players')
-        // collectionGroup queries require a composite index if filtered;
-        // here we query all player docs where userId matches
-        // Note: Firestore collectionGroup on 'players' must be allowed in rules
-    ).then((snap) => {
+    if (!user || tournaments.length === 0) return;
+
+    const checkRegistrations = async () => {
       const ids = new Set();
-      snap.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (data.userId === user.uid || docSnap.id === user.uid) {
-          // parent path: tournaments/{tournamentId}/players/{userId}
-          const tournamentId = docSnap.ref.parent.parent?.id;
-          if (tournamentId) ids.add(tournamentId);
-        }
-      });
+      await Promise.all(
+        tournaments.map(async (t) => {
+          try {
+            const playerSnap = await getDoc(doc(db, 'tournaments', t.id, 'players', user.uid));
+            if (playerSnap.exists()) ids.add(t.id);
+          } catch (_) {}
+        })
+      );
       setRegisteredIds(ids);
-    }).catch(console.error);
-  }, [userProfile]);
+    };
+
+    checkRegistrations();
+  }, [tournaments, userProfile]);
 
   const stats = [
     { icon: <Trophy size={18} color="#FF6B4A" />, value: userProfile?.totalWins || 0, label: 'Wins', bg: '#FFF0EC' },
