@@ -95,20 +95,19 @@ export default function InstallAppBanner() {
         }} />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-          <div style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#FFFFFF',
-            flexShrink: 0,
-            boxShadow: '0 4px 10px rgba(255, 107, 74, 0.35)',
-          }}>
-            <Smartphone size={22} />
-          </div>
+          <img
+            src="/icon-192.png"
+            alt="NabPrize Esports"
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
+              objectFit: 'cover',
+              flexShrink: 0,
+              boxShadow: '0 4px 12px rgba(255, 107, 74, 0.4)',
+              border: '1.5px solid rgba(255, 107, 74, 0.5)',
+            }}
+          />
 
           <div style={{ minWidth: 0 }}>
             <div style={{
@@ -209,19 +208,20 @@ export default function InstallAppBanner() {
             textAlign: 'center',
             boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
           }}>
-            <div style={{
-              width: '54px',
-              height: '54px',
-              borderRadius: '16px',
-              background: '#FFF0EC',
-              color: '#FF6B4A',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px',
-            }}>
-              <Smartphone size={28} />
-            </div>
+            <img
+              src="/icon-192.png"
+              alt="NabPrize Esports"
+              style={{
+                width: '60px',
+                height: '60px',
+                borderRadius: '16px',
+                objectFit: 'cover',
+                margin: '0 auto 16px',
+                display: 'block',
+                boxShadow: '0 6px 16px rgba(255, 107, 74, 0.35)',
+                border: '2px solid rgba(255, 107, 74, 0.4)',
+              }}
+            />
 
             <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#2E2A26', margin: '0 0 8px' }}>
               Install on iPhone / iPad
