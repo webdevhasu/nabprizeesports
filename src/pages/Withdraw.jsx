@@ -4,6 +4,7 @@ import { doc, updateDoc, increment, collection, addDoc, serverTimestamp, onSnaps
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import TopBar from '../components/TopBar';
+import { sounds } from '../utils/sounds';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Clock, CheckCircle2, XCircle, ArrowUpRight, ShieldCheck, Wallet, RefreshCw } from 'lucide-react';
 
@@ -88,6 +89,7 @@ export default function Withdraw() {
 
       await refreshProfile();
       setSuccess(true);
+      sounds.withdraw();
     } catch {
       alert('Withdrawal failed. Please try again.');
     }

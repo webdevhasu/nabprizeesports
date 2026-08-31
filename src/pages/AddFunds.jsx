@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { FaCheck } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc, increment, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import TopBar from '../components/TopBar';
+import { sounds } from '../utils/sounds';
 
 export default function AddFunds() {
   const navigate = useNavigate();
@@ -46,6 +48,7 @@ export default function AddFunds() {
 
       await refreshProfile();
       setSuccess(true);
+      sounds.success();
     } catch {
       alert('Payment failed. Please try again.');
     }
@@ -57,7 +60,7 @@ export default function AddFunds() {
       <>
         <TopBar title="Add Funds" showBack />
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
+          <div style={{ marginBottom: '16px' }}><FaCheck size={64} color="#3FA65C" /></div>
           <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: '22px', color: '#2E2A26', marginBottom: '8px' }}>
             Funds Added!
           </h2>

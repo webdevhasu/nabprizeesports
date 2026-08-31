@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FaMedal } from 'react-icons/fa';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import TopBar from '../components/TopBar';
@@ -94,9 +95,9 @@ export default function HallOfFame() {
   };
 
   const getRankBadge = (index) => {
-    if (index === 0) return { icon: '🥇', color: '#F4B740', bg: '#FFF8E1', border: '#FFE082' };
-    if (index === 1) return { icon: '🥈', color: '#9E9E9E', bg: '#F5F5F5', border: '#E0E0E0' };
-    if (index === 2) return { icon: '🥉', color: '#CD7F32', bg: '#FFF3E0', border: '#FFCC80' };
+    if (index === 0) return { icon: <FaMedal size={18} color="#F4B740" />, color: '#F4B740', bg: '#FFF8E1', border: '#FFE082' };
+    if (index === 1) return { icon: <FaMedal size={18} color="#9E9E9E" />, color: '#9E9E9E', bg: '#F5F5F5', border: '#E0E0E0' };
+    if (index === 2) return { icon: <FaMedal size={18} color="#CD7F32" />, color: '#CD7F32', bg: '#FFF3E0', border: '#FFCC80' };
     return { icon: `#${index + 1}`, color: '#8A8078', bg: '#F8F6F1', border: '#EBE4DA' };
   };
 

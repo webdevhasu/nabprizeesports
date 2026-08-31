@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FaCrosshairs, FaFire, FaPhone, FaClock } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -452,7 +453,7 @@ export default function Profile() {
             <form onSubmit={handleSaveGameIds}>
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#FF6B4A', marginBottom: '6px' }}>
-                  🎯 PUBG Mobile
+                  <><FaCrosshairs size={12} style={{display:'inline'}} /> PUBG Mobile</>
                 </div>
                 <input
                   type="text"
@@ -478,7 +479,7 @@ export default function Profile() {
 
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#7B4FE0', marginBottom: '6px' }}>
-                  🔥 Free Fire
+                  <><FaFire size={12} style={{display:'inline'}} /> Free Fire</>
                 </div>
                 <input
                   type="text"
@@ -544,8 +545,8 @@ export default function Profile() {
             <div style={{
               background: '#FFF9F5', padding: '14px', borderRadius: '10px', border: '1px solid #FFE4D3', marginBottom: '16px', fontSize: '12px', color: '#5E5851',
             }}>
-              <div>📱 <strong>WhatsApp Support</strong>: Available 24/7</div>
-              <div style={{ marginTop: '4px' }}>⏰ <strong>Payout Processing</strong>: Within 1-2 Hours</div>
+              <div><><FaPhone size={14} style={{display:'inline'}} /> <strong>WhatsApp Support</strong></>: Available 24/7</div>
+              <div style={{ marginTop: '4px' }}><><FaClock size={14} style={{display:'inline'}} /> <strong>Payout Processing</strong></>: Within 1-2 Hours</div>
             </div>
             <button onClick={() => setShowSupportModal(false)} style={{
               width: '100%', padding: '12px', background: '#FF6B4A', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '13px', cursor: 'pointer',

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FaClipboardList } from 'react-icons/fa';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import TopBar from '../components/TopBar';
@@ -43,7 +44,7 @@ export default function TransactionHistory() {
           <LoadingSpinner text="Loading transactions..." />
         ) : transactions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: '48px', color: '#C4BCB2', marginBottom: '16px' }}>📋</div>
+            <div style={{ marginBottom: '16px' }}><FaClipboardList size={48} color="#C4BCB2" /></div>
             <p style={{ fontWeight: 600, fontSize: '16px', color: '#2E2A26', marginBottom: '8px' }}>
               No transactions yet
             </p>

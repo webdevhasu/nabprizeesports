@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, setDoc, collection, query, where, getDocs, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
+import { sounds } from '../utils/sounds';
 
 export default function AccountSetup() {
   const navigate = useNavigate();
@@ -93,6 +94,7 @@ export default function AccountSetup() {
       });
 
       await refreshProfile();
+      sounds.success();
       navigate('/', { replace: true });
     } catch {
       setError('Failed to save profile. Please try again.');

@@ -5,6 +5,7 @@ import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { sounds } from '../utils/sounds';
 import { Clock, Users, Shield, X, Key, Copy, Check, Lock, Sparkles, Play, AlertCircle, Info } from 'lucide-react';
 
 export default function TournamentDetail() {
@@ -170,6 +171,7 @@ export default function TournamentDetail() {
 
       setJoinStep(3);
       await refreshProfile();
+      sounds.join();
     } catch (err) {
       if (err.message === 'full') setJoinError('full');
       else if (err.message === 'insufficient') setJoinError('insufficient');

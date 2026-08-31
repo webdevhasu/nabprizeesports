@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Trophy, Users, DollarSign, Clock, MapPin, ShieldCheck, ChevronRight, Zap, Key } from 'lucide-react';
+import { FaFire } from 'react-icons/fa';
 
 export default function TournamentCard({ tournament, isRegistered = false }) {
   const isLive = tournament.status === 'live';
@@ -30,7 +31,7 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
 
     if (diffToRegClose <= 0 && diffToMatchStart > 0) {
       const minsLeft = Math.ceil(diffToMatchStart / 60000);
-      return { label: `🔥 Room Open (${minsLeft}m to start)`, isRoomWindow: true, isLiveMatch: false, regCloseStr, matchStartStr };
+      return { label: (<><FaFire size={12} style={{display:'inline'}} /> Room Open ({minsLeft}m to start)</>), isRoomWindow: true, isLiveMatch: false, regCloseStr, matchStartStr };
     }
 
     const hours = Math.floor(diffToRegClose / 3600000);

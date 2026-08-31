@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 import { useEffect } from 'react';
+import { sounds } from '../utils/sounds';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ export default function Login() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      sounds.success();
       navigate('/', { replace: true });
     } catch (err) {
       if (err.code === 'auth/user-not-found') setError('No account found with this email.');
@@ -50,6 +52,7 @@ export default function Login() {
         await signInWithRedirect(auth, googleProvider);
       } else {
         await signInWithPopup(auth, googleProvider);
+        sounds.success();
         navigate('/', { replace: true });
       }
     } catch (err) {

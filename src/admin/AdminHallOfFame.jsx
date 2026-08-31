@@ -15,6 +15,7 @@ import {
   Gamepad2,
   Sparkles
 } from 'lucide-react';
+import { FaMedal } from 'react-icons/fa';
 import AdminLayout from './AdminLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -445,7 +446,7 @@ export default function AdminHallOfFame() {
                     >
                       {/* Rank */}
                       <td style={{ padding: '14px', fontWeight: 800, fontSize: index < 3 ? '16px' : '13px', color: index === 0 ? '#F4B740' : '#8A8078' }}>
-                        {index === 0 ? '🥇 #1' : index === 1 ? '🥈 #2' : index === 2 ? '🥉 #3' : `#${index + 1}`}
+                        {index === 0 ? (<><FaMedal color="#F4B740" /> #1</>) : index === 1 ? (<><FaMedal color="#9E9E9E" /> #2</>) : index === 2 ? (<><FaMedal color="#CD7F32" /> #3</>) : `#${index + 1}`}
                       </td>
 
                       {/* Player User */}
@@ -594,7 +595,7 @@ export default function AdminHallOfFame() {
                     >
                       {/* Rank */}
                       <td style={{ padding: '14px', fontWeight: 800, fontSize: index < 3 ? '16px' : '13px', color: index === 0 ? '#7B4FE0' : '#8A8078' }}>
-                        {index === 0 ? '🥇 #1' : index === 1 ? '🥈 #2' : index === 2 ? '🥉 #3' : `#${index + 1}`}
+                        {index === 0 ? (<><FaMedal color="#F4B740" /> #1</>) : index === 1 ? (<><FaMedal color="#9E9E9E" /> #2</>) : index === 2 ? (<><FaMedal color="#CD7F32" /> #3</>) : `#${index + 1}`}
                       </td>
 
                       {/* Player */}

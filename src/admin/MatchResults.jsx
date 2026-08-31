@@ -19,6 +19,7 @@ import {
   Check,
   Award
 } from 'lucide-react';
+import { FaMedal, FaTrophy, FaExclamationTriangle } from 'react-icons/fa';
 import AdminLayout from './AdminLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -170,7 +171,7 @@ export default function MatchResults() {
       await addDoc(collection(db, 'transactions', winnerPlayer.userId, 'history'), {
         type: 'credit',
         amount: selectedTournament.fixedReward || 0,
-        description: `🏆 Prize Won: ${selectedTournament.name}`,
+        description: `Prize Won: ${selectedTournament.name}`,
         timestamp: serverTimestamp(),
         status: 'completed',
       });
@@ -353,7 +354,7 @@ export default function MatchResults() {
               boxShadow: '0 2px 6px rgba(255, 107, 74, 0.25)',
             }}
           >
-            <Trophy size={16} /> 🏆 All-Time Champions ({allTimeChampionsList.length})
+            <Trophy size={16} /> <FaTrophy size={16} style={{display:'inline'}} /> All-Time Champions ({allTimeChampionsList.length})
           </button>
         </div>
 
@@ -447,7 +448,7 @@ export default function MatchResults() {
                     >
                       {/* Rank */}
                       <td style={{ padding: '14px', fontWeight: 800, fontSize: index < 3 ? '16px' : '13px', color: index === 0 ? '#F4B740' : '#8A8078' }}>
-                        {index === 0 ? '🥇 #1' : index === 1 ? '🥈 #2' : index === 2 ? '🥉 #3' : `#${index + 1}`}
+                        {index === 0 ? (<><FaMedal color="#F4B740" /> #1</>) : index === 1 ? (<><FaMedal color="#9E9E9E" /> #2</>) : index === 2 ? (<><FaMedal color="#CD7F32" /> #3</>) : `#${index + 1}`}
                       </td>
 
                       {/* Champion User */}
@@ -637,7 +638,7 @@ export default function MatchResults() {
               gap: '6px',
             }}
           >
-            <Trophy size={16} /> 🏆 All-Time Champions ({allTimeWinnersMap.size})
+            <Trophy size={16} /> <FaTrophy size={16} style={{display:'inline'}} /> All-Time Champions ({allTimeWinnersMap.size})
           </button>
         </div>
 
@@ -999,7 +1000,7 @@ export default function MatchResults() {
                   color: '#E88B00',
                   border: '1px solid #FFE082',
                 }}>
-                  ⚠️ Click "Set Winner" next to a player in the table.
+                  <FaExclamationTriangle size={14} style={{display:'inline'}} /> Click "Set Winner" next to a player in the table.
                 </div>
               )}
 
@@ -1068,7 +1069,7 @@ export default function MatchResults() {
                       }}
                     >
                       <span style={{ fontSize: '14px' }}>
-                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                        {i === 0 ? (<><FaMedal color="#F4B740" /></>) : i === 1 ? (<><FaMedal color="#9E9E9E" /></>) : i === 2 ? (<><FaMedal color="#CD7F32" /></>) : `#${i + 1}`}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: '12px', color: '#2E2A26' }}>

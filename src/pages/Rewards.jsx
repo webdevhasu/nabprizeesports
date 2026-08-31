@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FaMedal, FaCrosshairs, FaStar } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
@@ -151,13 +152,13 @@ export default function Rewards() {
                   WINNER
                 </span>
                 {reward.placement === 1 && (
-                  <span style={{ fontSize: '14px' }}>🥇</span>
+                  <span style={{ fontSize: '14px' }}><FaMedal size={14} style={{display:'inline'}} /></span>
                 )}
                 {reward.placement === 2 && (
-                  <span style={{ fontSize: '14px' }}>🥈</span>
+                  <span style={{ fontSize: '14px' }}><FaMedal size={14} style={{display:'inline'}} /></span>
                 )}
                 {reward.placement === 3 && (
-                  <span style={{ fontSize: '14px' }}>🥉</span>
+                  <span style={{ fontSize: '14px' }}><FaMedal size={14} style={{display:'inline'}} /></span>
                 )}
               </div>
 
@@ -191,8 +192,8 @@ export default function Rewards() {
                 display: 'flex', gap: '16px', marginTop: '10px', paddingTop: '10px',
                 borderTop: '1px solid #F0E6D8', fontSize: '12px', color: '#8A8078',
               }}>
-                <span>🎯 {reward.kills} kills</span>
-                <span>🏅 #{reward.placement} placement</span>
+                <span><FaCrosshairs size={14} style={{display:'inline'}} /> {reward.kills} kills</span>
+                <span><FaStar size={14} style={{display:'inline'}} /> #{reward.placement} placement</span>
               </div>
             </div>
           ))
