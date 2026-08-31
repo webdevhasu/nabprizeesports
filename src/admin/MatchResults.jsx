@@ -129,9 +129,10 @@ export default function MatchResults() {
     .filter(p => (playerKills[p.id] || 0) > 0)
     .sort((a, b) => (playerKills[b.id] || 0) - (playerKills[a.id] || 0));
 
+  const existingResult = selectedTournament ? matchResultsList.find(d => d.id === selectedTournament.id) : null;
+
   const submitWinner = async () => {
     if (!selectedTournament || !winnerId) return;
-    const existingResult = matchResultsList.find(d => d.id === selectedTournament.id);
     if (existingResult?.winnerDeclared) {
       alert('Winner already declared for this tournament.');
       setSubmittingWinner(false);
