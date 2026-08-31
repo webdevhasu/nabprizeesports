@@ -7,6 +7,13 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uid;
       allow create: if request.auth != null && request.auth.uid == uid;
+
+      // Notifications - owner can read, anyone authenticated can create (for admin/system)
+      match /notifications/{notifId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null && request.auth.uid == uid;
+      }
     }
 
     // Tournaments - anyone authenticated can read, only admin writes
