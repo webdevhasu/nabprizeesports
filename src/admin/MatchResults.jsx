@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, doc, setDoc, updateDoc, increment, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, setDoc, updateDoc, increment, getDocs, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import {
   ArrowLeft,
@@ -133,15 +133,21 @@ export default function MatchResults() {
 
   const submitWinner = async () => {
     if (!selectedTournament || !winnerId) return;
-    if (existingResult?.winnerDeclared) {
-      alert('Winner already declared for this tournament.');
-      setSubmittingWinner(false);
-      return;
-    }
     setSubmittingWinner(true);
     try {
+      // Fresh Firestore read to prevent double declaration
+      const resultDoc = await getDoc(doc(db, 'matchResults', selectedTournament.id));
+      if (resultDoc.exists() && resultDoc.data().winnerDeclared) {
+        alert('Winner already declared for this tournament.');
+        setSubmittingWinner(false);
+        return;
+      }
+
       const winnerPlayer = registeredPlayers.find(p => p.id === winnerId);
-      if (!winnerPlayer) return;
+      if (!winnerPlayer) {
+        setSubmittingWinner(false);
+        return;
+      }
 
       const players = registeredPlayers.map(p => ({
         userId: p.userId,
@@ -225,6 +231,11 @@ export default function MatchResults() {
 
   const submitFraggers = async () => {
     if (!selectedTournament || topFraggers.length === 0) return;
+    // Check if already submitted
+    if (existingResult?.fraggersSubmitted) {
+      alert('Top fraggers already submitted for this tournament.');
+      return;
+    }
     setSubmittingFraggers(true);
     try {
       const fraggerData = topFraggers.slice(0, 10).map((p, i) => ({

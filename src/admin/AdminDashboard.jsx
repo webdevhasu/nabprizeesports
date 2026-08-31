@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { db } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, increment, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, increment, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import {
   Users,
   Trophy,
@@ -56,6 +56,13 @@ export default function AdminDashboard() {
 
   const handleWithdrawalAction = async (w, status) => {
     try {
+      // Fresh Firestore read to prevent double processing
+      const freshDoc = await getDoc(doc(db, 'withdrawals', w.id));
+      if (!freshDoc.exists() || freshDoc.data().status !== 'pending') {
+        alert('This withdrawal has already been processed.');
+        return;
+      }
+
       await updateDoc(doc(db, 'withdrawals', w.id), {
         status,
         processedAt: new Date(),

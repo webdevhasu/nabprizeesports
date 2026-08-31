@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, updateDoc, increment, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, increment, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import {
   CheckCircle,
@@ -62,6 +62,20 @@ export default function Withdrawals() {
   const handleAction = async (w, status) => {
     setActionLoading(w.id);
     try {
+      // Fresh Firestore read to prevent double processing
+      const freshDoc = await getDoc(doc(db, 'withdrawals', w.id));
+      if (!freshDoc.exists()) {
+        alert('Withdrawal not found');
+        setActionLoading(null);
+        return;
+      }
+      const freshData = freshDoc.data();
+      if (freshData.status !== 'pending') {
+        alert('This withdrawal has already been processed.');
+        setActionLoading(null);
+        return;
+      }
+
       await updateDoc(doc(db, 'withdrawals', w.id), {
         status,
         processedAt: new Date(),

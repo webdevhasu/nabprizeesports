@@ -697,6 +697,7 @@ export default function CreateTournament() {
                             <span>Room Not Set</span>
                           </div>
                         )}
+                        {(t.status === 'upcoming' || t.status === 'live') && (
                         <button
                           onClick={() => openRoomModal(t)}
                           style={{
@@ -716,6 +717,7 @@ export default function CreateTournament() {
                         >
                           <Key size={11} /> {t.roomId ? 'Edit Room Details' : '+ Set Room ID & Pass'}
                         </button>
+                        )}
                       </td>
 
                       {/* Joined Players Column */}

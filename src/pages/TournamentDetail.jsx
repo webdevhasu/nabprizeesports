@@ -35,7 +35,12 @@ export default function TournamentDetail() {
     const unsub = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         setTournament({ id: docSnap.id, ...docSnap.data() });
+      } else {
+        setTournament(null);
       }
+      setLoading(false);
+    }, (err) => {
+      console.error('Tournament snapshot error:', err);
       setLoading(false);
     });
     return unsub;
@@ -125,13 +130,16 @@ export default function TournamentDetail() {
 
         const tournamentSnap = await transaction.get(tournamentRef);
         const userSnap = await transaction.get(userRef);
+        const playerSnap = await transaction.get(playerRef);
 
         if (!tournamentSnap.exists()) throw new Error('Tournament not found');
         if (!userSnap.exists()) throw new Error('User not found');
+        if (playerSnap.exists()) throw new Error('already_registered');
 
         const tData = tournamentSnap.data();
         const uData = userSnap.data();
 
+        if (!tData.maxSlots) throw new Error('Tournament misconfigured');
         if ((tData.slotsFilled || 0) >= tData.maxSlots) throw new Error('full');
         if (uData.walletBalance < tData.registrationCharge) throw new Error('insufficient');
 
@@ -175,6 +183,7 @@ export default function TournamentDetail() {
     } catch (err) {
       if (err.message === 'full') setJoinError('full');
       else if (err.message === 'insufficient') setJoinError('insufficient');
+      else if (err.message === 'already_registered') setJoinError('already_registered');
       else setJoinError('failed');
     }
     setJoining(false);

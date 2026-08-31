@@ -7,8 +7,7 @@ import { sounds } from '../utils/sounds';
 
 export default function AccountSetup() {
   const navigate = useNavigate();
-  const { refreshProfile } = useAuth();
-  const user = auth.currentUser;
+  const { refreshProfile, currentUser: user } = useAuth();
 
   const [fullName, setFullName] = useState(user?.displayName || '');
   const [username, setUsername] = useState('');
@@ -28,10 +27,14 @@ export default function AccountSetup() {
     }
     // If profile already exists, redirect to home
     const checkProfile = async () => {
-      const docSnap = await getDoc(doc(db, 'users', user.uid));
-      if (docSnap.exists()) {
-        await refreshProfile();
-        navigate('/', { replace: true });
+      try {
+        const docSnap = await getDoc(doc(db, 'users', user.uid));
+        if (docSnap.exists()) {
+          await refreshProfile();
+          navigate('/', { replace: true });
+        }
+      } catch (e) {
+        console.error('Profile check error:', e);
       }
     };
     checkProfile();
