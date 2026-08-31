@@ -64,6 +64,26 @@ input, textarea, select {
   background: #C4BCB2;
 }
 
+/* Responsive typography & overflow protection */
+h1, h2, h3, h4, h5, h6 {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+p, span, div, label {
+  overflow-wrap: break-word;
+}
+
+/* Small mobile devices (iPhone SE, Galaxy A, etc. <= 380px) */
+@media (max-width: 380px) {
+  body {
+    font-size: 13px;
+  }
+  .mobile-app-shell {
+    box-shadow: none;
+  }
+}
+
 /* Animations */
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }

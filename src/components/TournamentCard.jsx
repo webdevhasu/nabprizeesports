@@ -191,10 +191,11 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
           <h3 style={{
             fontFamily: "'Poppins', sans-serif",
             fontWeight: 700,
-            fontSize: '16px',
+            fontSize: 'clamp(14px, 4.2vw, 16px)',
             color: '#2E2A26',
             margin: '0 0 8px',
-            lineHeight: 1.3,
+            lineHeight: 1.35,
+            wordBreak: 'break-word',
           }}>
             {tournament.name}
           </h3>
@@ -205,15 +206,17 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '4px 8px',
               background: '#F8F6F1',
               padding: '6px 10px',
               borderRadius: '8px',
-              fontSize: '11px',
+              fontSize: 'clamp(10px, 3vw, 11px)',
               color: '#5E5851',
               marginBottom: '12px',
             }}>
               <span>Reg Close: <strong>{timing.regCloseStr}</strong></span>
-              <span>•</span>
+              <span style={{ display: 'inline-block' }}>•</span>
               <span style={{ color: '#2E7D32', fontWeight: 600 }}>Match Start: {timing.matchStartStr}</span>
             </div>
           )}
@@ -222,32 +225,32 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
           <div style={{
             background: '#FAF8F5',
             borderRadius: '12px',
-            padding: '12px 14px',
+            padding: '10px 12px',
             display: 'grid',
             gridTemplateColumns: '1fr 1fr 1fr',
-            gap: '8px',
+            gap: '6px',
             border: '1px solid #F0ECE4',
             marginBottom: '12px',
           }}>
             <div>
-              <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Registration Fee</div>
-              <div style={{ fontWeight: 800, fontSize: '15px', color: '#2E2A26', marginTop: '2px' }}>
+              <div style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Entry Fee</div>
+              <div style={{ fontWeight: 800, fontSize: 'clamp(13px, 3.8vw, 15px)', color: '#2E2A26', marginTop: '2px' }}>
                 {tournament.registrationCharge > 0 ? `Rs ${tournament.registrationCharge}` : 'FREE'}
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Prize Pool</div>
-              <div style={{ fontWeight: 800, fontSize: '15px', color: '#FF6B4A', marginTop: '2px' }}>
+              <div style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Prize Pool</div>
+              <div style={{ fontWeight: 800, fontSize: 'clamp(13px, 3.8vw, 15px)', color: '#FF6B4A', marginTop: '2px' }}>
                 Rs {tournament.fixedReward || 0}
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Slots Left</div>
+              <div style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Slots Left</div>
               <div style={{
                 fontWeight: 800,
-                fontSize: '15px',
+                fontSize: 'clamp(13px, 3.8vw, 15px)',
                 color: isNearlyFull ? '#D9503F' : '#2E2A26',
                 marginTop: '2px',
               }}>

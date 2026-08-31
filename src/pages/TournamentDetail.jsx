@@ -284,9 +284,10 @@ export default function TournamentDetail() {
           <h1 style={{
             fontFamily: "'Poppins', sans-serif",
             fontWeight: 800,
-            fontSize: '20px',
+            fontSize: 'clamp(16px, 5vw, 20px)',
             margin: '0 0 10px',
-            lineHeight: 1.3,
+            lineHeight: 1.35,
+            wordBreak: 'break-word',
           }}>
             {tournament.name}
           </h1>

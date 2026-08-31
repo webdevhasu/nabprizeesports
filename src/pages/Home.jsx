@@ -121,10 +121,11 @@ export default function Home() {
           <div style={{
             fontFamily: "'Poppins', sans-serif",
             fontWeight: 800,
-            fontSize: '32px',
+            fontSize: 'clamp(24px, 7vw, 32px)',
             color: '#F4B740',
             marginBottom: '18px',
             letterSpacing: '-0.5px',
+            wordBreak: 'break-word',
           }}>
             {balanceVisible ? `Rs ${(userProfile?.walletBalance || 0).toLocaleString()}` : 'Rs ••••••'}
           </div>

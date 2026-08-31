@@ -22,7 +22,7 @@ export default function TopBar({ title, rightAction, showBack = false, showNotif
       padding: '0 16px',
       zIndex: 100,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
         {showBack && (
           <button
             onClick={() => navigate(-1)}
@@ -33,6 +33,7 @@ export default function TopBar({ title, rightAction, showBack = false, showNotif
               padding: '4px',
               display: 'flex',
               color: '#2E2A26',
+              flexShrink: 0,
             }}
           >
             <ChevronLeft size={24} />
@@ -41,9 +42,12 @@ export default function TopBar({ title, rightAction, showBack = false, showNotif
         <h1 style={{
           fontFamily: "'Poppins', sans-serif",
           fontWeight: 700,
-          fontSize: '18px',
+          fontSize: 'clamp(15px, 4.5vw, 18px)',
           color: '#2E2A26',
           margin: 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}>
           {title}
         </h1>
