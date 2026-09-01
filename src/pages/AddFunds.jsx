@@ -46,7 +46,7 @@ export default function AddFunds() {
             marginBottom: '24px',
           }}>
             <p style={{ fontSize: '13px', color: '#8A8078', margin: 0 }}>
-              You can still join tournaments by contacting our admin on WhatsApp for manual wallet top-up.
+              You can still join free tournaments without adding funds!
             </p>
           </div>
 
