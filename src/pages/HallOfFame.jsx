@@ -291,16 +291,8 @@ export default function HallOfFame() {
                         </div>
                       </div>
 
-                      {/* Prize Reward & Kills */}
+                      {/* Tournament Info */}
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{
-                          fontFamily: "'Poppins', sans-serif",
-                          fontWeight: 800,
-                          fontSize: '17px',
-                          color: '#2E7D32',
-                        }}>
-                          Rs {winner.reward || 0}
-                        </div>
                         <div style={{
                           fontSize: '11px',
                           color: '#7B4FE0',

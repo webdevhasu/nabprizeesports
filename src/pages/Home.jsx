@@ -9,7 +9,7 @@ import TournamentCard from '../components/TournamentCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NotificationPanel from '../components/NotificationPanel';
 import InstallAppBanner from '../components/InstallAppBanner';
-import { Trophy, Target, Gamepad2, Eye, EyeOff, Plus, ArrowUpRight } from 'lucide-react';
+import { Trophy, Gamepad2, Eye, EyeOff, Plus, ArrowUpRight } from 'lucide-react';
 
 // Shimmer for dark backgrounds (wallet card)
 function Shimmer({ width = '100%', height = '20px', radius = '8px', style = {} }) {
@@ -116,7 +116,6 @@ export default function Home() {
   const profileReady = !authLoading;
   const stats = [
     { icon: <Trophy size={18} color="#FF6B4A" />, value: profileReady ? (userProfile?.totalWins || 0) : null, label: 'Wins', bg: '#FFF0EC' },
-    { icon: <Target size={18} color="#7B4FE0" />, value: profileReady ? (userProfile?.totalKills || 0) : null, label: 'Kills', bg: '#F3EEFF' },
     { icon: <Gamepad2 size={18} color="#2E2A26" />, value: profileReady ? (userProfile?.tournamentsPlayed || 0) : null, label: 'Played', bg: '#F0ECE4' },
   ];
 

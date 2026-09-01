@@ -315,7 +315,6 @@ export default function Profile() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
           {[
             { label: 'Total Wins', value: userProfile?.totalWins || 0, color: '#FF6B4A', bg: '#FFF0EC' },
-            { label: 'Total Kills', value: userProfile?.totalKills || 0, color: '#7B4FE0', bg: '#F3EEFF' },
             { label: 'Tournaments Played', value: userProfile?.tournamentsPlayed || 0, color: '#2E2A26', bg: '#F8F6F1' },
             {
               label: 'Win Rate',
