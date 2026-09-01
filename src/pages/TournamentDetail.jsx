@@ -160,7 +160,8 @@ export default function TournamentDetail() {
 
         // Deduct wallet
         transaction.update(userRef, {
-          walletBalance: uData.walletBalance - tData.registrationCharge
+          walletBalance: uData.walletBalance - tData.registrationCharge,
+          tournamentsPlayed: increment(1),
         });
 
         // Increment slots
