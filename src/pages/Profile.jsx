@@ -323,7 +323,7 @@ export default function Profile() {
         </div>
 
         {/* Stats Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
           {[
             { label: 'Total Wins', value: userProfile?.totalWins || 0, color: '#FF6B4A', bg: '#FFF0EC' },
             { label: 'Tournaments Played', value: userProfile?.tournamentsPlayed || 0, color: '#2E2A26', bg: '#F8F6F1' },
