@@ -12,6 +12,7 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
   const isNearlyFull = fillPercentage >= 85;
   const isFull = slotsFilled >= maxSlots;
   const isWeekly = tournament.tournamentType === 'Weekly Championship' || tournament.tournamentType === 'Special Cup';
+  const isFree = !tournament.registrationCharge || tournament.registrationCharge === 0;
 
   const getTimingDetails = (startTime) => {
     if (!startTime) return { label: 'Schedule TBD', isRoomWindow: false, isLiveMatch: false };
@@ -77,7 +78,28 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
           ? '0 6px 20px rgba(244, 183, 64, 0.18)'
           : '0 2px 8px rgba(0,0,0,0.03)',
         transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+        position: 'relative',
       }}>
+        
+        {/* Free Tournament Corner Ribbon */}
+        {isFree && (
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            right: '-30px',
+            background: 'linear-gradient(135deg, #3FA65C 0%, #2E7D32 100%)',
+            color: '#FFFFFF',
+            fontSize: '10px',
+            fontWeight: 800,
+            letterSpacing: '1px',
+            padding: '4px 36px',
+            transform: 'rotate(45deg)',
+            boxShadow: '0 2px 6px rgba(63, 166, 92, 0.4)',
+            zIndex: 1,
+          }}>
+            FREE
+          </div>
+        )}
         
         {/* Weekly Header Banner if applicable */}
         {isWeekly && (

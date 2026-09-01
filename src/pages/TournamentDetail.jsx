@@ -125,7 +125,8 @@ export default function TournamentDetail() {
 
   const handleJoin = async () => {
     if (!userProfile || !tournament) return;
-    if (userProfile.walletBalance < tournament.registrationCharge) {
+    const isFree = !tournament.registrationCharge || tournament.registrationCharge === 0;
+    if (!isFree && userProfile.walletBalance < tournament.registrationCharge) {
       setJoinError('insufficient');
       return;
     }
@@ -155,14 +156,21 @@ export default function TournamentDetail() {
 
         if (!tData.maxSlots) throw new Error('Tournament misconfigured');
         if ((tData.slotsFilled || 0) >= tData.maxSlots) throw new Error('full');
-        if (uData.walletBalance < tData.registrationCharge) throw new Error('insufficient');
+        const tIsFree = !tData.registrationCharge || tData.registrationCharge === 0;
+        if (!tIsFree && uData.walletBalance < tData.registrationCharge) throw new Error('insufficient');
         if (tData.status !== 'upcoming') throw new Error('registration_closed');
 
-        // Deduct wallet
-        transaction.update(userRef, {
-          walletBalance: uData.walletBalance - tData.registrationCharge,
-          tournamentsPlayed: increment(1),
-        });
+        // Deduct wallet only for paid tournaments
+        if (!tIsFree) {
+          transaction.update(userRef, {
+            walletBalance: uData.walletBalance - tData.registrationCharge,
+            tournamentsPlayed: increment(1),
+          });
+        } else {
+          transaction.update(userRef, {
+            tournamentsPlayed: increment(1),
+          });
+        }
 
         // Increment slots
         transaction.update(tournamentRef, {
@@ -182,15 +190,17 @@ export default function TournamentDetail() {
           status: 'registered',
         });
 
-        // Log transaction
-        const txnRef = doc(collection(db, 'transactions', auth.currentUser.uid, 'history'));
-        transaction.set(txnRef, {
-          type: 'debit',
-          amount: tData.registrationCharge,
-          description: `Tournament: ${tData.name}`,
-          timestamp: serverTimestamp(),
-          status: 'completed',
-        });
+        // Log transaction only for paid tournaments
+        if (!tIsFree) {
+          const txnRef = doc(collection(db, 'transactions', auth.currentUser.uid, 'history'));
+          transaction.set(txnRef, {
+            type: 'debit',
+            amount: tData.registrationCharge,
+            description: `Tournament: ${tData.name}`,
+            timestamp: serverTimestamp(),
+            status: 'completed',
+          });
+        }
       });
 
       setJoinStep(3);
@@ -783,16 +793,21 @@ export default function TournamentDetail() {
                   Confirm Registration
                 </h2>
                 <div style={{
-                  background: '#FFF9F5',
+                  background: tournament?.registrationCharge > 0 ? '#FFF9F5' : '#E8F5E9',
                   borderRadius: '10px',
                   padding: '12px 14px',
                   marginBottom: '16px',
-                  border: '1px solid #FFE4D3',
+                  border: tournament?.registrationCharge > 0 ? '1px solid #FFE4D3' : '1px solid #C8E6C9',
                   fontSize: '12px',
                   color: '#5E5851',
                   lineHeight: 1.5,
                 }}>
-                  Registration Fee: <strong>Rs {tournament.registrationCharge}</strong>. Room ID will be released at <strong>{timeline?.regCloseStr}</strong> with a 10-minute joining window before match starts at <strong>{timeline?.matchStartStr}</strong>.
+                  {tournament?.registrationCharge > 0 ? (
+                    <>Registration Fee: <strong>Rs {tournament.registrationCharge}</strong>. </>
+                  ) : (
+                    <>Registration is <strong style={{ color: '#2E7D32' }}>FREE</strong>. </>
+                  )}
+                  Room ID will be released at <strong>{timeline?.regCloseStr}</strong> with a 10-minute joining window before match starts at <strong>{timeline?.matchStartStr}</strong>.
                 </div>
 
                 <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '20px', cursor: 'pointer' }}>
@@ -803,7 +818,13 @@ export default function TournamentDetail() {
                 </label>
 
                 <button
-                  onClick={() => setJoinStep(2)}
+                  onClick={() => {
+                    if (tournament?.registrationCharge > 0) {
+                      setJoinStep(2);
+                    } else {
+                      handleJoin();
+                    }
+                  }}
                   disabled={!agreed}
                   style={{
                     width: '100%', padding: '14px',
@@ -812,7 +833,7 @@ export default function TournamentDetail() {
                     fontSize: '14px', cursor: agreed ? 'pointer' : 'not-allowed',
                   }}
                 >
-                  Continue to Payment
+                  {tournament?.registrationCharge > 0 ? 'Continue to Payment' : 'Register for Free'}
                 </button>
               </>
             )}
@@ -898,10 +919,13 @@ export default function TournamentDetail() {
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎉</div>
                 <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '20px', color: '#2E2A26', marginBottom: '8px' }}>
-                  Slot Reserved Successfully!
+                  {tournament?.registrationCharge > 0 ? 'Slot Reserved Successfully!' : 'Registered Successfully!'}
                 </h2>
                 <p style={{ fontSize: '13px', color: '#5E5851', marginBottom: '20px', lineHeight: 1.5 }}>
-                  You are registered! Check back here at <strong>{timeline?.regCloseStr}</strong> to copy your Room ID & Password during the 10-minute joining window.
+                  {tournament?.registrationCharge > 0
+                    ? <>You are registered! Check back here at <strong>{timeline?.regCloseStr}</strong> to copy your Room ID & Password during the 10-minute joining window.</>
+                    : <>You're in for free! Check back here at <strong>{timeline?.regCloseStr}</strong> to copy your Room ID & Password during the 10-minute joining window.</>
+                  }
                 </p>
                 <button
                   onClick={() => setShowJoinSheet(false)}
