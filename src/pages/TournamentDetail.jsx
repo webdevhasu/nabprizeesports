@@ -825,15 +825,25 @@ export default function TournamentDetail() {
                       handleJoin();
                     }
                   }}
-                  disabled={!agreed}
+                  disabled={!agreed || joining}
                   style={{
                     width: '100%', padding: '14px',
-                    background: agreed ? '#FF6B4A' : '#C4BCB2',
+                    background: agreed && !joining ? '#FF6B4A' : '#C4BCB2',
                     color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 700,
-                    fontSize: '14px', cursor: agreed ? 'pointer' : 'not-allowed',
+                    fontSize: '14px', cursor: agreed && !joining ? 'pointer' : 'not-allowed',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   }}
                 >
-                  {tournament?.registrationCharge > 0 ? 'Continue to Payment' : 'Register for Free'}
+                  {joining ? (
+                    <>
+                      <div style={{
+                        width: '16px', height: '16px', border: '2px solid #FFFFFF',
+                        borderTop: '2px solid transparent', borderRadius: '50%',
+                        animation: 'spin 0.8s linear infinite',
+                      }} />
+                      Registering...
+                    </>
+                  ) : tournament?.registrationCharge > 0 ? 'Continue to Payment' : 'Register for Free'}
                 </button>
               </>
             )}

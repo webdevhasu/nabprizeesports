@@ -886,7 +886,7 @@ export default function CreateTournament() {
                         <Sparkles size={12} color="#F4B740" />
                         <span>{tpl.presetName || tpl.name}</span>
                         <span style={{ color: '#8A8078', fontSize: '10px' }}>
-                          (Rs {tpl.registrationCharge || 0}/{tpl.fixedReward || 0})
+                          ({Number(tpl.registrationCharge) > 0 ? `Rs ${tpl.registrationCharge}` : 'Free'}/{tpl.fixedReward || 0})
                         </span>
                       </button>
                       {!tpl.isStarter && (
@@ -1388,7 +1388,9 @@ export default function CreateTournament() {
 
                           {/* Fee & Reward */}
                           <td style={{ padding: '14px', textAlign: 'center' }}>
-                            <div style={{ fontWeight: 600, color: '#5E5851' }}>Rs {t.registrationCharge}</div>
+                            <div style={{ fontWeight: 600, color: t.registrationCharge > 0 ? '#5E5851' : '#2E7D32' }}>
+                              {t.registrationCharge > 0 ? `Rs ${t.registrationCharge}` : 'Free'}
+                            </div>
                             <div style={{ fontWeight: 800, color: '#FF6B4A', fontSize: '13px' }}>
                               Reward: Rs {t.fixedReward}
                             </div>
@@ -1984,7 +1986,7 @@ export default function CreateTournament() {
                   {playersModalTournament.name}
                 </h3>
                 <p style={{ fontSize: '12px', color: '#8A8078', margin: '2px 0 0' }}>
-                  Total Joined: <strong>{tournamentPlayers.length} / {playersModalTournament.maxSlots} Players</strong> • Total Collected: <strong>Rs {(playersModalTournament.registrationCharge || 0) * tournamentPlayers.length}</strong>
+                  Total Joined: <strong>{tournamentPlayers.length} / {playersModalTournament.maxSlots} Players</strong> • Total Collected: <strong>{playersModalTournament.registrationCharge > 0 ? `Rs ${(playersModalTournament.registrationCharge || 0) * tournamentPlayers.length}` : 'Free'}</strong>
                 </p>
               </div>
 
