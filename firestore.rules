@@ -42,10 +42,9 @@ service cloud.firestore {
     // ─── TOURNAMENTS ───
     match /tournaments/{tournamentId} {
       allow read: if request.auth != null;
-      // Admin creates/edits/deletes tournaments
-      // Users can update for join flow (slotsFilled increment)
-      // NOTE: users could tamper with tournament data via console — needs Cloud Functions for full protection
-      allow create, update, delete: if request.auth != null;
+      allow create, delete: if isAdmin();
+      // Admin can update all fields; users can only update slotsFilled (join flow)
+      allow update: if isAdmin() || (request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slotsFilled']));
 
       // Players subcollection
       match /players/{playerId} {

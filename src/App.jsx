@@ -65,6 +65,22 @@ function ProtectedRoute({ children }) {
 
   if (!currentUser) return <Navigate to="/login" replace />;
 
+  if (userProfile?.isBanned) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FFF8F0' }}>
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <p style={{ fontSize: '16px', fontWeight: 600, color: '#D9503F', marginBottom: '8px' }}>Account Suspended</p>
+          <p style={{ fontSize: '13px', color: '#8A8078', marginBottom: '20px' }}>Your account has been suspended. Contact support for help.</p>
+          <button onClick={async () => { const { signOut } = await import('firebase/auth'); const { auth } = await import('./firebase/config'); await signOut(auth); }} style={{
+            padding: '10px 24px', borderRadius: '10px', border: 'none',
+            background: '#FF6B4A', color: '#FFFFFF', fontSize: '14px', fontWeight: 600,
+            cursor: 'pointer',
+          }}>Sign Out</button>
+        </div>
+      </div>
+    );
+  }
+
   // Profile fetch failed due to network error — retry instead of redirecting to account-setup
   if (profileError && !userProfile) {
     return (

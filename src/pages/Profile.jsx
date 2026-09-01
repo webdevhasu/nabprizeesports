@@ -59,11 +59,22 @@ export default function Profile() {
 
   const handleSaveUsername = async (e) => {
     e.preventDefault();
-    if (!newUsername.trim() || !auth.currentUser) return;
+    const trimmed = newUsername.trim();
+    if (!trimmed || !auth.currentUser) return;
+
+    if (trimmed.length < 3 || trimmed.length > 20) {
+      alert('Username must be 3-20 characters long.');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+      alert('Username can only contain letters, numbers, and underscores.');
+      return;
+    }
+
     setSavingUsername(true);
     try {
       await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-        username: newUsername.trim(),
+        username: trimmed,
       });
       await refreshProfile();
       setShowEditUsername(false);

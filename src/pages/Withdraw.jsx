@@ -64,6 +64,8 @@ export default function Withdraw() {
         if (!userSnap.exists()) throw new Error('User not found');
 
         const currentBalance = userSnap.data().walletBalance || 0;
+        if (numAmount < 200) throw new Error('Minimum withdrawal is Rs 200');
+        if (numAmount > 50000) throw new Error('Maximum withdrawal is Rs 50,000');
         if (currentBalance < numAmount) throw new Error('Insufficient balance');
 
         transaction.update(userRef, {
@@ -96,8 +98,12 @@ export default function Withdraw() {
       await refreshProfile();
       setSuccess(true);
       sounds.withdraw();
-    } catch {
-      alert('Withdrawal failed. Please try again.');
+    } catch (err) {
+      if (err.message?.includes('Minimum') || err.message?.includes('Maximum')) {
+        alert(err.message);
+      } else {
+        alert('Withdrawal failed. Please try again.');
+      }
     }
     setLoading(false);
   };
