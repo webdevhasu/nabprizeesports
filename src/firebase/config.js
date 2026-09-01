@@ -11,7 +11,7 @@ export const firebaseConfig = {
   messagingSenderId: "646287362277",
   appId: "1:646287362277:web:36f3d1128eb9b187692c0c",
   measurementId: "G-S21QR4DEGS",
-  databaseURL: "",
+  databaseURL: "https://nabprize-esports-default-rtdb.firebaseio.com",
 };
 
 const app = initializeApp(firebaseConfig);
