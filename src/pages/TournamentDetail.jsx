@@ -156,6 +156,7 @@ export default function TournamentDetail() {
         if (!tData.maxSlots) throw new Error('Tournament misconfigured');
         if ((tData.slotsFilled || 0) >= tData.maxSlots) throw new Error('full');
         if (uData.walletBalance < tData.registrationCharge) throw new Error('insufficient');
+        if (tData.status !== 'upcoming') throw new Error('registration_closed');
 
         // Deduct wallet
         transaction.update(userRef, {
@@ -198,6 +199,7 @@ export default function TournamentDetail() {
       if (err.message === 'full') setJoinError('full');
       else if (err.message === 'insufficient') setJoinError('insufficient');
       else if (err.message === 'already_registered') setJoinError('already_registered');
+      else if (err.message === 'registration_closed') setJoinError('closed');
       else setJoinError('failed');
     }
     setJoining(false);
@@ -829,6 +831,21 @@ export default function TournamentDetail() {
                 {joinError === 'full' && (
                   <div style={{ background: '#FFEBEE', color: '#D9503F', padding: '12px', borderRadius: '10px', fontSize: '13px', marginBottom: '16px', textAlign: 'center' }}>
                     Sorry, this tournament has just filled up.
+                  </div>
+                )}
+                {joinError === 'closed' && (
+                  <div style={{ background: '#FFEBEE', color: '#D9503F', padding: '12px', borderRadius: '10px', fontSize: '13px', marginBottom: '16px', textAlign: 'center' }}>
+                    Registration is closed for this tournament.
+                  </div>
+                )}
+                {joinError === 'already_registered' && (
+                  <div style={{ background: '#FFF3E0', color: '#E8552F', padding: '12px', borderRadius: '10px', fontSize: '13px', marginBottom: '16px', textAlign: 'center' }}>
+                    You are already registered for this tournament.
+                  </div>
+                )}
+                {joinError === 'failed' && (
+                  <div style={{ background: '#FFEBEE', color: '#D9503F', padding: '12px', borderRadius: '10px', fontSize: '13px', marginBottom: '16px', textAlign: 'center' }}>
+                    Registration failed. Please try again.
                   </div>
                 )}
 

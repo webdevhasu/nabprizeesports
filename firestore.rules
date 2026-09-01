@@ -2,81 +2,101 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Admin helper
+    // ─── HELPER FUNCTIONS ───
     function isAdmin() {
-      return request.auth != null && (
-        request.auth.token.email == 'nabprize.official@gmail.com' ||
-        request.auth.token.admin == true
-      );
+      return request.auth != null && request.auth.token.email == 'nabprize.official@gmail.com';
     }
 
-    // Users - owner can read/write, admin can write (for winner reward credits, stats increment, refunding rejected withdrawals, banning/unbanning)
-    match /users/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.auth.uid == uid || isAdmin());
-      allow create: if request.auth != null && (request.auth.uid == uid || isAdmin());
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
 
-      // Notifications - owner can read, anyone authenticated can create (for admin/system)
+    function isWithdrawalOwner() {
+      return request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // ─── USERS ───
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid);
+      // Owner can update own profile (username, gameIDs, fcmTokens, walletBalance)
+      // NOTE: walletBalance can be tampered via console — needs Cloud Functions for full protection
+      allow update: if isOwner(uid) || isAdmin();
+
+      // ─── NOTIFICATIONS (subcollection) ───
       match /notifications/{notifId} {
-        allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && (request.auth.uid == uid || isAdmin());
+        allow read: if isOwner(uid) || isAdmin();
+        allow create: if isAdmin();
+        // Owner can mark as read / delete own notifications
+        allow update: if isOwner(uid) || isAdmin();
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+
+      // ─── TOURNAMENTS PLAYED (subcollection) ───
+      match /tournamentsPlayed/{tpId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow create, update: if isAdmin();
       }
     }
 
-    // Tournaments - anyone authenticated can read, only admin writes
+    // ─── TOURNAMENTS ───
     match /tournaments/{tournamentId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
-      allow create: if request.auth != null;
+      // Admin creates/edits/deletes tournaments
+      // Users can update for join flow (slotsFilled increment)
+      // NOTE: users could tamper with tournament data via console — needs Cloud Functions for full protection
+      allow create, update, delete: if request.auth != null;
 
       // Players subcollection
       match /players/{playerId} {
         allow read: if request.auth != null;
-        allow write: if request.auth != null;
-        allow create: if request.auth != null;
+        // Player can join (create own registration), admin can manage all
+        allow create: if request.auth != null && request.auth.uid == playerId;
+        allow update, delete: if isAdmin();
       }
     }
 
-    // Tournament Templates & Presets (Admin only)
+    // ─── TOURNAMENT TEMPLATES ───
     match /tournamentTemplates/{templateId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && isAdmin();
-      allow create: if request.auth != null && isAdmin();
-      allow delete: if request.auth != null && isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
-    // Match Results - authenticated read/write
+    // ─── MATCH RESULTS ───
     match /matchResults/{resultId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      // CRITICAL: Only admin can declare winners and submit fraggers
+      allow create, update, delete: if isAdmin();
     }
 
-    // Transactions - owner can read/write, admin can write
+    // ─── TRANSACTIONS ───
     match /transactions/{userId}/{document=**} {
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow create: if request.auth != null;
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update, delete: if isAdmin();
     }
 
-    // Withdrawals - owner can read/create, admin-only update
+    // ─── WITHDRAWALS ───
     match /withdrawals/{withdrawalId} {
-      allow read: if request.auth != null;
+      allow read: if isWithdrawalOwner() || isAdmin();
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update: if request.auth != null;
+      // CRITICAL: Only admin can approve/reject
+      allow update: if isAdmin();
     }
 
-    // Reports - authenticated can create and read, admin can update
+    // ─── REPORTS ───
     match /reports/{reportId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
-      allow update: if request.auth != null;
+      // Only admin can update status
+      allow update, delete: if isAdmin();
     }
 
-    // Reviews - authenticated can create and read
+    // ─── REVIEWS ───
     match /reviews/{reviewId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
+      // Reviews are immutable
     }
   }
 }

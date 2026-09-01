@@ -19,40 +19,7 @@ export default function AddFunds() {
   const handleAddFunds = async () => {
     const numAmount = parseInt(amount);
     if (!numAmount || numAmount < 50 || !auth.currentUser) return;
-
-    setLoading(true);
-
-    try {
-      // TODO: Replace with actual Safepay integration when production keys are ready
-      // For now, simulating successful payment for testing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Credit wallet
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      await updateDoc(userRef, {
-        walletBalance: increment(numAmount),
-      });
-
-      // Log transaction
-      const txnRef = collection(db, 'transactions', auth.currentUser.uid, 'history');
-      await addDoc(txnRef, {
-        type: 'credit',
-        amount: numAmount,
-        method: method,
-        description: `Added via ${method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}`,
-        timestamp: serverTimestamp(),
-        status: 'completed',
-        // Safepay sandbox reference
-        reference: `NP-SANDBOX-${Date.now()}`,
-      });
-
-      await refreshProfile();
-      setSuccess(true);
-      sounds.success();
-    } catch {
-      alert('Payment failed. Please try again.');
-    }
-    setLoading(false);
+    alert('Online payment integration is coming soon! Stay tuned.');
   };
 
   if (success) {
