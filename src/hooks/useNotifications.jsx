@@ -18,20 +18,12 @@ export function NotificationProvider({ children }) {
   const [foregroundPayload, setForegroundPayload] = useState(null);
 
   useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' && 'Notification' in window) {
-        setPermission(window.Notification?.permission || 'default');
-      } else {
-        setPermission('unsupported');
-      }
-    } catch (_) {
-      setPermission('unsupported');
-    }
+    setPermission(Notification?.permission || 'default');
   }, []);
 
   // Listen to notifications from Firestore — use onAuthStateChanged to avoid race condition
   useEffect(() => {
-    let unsub = () => {};
+    let unsub = () => { };
 
     const unsubAuth = onAuthStateChanged(auth, (user) => {
       unsub();
@@ -41,22 +33,18 @@ export function NotificationProvider({ children }) {
         return;
       }
 
-      try {
-        const q = query(
-          collection(db, 'users', user.uid, 'notifications'),
-          orderBy('createdAt', 'desc')
-        );
+      const q = query(
+        collection(db, 'users', user.uid, 'notifications'),
+        orderBy('createdAt', 'desc')
+      );
 
-        unsub = onSnapshot(q, (snap) => {
-          const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-          setNotifications(notifs);
-          setUnreadCount(notifs.filter(n => !n.read).length);
-        }, (err) => {
-          console.error('Notifications listener error:', err);
-        });
-      } catch (err) {
-        console.error('Notifications query setup error:', err);
-      }
+      unsub = onSnapshot(q, (snap) => {
+        const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setNotifications(notifs);
+        setUnreadCount(notifs.filter(n => !n.read).length);
+      }, (err) => {
+        console.error('Notifications listener error:', err);
+      });
     });
 
     return () => {
@@ -69,86 +57,65 @@ export function NotificationProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onMessageListener((payload) => {
       setForegroundPayload(payload);
-      try {
-        if (
-          typeof window !== 'undefined' &&
-          'Notification' in window &&
-          window.Notification?.permission === 'granted'
-        ) {
-          const { title, body, url } = payload?.data || {};
-          new window.Notification(title || 'NabPrize Esports', {
-            body: body || 'New notification',
-            icon: '/icon-192.png',
-            tag: url || 'nabprize-foreground',
-          });
-        }
-      } catch (_) {}
+      if (Notification?.permission === 'granted') {
+        const { title, body, url } = payload.data || {};
+        new Notification(title || 'NabPrize Esports', {
+          body: body || 'New notification',
+          icon: '/icon-192.png',
+          tag: url || 'nabprize-foreground',
+        });
+      }
     });
-    return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
-    };
+    return unsubscribe;
   }, []);
 
   const requestPermission = useCallback(async () => {
-    try {
-      const token = await requestNotificationPermission();
-      if (token) {
-        setPermission('granted');
-        const user = auth.currentUser;
-        if (user) {
-          await updateDoc(doc(db, 'users', user.uid), {
-            fcmTokens: arrayUnion(token),
-          }).catch(() => {});
-        }
+    const token = await requestNotificationPermission();
+    if (token) {
+      setPermission('granted');
+      const user = auth.currentUser;
+      if (user) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          fcmTokens: arrayUnion(token),
+        }).catch(() => { });
       }
-      return token;
-    } catch (e) {
-      console.warn('Request notification permission failed:', e);
-      return null;
     }
+    return token;
   }, []);
 
   const markAsRead = useCallback(async (notifId) => {
     const user = auth.currentUser;
     if (!user) return;
-    try {
-      await updateDoc(doc(db, 'users', user.uid, 'notifications', notifId), {
-        read: true,
-      });
-    } catch (_) {}
+    await updateDoc(doc(db, 'users', user.uid, 'notifications', notifId), {
+      read: true,
+    });
   }, []);
 
   const markAllRead = useCallback(async () => {
     const user = auth.currentUser;
     if (!user) return;
-    try {
-      const batch = writeBatch(db);
-      notifications.forEach(n => {
-        if (!n.read) {
-          batch.update(doc(db, 'users', user.uid, 'notifications', n.id), { read: true });
-        }
-      });
-      await batch.commit();
-    } catch (_) {}
+    const batch = writeBatch(db);
+    notifications.forEach(n => {
+      if (!n.read) {
+        batch.update(doc(db, 'users', user.uid, 'notifications', n.id), { read: true });
+      }
+    });
+    await batch.commit();
   }, [notifications]);
 
   const clearOne = useCallback(async (notifId) => {
     const user = auth.currentUser;
     if (!user) return;
-    try {
-      await deleteDoc(doc(db, 'users', user.uid, 'notifications', notifId));
-    } catch (_) {}
+    await deleteDoc(doc(db, 'users', user.uid, 'notifications', notifId));
   }, []);
 
   const clearAll = useCallback(async () => {
     const user = auth.currentUser;
     if (!user) return;
-    try {
-      const snap = await getDocs(collection(db, 'users', user.uid, 'notifications'));
-      const batch = writeBatch(db);
-      snap.docs.forEach(d => batch.delete(d.ref));
-      await batch.commit();
-    } catch (_) {}
+    const snap = await getDocs(collection(db, 'users', user.uid, 'notifications'));
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
   }, []);
 
   const value = {
