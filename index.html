@@ -17,6 +17,30 @@
       * { -webkit-tap-highlight-color: transparent; }
       body { overscroll-behavior: none; }
     </style>
+    <script>
+      // Self-healing: if an old cached asset or chunk fails to load, clear cache and reload automatically
+      window.addEventListener('error', function (e) {
+        if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+          if (!sessionStorage.getItem('sw_healed')) {
+            sessionStorage.setItem('sw_healed', '1');
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                regs.forEach(function (r) { r.unregister(); });
+              });
+            }
+            if ('caches' in window) {
+              caches.keys().then(function (keys) {
+                Promise.all(keys.map(function (k) { return caches.delete(k); })).then(function () {
+                  window.location.reload();
+                });
+              });
+            } else {
+              window.location.reload();
+            }
+          }
+        }
+      }, true);
+    </script>
   </head>
   <body>
     <div id="root"></div>
