@@ -24,6 +24,23 @@
       overscroll-behavior: none;
     }
   </style>
+  <script>
+    window.addEventListener('error', function(e) {
+      // If a script fails to load (often due to old PWA cache pointing to deleted chunks)
+      if (e.target && e.target.tagName === 'SCRIPT') {
+        if (window.caches) {
+          caches.keys().then(function(names) {
+            for (let name of names) caches.delete(name);
+          }).then(function() {
+            if (!sessionStorage.getItem('reloaded_once')) {
+              sessionStorage.setItem('reloaded_once', 'true');
+              window.location.reload(true);
+            }
+          });
+        }
+      }
+    }, true);
+  </script>
 </head>
 
 <body>

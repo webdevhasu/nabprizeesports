@@ -17,13 +17,15 @@ export default function InstallAppBanner() {
     setIsStandalone(Boolean(isRunningStandalone));
 
     // Check if user dismissed within last 3 days
-    const dismissedAt = localStorage.getItem('np_install_dismissed');
-    if (dismissedAt) {
-      const diffDays = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60 * 24);
-      if (diffDays < 3) {
-        setDismissed(true);
+    try {
+      const dismissedAt = window.localStorage.getItem('np_install_dismissed');
+      if (dismissedAt) {
+        const diffDays = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60 * 24);
+        if (diffDays < 3) {
+          setDismissed(true);
+        }
       }
-    }
+    } catch (_) {}
 
     // Detect iOS
     const isIosDevice = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
@@ -78,7 +80,9 @@ export default function InstallAppBanner() {
 
   const handleDismiss = () => {
     setDismissed(true);
-    localStorage.setItem('np_install_dismissed', Date.now().toString());
+    try {
+      window.localStorage.setItem('np_install_dismissed', Date.now().toString());
+    } catch (_) {}
   };
 
   if (isStandalone || dismissed) return null;

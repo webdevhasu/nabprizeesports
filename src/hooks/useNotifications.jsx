@@ -18,7 +18,15 @@ export function NotificationProvider({ children }) {
   const [foregroundPayload, setForegroundPayload] = useState(null);
 
   useEffect(() => {
-    setPermission(Notification?.permission || 'default');
+    try {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        setPermission(window.Notification?.permission || 'default');
+      } else {
+        setPermission('unsupported');
+      }
+    } catch (_) {
+      setPermission('unsupported');
+    }
   }, []);
 
   // Listen to notifications from Firestore — use onAuthStateChanged to avoid race condition
@@ -57,14 +65,16 @@ export function NotificationProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onMessageListener((payload) => {
       setForegroundPayload(payload);
-      if (Notification?.permission === 'granted') {
-        const { title, body, url } = payload.data || {};
-        new Notification(title || 'NabPrize Esports', {
-          body: body || 'New notification',
-          icon: '/icon-192.png',
-          tag: url || 'nabprize-foreground',
-        });
-      }
+      try {
+        if (typeof window !== 'undefined' && 'Notification' in window && window.Notification?.permission === 'granted') {
+          const { title, body, url } = payload.data || {};
+          new window.Notification(title || 'NabPrize Esports', {
+            body: body || 'New notification',
+            icon: '/icon-192.png',
+            tag: url || 'nabprize-foreground',
+          });
+        }
+      } catch (_) {}
     });
     return unsubscribe;
   }, []);

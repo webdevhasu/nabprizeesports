@@ -1,15 +1,34 @@
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const getAudioContextConstructor = () => {
+  if (typeof window === 'undefined') return null;
+  return window.AudioContext || window.webkitAudioContext || null;
+};
+
 let ctx = null;
 
 function getCtx() {
-  if (!ctx) ctx = new AudioCtx();
-  if (ctx.state === 'suspended') ctx.resume();
+  const AudioCtx = getAudioContextConstructor();
+  if (!AudioCtx) return null;
+  
+  if (!ctx) {
+    try {
+      ctx = new AudioCtx();
+    } catch (_) {
+      return null;
+    }
+  }
+  
+  if (ctx && ctx.state === 'suspended') {
+    try {
+      ctx.resume().catch(() => {});
+    } catch (_) {}
+  }
   return ctx;
 }
 
 function playTone(freq, duration, type = 'sine', volume = 0.3) {
   try {
     const c = getCtx();
+    if (!c) return;
     const osc = c.createOscillator();
     const gain = c.createGain();
     osc.type = type;
