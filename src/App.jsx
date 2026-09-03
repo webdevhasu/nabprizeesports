@@ -1,4 +1,7 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { getRedirectResult } from 'firebase/auth';
+import { auth } from './firebase/config';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './hooks/useNotifications';
 import BottomNav from './components/BottomNav';
@@ -26,6 +29,26 @@ import Withdrawals from './admin/Withdrawals';
 import UserManagement from './admin/UserManagement';
 import AdminReports from './admin/AdminReports';
 import Reviews from './components/Reviews';
+
+// Handles Google redirect result at top level so it works in PWA standalone mode
+function GoogleRedirectHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          // Successfully signed in via redirect (PWA mode)
+          navigate('/', { replace: true });
+        }
+      })
+      .catch((err) => {
+        console.warn('Google redirect result error:', err);
+      });
+  }, [navigate]);
+
+  return null;
+}
 
 function UserShell({ children }) {
   return (
@@ -174,6 +197,7 @@ export default function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
+      <GoogleRedirectHandler />
       <Routes>
         {/* Splash */}
         <Route path="/splash" element={<UserShell><Splash /></UserShell>} />

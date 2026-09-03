@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 import { useEffect } from 'react';
 import { sounds } from '../utils/sounds';
@@ -14,18 +14,6 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-
-  useEffect(() => {
-    getRedirectResult(auth).then((result) => {
-      if (result) {
-        navigate('/', { replace: true });
-      }
-    }).catch((err) => {
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError('Google login failed. Please try again.');
-      }
-    });
-  }, [navigate]);
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
