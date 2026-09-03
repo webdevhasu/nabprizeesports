@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRed
 import { auth, googleProvider } from '../firebase/config';
 import { useEffect } from 'react';
 import { sounds } from '../utils/sounds';
+import InstallAppBanner from '../components/InstallAppBanner';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -47,16 +48,25 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      // Detect PWA standalone mode
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+
       if (isStandalone) {
+        // In PWA, popup is blocked — use redirect instead
         await signInWithRedirect(auth, googleProvider);
+        // signInWithRedirect navigates away; result handled in useEffect above
+        return;
       } else {
-        await signInWithPopup(auth, googleProvider);
-        sounds.success();
-        navigate('/', { replace: true });
+        const result = await signInWithPopup(auth, googleProvider);
+        if (result?.user) {
+          sounds.success();
+          navigate('/', { replace: true });
+        }
       }
     } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user') {
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
         setError('Google login failed. Please try again.');
       }
     }
@@ -75,7 +85,10 @@ export default function Login() {
   };
 
   return (
-    <div style={{ padding: '40px 20px', maxWidth: '400px', margin: '0 auto' }}>
+    <div style={{ padding: '20px 20px 40px', maxWidth: '400px', margin: '0 auto' }}>
+      {/* Install App Banner - only shows if not already installed */}
+      <InstallAppBanner />
+
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
         <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '28px', color: '#E8552F' }}>
           NabPrize Esports

@@ -17,6 +17,8 @@ export const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+// Force account selection so redirect works in PWA/standalone mode
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 export const db = getFirestore(app);
 export const rtdb = getDatabase(app);
 export default app;
