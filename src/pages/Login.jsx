@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, sendPasswordResetEmail } from 'firebase/auth';
-import { auth, googleProvider } from '../firebase/config';
+import { auth, googleProvider, db } from '../firebase/config';
 import { useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 import { sounds } from '../utils/sounds';
 import InstallAppBanner from '../components/InstallAppBanner';
 
@@ -15,14 +16,29 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
+  // Check if user has completed account setup, navigate accordingly
+  const navigateAfterLogin = async (user) => {
+    try {
+      const docSnap = await getDoc(doc(db, 'users', user.uid));
+      if (docSnap.exists()) {
+        navigate('/', { replace: true });
+      } else {
+        navigate('/account-setup', { replace: true });
+      }
+    } catch {
+      // On network error, fallback to home (ProtectedRoute will handle further)
+      navigate('/', { replace: true });
+    }
+  };
+
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
       sounds.success();
-      navigate('/', { replace: true });
+      await navigateAfterLogin(result.user);
     } catch (err) {
       if (err.code === 'auth/user-not-found') setError('No account found with this email.');
       else if (err.code === 'auth/wrong-password') setError('Incorrect password.');
@@ -36,21 +52,19 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      // Detect PWA standalone mode
       const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
         window.navigator.standalone === true;
 
       if (isStandalone) {
-        // In PWA, popup is blocked — use redirect instead
+        // In PWA, popup is blocked — use redirect (result handled in App.jsx)
         await signInWithRedirect(auth, googleProvider);
-        // signInWithRedirect navigates away; result handled in useEffect above
         return;
       } else {
         const result = await signInWithPopup(auth, googleProvider);
         if (result?.user) {
           sounds.success();
-          navigate('/', { replace: true });
+          await navigateAfterLogin(result.user);
         }
       }
     } catch (err) {

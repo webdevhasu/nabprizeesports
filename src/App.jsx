@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { getRedirectResult } from 'firebase/auth';
-import { auth } from './firebase/config';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from './firebase/config';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './hooks/useNotifications';
 import BottomNav from './components/BottomNav';
@@ -36,10 +37,19 @@ function GoogleRedirectHandler() {
 
   useEffect(() => {
     getRedirectResult(auth)
-      .then((result) => {
+      .then(async (result) => {
         if (result?.user) {
-          // Successfully signed in via redirect (PWA mode)
-          navigate('/', { replace: true });
+          // Check Firestore to decide where to send the user
+          try {
+            const docSnap = await getDoc(doc(db, 'users', result.user.uid));
+            if (docSnap.exists()) {
+              navigate('/', { replace: true });
+            } else {
+              navigate('/account-setup', { replace: true });
+            }
+          } catch {
+            navigate('/', { replace: true });
+          }
         }
       })
       .catch((err) => {
