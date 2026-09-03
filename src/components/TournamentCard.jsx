@@ -1,9 +1,30 @@
 import { Link } from 'react-router-dom';
-import { Trophy, Users, DollarSign, Clock, MapPin, ShieldCheck, ChevronRight, Zap, Key } from 'lucide-react';
+import { Trophy, Users, Clock, ChevronRight } from 'lucide-react';
 import { FaFire } from 'react-icons/fa';
 
+// Banner image map based on game + tournament type
+const BANNER_MAP = {
+  pubg: {
+    weekly: '/banner-pubg-weekly.jpg',
+    special: '/banner-pubg-weekly.jpg',
+    default: '/banner-pubg-daily.jpg',
+  },
+  freefire: {
+    weekly: '/banner-ff-weekly.jpg',
+    special: '/banner-ff-weekly.jpg',
+    default: '/banner-ff-daily.jpg',
+  },
+};
+
+function getBanner(game, tournamentType) {
+  const gameKey = game === 'pubg' ? 'pubg' : 'freefire';
+  const map = BANNER_MAP[gameKey];
+  const typeKey = tournamentType?.toLowerCase() || '';
+  if (typeKey.includes('weekly') || typeKey.includes('special')) return map.weekly;
+  return map.default;
+}
+
 export default function TournamentCard({ tournament, isRegistered = false }) {
-  // isRegistered can be: null (still loading), true (registered), false (not registered)
   const registrationLoading = isRegistered === null;
   const isLive = tournament.status === 'live';
   const slotsFilled = tournament.slotsFilled || 0;
@@ -14,6 +35,8 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
   const isWeekly = tournament.tournamentType === 'Weekly Championship' || tournament.tournamentType === 'Special Cup';
   const isFree = !tournament.registrationCharge || tournament.registrationCharge === 0;
 
+  const bannerSrc = getBanner(tournament.game, tournament.tournamentType);
+
   const getTimingDetails = (startTime) => {
     if (!startTime) return { label: 'Schedule TBD', isRoomWindow: false, isLiveMatch: false };
     const regClose = startTime.toDate ? startTime.toDate() : new Date(startTime);
@@ -21,17 +44,14 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
 
     const matchStart = new Date(regClose.getTime() + 10 * 60 * 1000);
     const now = new Date().getTime();
-
     const diffToRegClose = regClose.getTime() - now;
     const diffToMatchStart = matchStart.getTime() - now;
-
     const regCloseStr = regClose.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true }) + ' PKT';
     const matchStartStr = matchStart.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true }) + ' PKT';
 
     if (diffToMatchStart <= 0 || isLive) {
       return { label: '● LIVE NOW', isRoomWindow: false, isLiveMatch: true, regCloseStr, matchStartStr };
     }
-
     if (diffToRegClose <= 0 && diffToMatchStart > 0) {
       const minsLeft = Math.ceil(diffToMatchStart / 60000);
       return { label: (<><FaFire size={12} style={{display:'inline'}} /> Room Open ({minsLeft}m to start)</>), isRoomWindow: true, isLiveMatch: false, regCloseStr, matchStartStr };
@@ -47,184 +67,202 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
       countdownStr = `${hours}h ${mins}m`;
     }
 
-    return {
-      label: `Reg ends in ${countdownStr}`,
-      isRoomWindow: false,
-      isLiveMatch: false,
-      regCloseStr,
-      matchStartStr,
-    };
+    return { label: `Reg ends in ${countdownStr}`, isRoomWindow: false, isLiveMatch: false, regCloseStr, matchStartStr };
   };
 
   const timing = getTimingDetails(tournament.startTime);
 
+  // Overlay gradient color based on state
+  const overlayColor = timing.isLiveMatch
+    ? 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(20,50,30,0.82) 55%, rgba(10,35,20,0.97) 100%)'
+    : isWeekly
+    ? 'linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(30,20,5,0.82) 55%, rgba(20,12,0,0.97) 100%)'
+    : 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(25,15,10,0.80) 55%, rgba(15,8,4,0.97) 100%)';
+
   return (
     <Link
       to={`/tournament/${tournament.id}`}
-      style={{ textDecoration: 'none', display: 'block', marginBottom: '14px' }}
+      style={{ textDecoration: 'none', display: 'block', marginBottom: '16px' }}
     >
       <div style={{
-        background: '#FFFFFF',
-        borderRadius: '18px',
-        border: isWeekly
-          ? '2px solid #F4B740'
-          : timing.isLiveMatch
-          ? '2px solid #3FA65C'
-          : timing.isRoomWindow
-          ? '2px solid #E88B00'
-          : '1px solid #EBE4DA',
+        borderRadius: '20px',
         overflow: 'hidden',
-        boxShadow: isWeekly
-          ? '0 6px 20px rgba(244, 183, 64, 0.18)'
-          : '0 2px 8px rgba(0,0,0,0.03)',
-        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
         position: 'relative',
+        boxShadow: isWeekly
+          ? '0 8px 32px rgba(244, 183, 64, 0.25), 0 2px 8px rgba(0,0,0,0.15)'
+          : timing.isLiveMatch
+          ? '0 8px 24px rgba(63, 166, 92, 0.2), 0 2px 8px rgba(0,0,0,0.12)'
+          : '0 4px 16px rgba(0,0,0,0.1)',
+        border: isWeekly
+          ? '2px solid rgba(244, 183, 64, 0.5)'
+          : timing.isLiveMatch
+          ? '2px solid rgba(63, 166, 92, 0.5)'
+          : timing.isRoomWindow
+          ? '2px solid rgba(232, 139, 0, 0.5)'
+          : '1.5px solid rgba(255,255,255,0.08)',
+        transition: 'transform 0.18s ease, box-shadow 0.18s ease',
       }}>
-        
-        {/* Free Tournament Corner Ribbon */}
-        {isFree && (
+
+        {/* === HERO BANNER IMAGE === */}
+        <div style={{ position: 'relative', height: '140px', overflow: 'hidden' }}>
+          <img
+            src={bannerSrc}
+            alt="tournament banner"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center top',
+              display: 'block',
+            }}
+          />
+          {/* Dark gradient overlay */}
           <div style={{
             position: 'absolute',
-            top: '12px',
-            right: '-30px',
-            background: 'linear-gradient(135deg, #3FA65C 0%, #2E7D32 100%)',
-            color: '#FFFFFF',
-            fontSize: '10px',
-            fontWeight: 800,
-            letterSpacing: '1px',
-            padding: '4px 36px',
-            transform: 'rotate(45deg)',
-            boxShadow: '0 2px 6px rgba(63, 166, 92, 0.4)',
-            zIndex: 1,
-          }}>
-            FREE
-          </div>
-        )}
-        
-        {/* Weekly Header Banner if applicable */}
-        {isWeekly && (
+            inset: 0,
+            background: overlayColor,
+          }} />
+
+          {/* === TOP BADGES on image === */}
           <div style={{
-            background: 'linear-gradient(90deg, #F4B740 0%, #E88B00 100%)',
-            color: '#FFFFFF',
-            padding: '6px 14px',
-            fontSize: '11px',
-            fontWeight: 800,
-            letterSpacing: '1px',
+            position: 'absolute',
+            top: '10px',
+            left: '12px',
+            right: '12px',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'space-between',
           }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              ⭐ WEEKLY CHAMPIONSHIP
-            </span>
-            <span style={{ fontSize: '10px', background: 'rgba(0,0,0,0.15)', padding: '2px 6px', borderRadius: '4px' }}>
-              BIG PRIZE
-            </span>
-          </div>
-        )}
-
-        <div style={{ padding: '16px' }}>
-          
-          {/* Card Top: Badges */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              {/* Game Badge */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {/* Game badge */}
               <span style={{
-                fontSize: '11px',
-                fontWeight: 700,
+                fontSize: '10px',
+                fontWeight: 800,
                 padding: '3px 8px',
                 borderRadius: '6px',
-                background: tournament.game === 'pubg' ? '#FFF0EC' : '#F3EEFF',
-                color: tournament.game === 'pubg' ? '#FF6B4A' : '#7B4FE0',
-                letterSpacing: '0.3px',
+                background: tournament.game === 'pubg'
+                  ? 'rgba(255, 107, 74, 0.9)'
+                  : 'rgba(123, 79, 224, 0.9)',
+                color: '#FFFFFF',
+                letterSpacing: '0.5px',
+                backdropFilter: 'blur(4px)',
               }}>
                 {tournament.game === 'pubg' ? 'PUBG MOBILE' : 'FREE FIRE'}
               </span>
 
-              {/* Mode & Map Badge */}
+              {/* Mode badge */}
               <span style={{
-                fontSize: '11px',
+                fontSize: '10px',
                 fontWeight: 600,
-                color: '#5E5851',
-                background: '#F0ECE4',
                 padding: '3px 8px',
                 borderRadius: '6px',
+                background: 'rgba(0,0,0,0.5)',
+                color: '#E0D8CC',
+                backdropFilter: 'blur(4px)',
               }}>
-                {tournament.matchType || 'Solo'} {tournament.mapName ? `• ${tournament.mapName}` : ''}
+                {tournament.matchType || 'Solo'}{tournament.mapName ? ` • ${tournament.mapName}` : ''}
               </span>
             </div>
 
-            {/* Live or Countdown Pill */}
+            {/* Status pill */}
             {timing.isLiveMatch ? (
               <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: 800,
-                color: '#FFFFFF',
-                background: '#3FA65C',
-                padding: '3px 10px',
-                borderRadius: '12px',
-                boxShadow: '0 2px 6px rgba(63, 166, 92, 0.35)',
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                fontSize: '10px', fontWeight: 800, color: '#FFFFFF',
+                background: '#3FA65C', padding: '3px 9px', borderRadius: '10px',
+                boxShadow: '0 2px 8px rgba(63,166,92,0.5)',
               }}>
-                <span style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  background: '#FFFFFF',
-                  display: 'inline-block',
-                }} />
-                LIVE NOW
+                <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#fff', display: 'inline-block' }} />
+                LIVE
               </span>
             ) : timing.isRoomWindow ? (
               <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: 800,
-                color: '#FFFFFF',
-                background: '#E88B00',
-                padding: '3px 10px',
-                borderRadius: '12px',
-                boxShadow: '0 2px 6px rgba(232, 139, 0, 0.35)',
+                fontSize: '10px', fontWeight: 800, color: '#FFFFFF',
+                background: '#E88B00', padding: '3px 9px', borderRadius: '10px',
+                boxShadow: '0 2px 8px rgba(232,139,0,0.5)',
               }}>
-                {timing.label}
+                🔥 Room Open
               </span>
             ) : (
               <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: 600,
-                color: '#8A8078',
-                background: '#FAF8F5',
-                border: '1px solid #EBE4DA',
-                padding: '3px 8px',
-                borderRadius: '8px',
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                fontSize: '10px', fontWeight: 600, color: '#E0D8CC',
+                background: 'rgba(0,0,0,0.5)', padding: '3px 8px', borderRadius: '8px',
+                backdropFilter: 'blur(4px)',
               }}>
-                <Clock size={12} color="#8A8078" />
+                <Clock size={10} />
                 {timing.label}
               </span>
             )}
           </div>
 
-          {/* Tournament Title */}
-          <h3 style={{
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 700,
-            fontSize: 'clamp(14px, 4.2vw, 16px)',
-            color: '#2E2A26',
-            margin: '0 0 8px',
-            lineHeight: 1.35,
-            wordBreak: 'break-word',
-          }}>
-            {tournament.name}
-          </h3>
+          {/* FREE ribbon */}
+          {isFree && (
+            <div style={{
+              position: 'absolute',
+              top: '10px',
+              right: '-24px',
+              background: 'linear-gradient(135deg, #3FA65C 0%, #2E7D32 100%)',
+              color: '#FFFFFF',
+              fontSize: '9px',
+              fontWeight: 800,
+              letterSpacing: '1px',
+              padding: '3px 32px',
+              transform: 'rotate(45deg)',
+              boxShadow: '0 2px 6px rgba(63,166,92,0.4)',
+              zIndex: 2,
+            }}>
+              FREE
+            </div>
+          )}
 
-          {/* PKT Schedule Timeline Sub-banner */}
+          {/* === TOURNAMENT TITLE on bottom of image === */}
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '10px 14px',
+          }}>
+            {isWeekly && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: 'linear-gradient(90deg, #F4B740, #E88B00)',
+                color: '#FFF',
+                fontSize: '9px',
+                fontWeight: 800,
+                letterSpacing: '1.5px',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                marginBottom: '4px',
+              }}>
+                ⭐ WEEKLY CHAMPIONSHIP
+              </div>
+            )}
+            <h3 style={{
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 700,
+              fontSize: 'clamp(13px, 4vw, 15px)',
+              color: '#FFFFFF',
+              margin: 0,
+              lineHeight: 1.3,
+              textShadow: '0 1px 4px rgba(0,0,0,0.5)',
+              wordBreak: 'break-word',
+            }}>
+              {tournament.name}
+            </h3>
+          </div>
+        </div>
+
+        {/* === CARD BODY (dark) === */}
+        <div style={{
+          background: '#1A1410',
+          padding: '12px 14px 14px',
+        }}>
+
+          {/* Schedule row */}
           {timing.regCloseStr && (
             <div style={{
               display: 'flex',
@@ -232,72 +270,66 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
               justifyContent: 'space-between',
               flexWrap: 'wrap',
               gap: '4px 8px',
-              background: '#F8F6F1',
+              background: 'rgba(255,255,255,0.05)',
               padding: '6px 10px',
               borderRadius: '8px',
               fontSize: 'clamp(10px, 3vw, 11px)',
-              color: '#5E5851',
-              marginBottom: '12px',
+              color: '#A89E93',
+              marginBottom: '10px',
+              border: '1px solid rgba(255,255,255,0.07)',
             }}>
-              <span>Reg Close: <strong>{timing.regCloseStr}</strong></span>
-              <span style={{ display: 'inline-block' }}>•</span>
-              <span style={{ color: '#2E7D32', fontWeight: 600 }}>Match Start: {timing.matchStartStr}</span>
+              <span>Reg Closes: <strong style={{ color: '#E0D8CC' }}>{timing.regCloseStr}</strong></span>
+              <span style={{ color: 'rgba(255,255,255,0.2)' }}>•</span>
+              <span style={{ color: '#5BC47A', fontWeight: 600 }}>Match: {timing.matchStartStr}</span>
             </div>
           )}
 
-          {/* 3 Metrics Box */}
+          {/* 3 Metrics */}
           <div style={{
-            background: '#FAF8F5',
-            borderRadius: '12px',
-            padding: '10px 12px',
             display: 'grid',
             gridTemplateColumns: '1fr 1fr 1fr',
-            gap: '6px',
-            border: '1px solid #F0ECE4',
-            marginBottom: '12px',
+            gap: '8px',
+            marginBottom: '10px',
           }}>
-            <div>
-              <div style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Entry Fee</div>
-              <div style={{ fontWeight: 800, fontSize: 'clamp(13px, 3.8vw, 15px)', color: '#2E2A26', marginTop: '2px' }}>
-                {tournament.registrationCharge > 0 ? `Rs ${tournament.registrationCharge}` : 'FREE'}
-              </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Prize Pool</div>
-              <div style={{ fontWeight: 800, fontSize: 'clamp(13px, 3.8vw, 15px)', color: '#FF6B4A', marginTop: '2px' }}>
-                Rs {tournament.fixedReward || 0}
-              </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Slots Left</div>
-              <div style={{
-                fontWeight: 800,
-                fontSize: 'clamp(13px, 3.8vw, 15px)',
-                color: isNearlyFull ? '#D9503F' : '#2E2A26',
-                marginTop: '2px',
+            {[
+              {
+                label: 'Entry Fee',
+                value: tournament.registrationCharge > 0 ? `Rs ${tournament.registrationCharge}` : 'FREE',
+                color: isFree ? '#5BC47A' : '#E0D8CC',
+              },
+              {
+                label: 'Prize Pool',
+                value: `Rs ${tournament.fixedReward || 0}`,
+                color: '#FF6B4A',
+              },
+              {
+                label: 'Slots',
+                value: `${slotsFilled}/${maxSlots}`,
+                color: isNearlyFull ? '#F4B740' : '#E0D8CC',
+              },
+            ].map((m) => (
+              <div key={m.label} style={{
+                background: 'rgba(255,255,255,0.04)',
+                borderRadius: '10px',
+                padding: '8px 8px',
+                textAlign: 'center',
+                border: '1px solid rgba(255,255,255,0.06)',
               }}>
-                {slotsFilled}/{maxSlots}
+                <div style={{ fontSize: '9px', color: '#6E6560', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{m.label}</div>
+                <div style={{ fontWeight: 800, fontSize: 'clamp(12px, 3.5vw, 14px)', color: m.color, marginTop: '3px' }}>{m.value}</div>
               </div>
-            </div>
+            ))}
           </div>
 
-          {/* Slots Progress Bar */}
-          <div style={{ marginBottom: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#8A8078', marginBottom: '4px' }}>
-              <span>Registration Status</span>
-              <span style={{ fontWeight: 600, color: isNearlyFull ? '#D9503F' : '#2E2A26' }}>
-                {isFull ? 'Full (100%)' : `${fillPercentage}% Filled`}
+          {/* Progress bar */}
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#6E6560', marginBottom: '5px' }}>
+              <span>Slots Filled</span>
+              <span style={{ fontWeight: 600, color: isNearlyFull ? '#F4B740' : '#A89E93' }}>
+                {isFull ? 'Full (100%)' : `${fillPercentage}%`}
               </span>
             </div>
-            <div style={{
-              width: '100%',
-              height: '6px',
-              borderRadius: '6px',
-              background: '#EBE4DA',
-              overflow: 'hidden',
-            }}>
+            <div style={{ width: '100%', height: '5px', borderRadius: '5px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
               <div style={{
                 height: '100%',
                 width: `${fillPercentage}%`,
@@ -305,29 +337,25 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
                   ? '#D9503F'
                   : isNearlyFull
                   ? 'linear-gradient(90deg, #F4B740, #D9503F)'
-                  : 'linear-gradient(90deg, #3FA65C, #2E7D32)',
-                borderRadius: '6px',
+                  : 'linear-gradient(90deg, #3FA65C, #5BC47A)',
+                borderRadius: '5px',
                 transition: 'width 0.3s ease',
               }} />
             </div>
           </div>
 
-          {/* Action Button */}
+          {/* Action button */}
           {registrationLoading ? (
-            // Shimmer skeleton — prevents flashing "Join Tournament" before check completes
             <div style={{
-              width: '100%',
-              height: '42px',
-              borderRadius: '10px',
-              background: 'linear-gradient(90deg, #F0ECE4 25%, #E4DDD3 50%, #F0ECE4 75%)',
-              backgroundSize: '200% 100%',
+              width: '100%', height: '42px', borderRadius: '10px',
+              background: 'rgba(255,255,255,0.06)',
               animation: 'shimmer 1.4s infinite',
             }} />
           ) : (
             <div style={{
               width: '100%',
-              padding: '11px 14px',
-              borderRadius: '10px',
+              padding: '12px 14px',
+              borderRadius: '12px',
               fontWeight: 700,
               fontSize: '13px',
               textAlign: 'center',
@@ -336,30 +364,32 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
               justifyContent: 'center',
               gap: '6px',
               background: isRegistered
-                ? '#E8F5E9'
+                ? 'rgba(63, 166, 92, 0.15)'
                 : timing.isLiveMatch
-                ? '#3FA65C'
+                ? 'linear-gradient(135deg, #3FA65C, #2E7D32)'
                 : timing.isRoomWindow
-                ? '#E88B00'
+                ? 'linear-gradient(135deg, #E88B00, #C87000)'
                 : isFull
-                ? '#EBE4DA'
-                : '#FF6B4A',
+                ? 'rgba(255,255,255,0.06)'
+                : 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
               color: isRegistered
-                ? '#2E7D32'
+                ? '#5BC47A'
                 : isFull
-                ? '#8A8078'
+                ? '#6E6560'
                 : '#FFFFFF',
-              border: isRegistered ? '1.5px solid #C8E6C9' : 'none',
+              border: isRegistered ? '1.5px solid rgba(63,166,92,0.3)' : 'none',
               boxShadow: (!isRegistered && !isFull)
-                ? '0 2px 8px rgba(255, 107, 74, 0.25)'
+                ? isWeekly
+                  ? '0 4px 14px rgba(255, 107, 74, 0.35)'
+                  : '0 3px 10px rgba(255, 107, 74, 0.28)'
                 : 'none',
             }}>
               {isRegistered ? (
-                <span>✓ Registered (View Room ID)</span>
+                <span>✓ Registered — View Room ID</span>
               ) : timing.isLiveMatch ? (
                 <span>Match Live — View Details</span>
               ) : timing.isRoomWindow ? (
-                <span>Room Open (10m) — View</span>
+                <span>🔑 Room Open — View Now</span>
               ) : isFull ? (
                 <span>Tournament Full</span>
               ) : (
@@ -370,7 +400,6 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
               )}
             </div>
           )}
-
         </div>
       </div>
     </Link>
