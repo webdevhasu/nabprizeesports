@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider, db } from '../firebase/config';
 import { useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
@@ -52,20 +52,10 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const isStandalone =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        window.navigator.standalone === true;
-
-      if (isStandalone) {
-        // In PWA, popup is blocked — use redirect (result handled in App.jsx)
-        await signInWithRedirect(auth, googleProvider);
-        return;
-      } else {
-        const result = await signInWithPopup(auth, googleProvider);
-        if (result?.user) {
-          sounds.success();
-          await navigateAfterLogin(result.user);
-        }
+      const result = await signInWithPopup(auth, googleProvider);
+      if (result?.user) {
+        sounds.success();
+        await navigateAfterLogin(result.user);
       }
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
