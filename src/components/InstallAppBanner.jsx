@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, X, Smartphone, Sparkles, Share, PlusSquare } from 'lucide-react';
+import { Download, X, Share, PlusSquare } from 'lucide-react';
 
 export default function InstallAppBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -9,50 +9,66 @@ export default function InstallAppBanner() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    // Check if already running in standalone/installed mode
-    const isRunningStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone ||
-      document.referrer.includes('android-app://');
+    try {
+      // Check if already running in standalone/installed mode
+      const isRunningStandalone = 
+        (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        (typeof window !== 'undefined' && window.navigator && (window.navigator.standalone || document.referrer.includes('android-app://')));
 
-    setIsStandalone(Boolean(isRunningStandalone));
+      setIsStandalone(Boolean(isRunningStandalone));
+    } catch (_) {}
 
     // Check if user dismissed within last 3 days
-    const dismissedAt = localStorage.getItem('np_install_dismissed');
-    if (dismissedAt) {
-      const diffDays = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60 * 24);
-      if (diffDays < 3) {
-        setDismissed(true);
+    try {
+      const dismissedAt = localStorage.getItem('np_install_dismissed');
+      if (dismissedAt) {
+        const diffDays = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60 * 24);
+        if (diffDays < 3) {
+          setDismissed(true);
+        }
       }
-    }
+    } catch (_) {}
 
     // Detect iOS
-    const isIosDevice = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-    setIsIOS(isIosDevice);
+    try {
+      const isIosDevice = typeof window !== 'undefined' && /iphone|ipad|ipod/.test(window.navigator?.userAgent?.toLowerCase() || '');
+      setIsIOS(isIosDevice);
+    } catch (_) {}
 
     // Read initial global prompt if already available
-    if (window.__np_deferred_prompt) {
-      setDeferredPrompt(window.__np_deferred_prompt);
-    }
+    try {
+      if (typeof window !== 'undefined' && window.__np_deferred_prompt) {
+        setDeferredPrompt(window.__np_deferred_prompt);
+      }
+    } catch (_) {}
 
     // Listen for custom ready event or direct beforeinstallprompt event
     const handlePromptReady = () => {
-      if (window.__np_deferred_prompt) {
-        setDeferredPrompt(window.__np_deferred_prompt);
-      }
+      try {
+        if (typeof window !== 'undefined' && window.__np_deferred_prompt) {
+          setDeferredPrompt(window.__np_deferred_prompt);
+        }
+      } catch (_) {}
     };
 
     const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      window.__np_deferred_prompt = e;
-      setDeferredPrompt(e);
+      try {
+        e.preventDefault();
+        window.__np_deferred_prompt = e;
+        setDeferredPrompt(e);
+      } catch (_) {}
     };
 
-    window.addEventListener('np_prompt_ready', handlePromptReady);
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('np_prompt_ready', handlePromptReady);
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    }
 
     return () => {
-      window.removeEventListener('np_prompt_ready', handlePromptReady);
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('np_prompt_ready', handlePromptReady);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      }
     };
   }, []);
 
@@ -62,14 +78,20 @@ export default function InstallAppBanner() {
       return;
     }
 
-    const promptToUse = deferredPrompt || window.__np_deferred_prompt;
+    const promptToUse = deferredPrompt || (typeof window !== 'undefined' ? window.__np_deferred_prompt : null);
 
     if (promptToUse) {
-      promptToUse.prompt();
-      const { outcome } = await promptToUse.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        window.__np_deferred_prompt = null;
+      try {
+        promptToUse.prompt();
+        const { outcome } = await promptToUse.userChoice;
+        if (outcome === 'accepted') {
+          setDeferredPrompt(null);
+          if (typeof window !== 'undefined') {
+            window.__np_deferred_prompt = null;
+          }
+        }
+      } catch (_) {
+        setShowIOSModal(true);
       }
     } else {
       setShowIOSModal(true);
@@ -78,7 +100,9 @@ export default function InstallAppBanner() {
 
   const handleDismiss = () => {
     setDismissed(true);
-    localStorage.setItem('np_install_dismissed', Date.now().toString());
+    try {
+      localStorage.setItem('np_install_dismissed', Date.now().toString());
+    } catch (_) {}
   };
 
   if (isStandalone || dismissed) return null;
