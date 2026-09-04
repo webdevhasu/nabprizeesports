@@ -799,12 +799,15 @@ export default function AdminDeposits() {
                             <img
                               src={dep.screenshotUrl}
                               alt="Proof"
+                              loading="lazy"
+                              decoding="async"
                               style={{
                                 width: '48px',
                                 height: '48px',
                                 objectFit: 'cover',
                                 borderRadius: '6px',
                                 display: 'block',
+                                background: '#F5EFE6',
                               }}
                             />
                             <div
