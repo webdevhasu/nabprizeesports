@@ -12,13 +12,9 @@ import {
   Zap,
   CheckCircle2,
   Gamepad2,
-  Flame,
   Share,
   PlusSquare,
   X,
-  Star,
-  Users,
-  Clock,
   Sparkles,
   ChevronRight
 } from 'lucide-react';
@@ -100,26 +96,26 @@ export default function Landing() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0D0B0A',
-      color: '#FAF8F5',
+      background: '#FFF8F0',
+      color: '#2E2A26',
       fontFamily: "'Inter', sans-serif",
       overflowX: 'hidden',
       position: 'relative',
     }}>
-      {/* Background Ambient Glows */}
+      {/* Background Ambient Warm Creamy Glows */}
       <div style={{
         position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: '1200px', height: '480px',
-        background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255, 107, 74, 0.22) 0%, rgba(0,0,0,0) 70%)',
+        background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255, 107, 74, 0.12) 0%, rgba(255, 248, 240, 0) 70%)',
         pointerEvents: 'none', zIndex: 0,
       }} />
 
       {/* 1. TOP NAVBAR */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(13, 11, 10, 0.85)',
+        background: 'rgba(255, 248, 240, 0.92)',
         backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+        borderBottom: '1px solid #F0E6D8',
         padding: '12px 20px',
       }}>
         <div style={{
@@ -133,19 +129,19 @@ export default function Landing() {
               alt="NabPrize Esports"
               style={{
                 width: '36px', height: '36px', borderRadius: '10px',
-                boxShadow: '0 2px 10px rgba(255, 107, 74, 0.4)',
-                border: '1.5px solid rgba(255, 107, 74, 0.5)',
+                boxShadow: '0 2px 10px rgba(255, 107, 74, 0.25)',
+                border: '1.5px solid rgba(255, 107, 74, 0.4)',
               }}
             />
             <div>
               <span style={{
                 fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '18px',
-                letterSpacing: '-0.3px', color: '#FFFFFF',
+                letterSpacing: '-0.3px', color: '#2E2A26',
               }}>
                 Nab<span style={{ color: '#FF6B4A' }}>Prize</span>
               </span>
               <span style={{
-                display: 'block', fontSize: '10px', color: '#A69E94',
+                display: 'block', fontSize: '10px', color: '#8A8078',
                 letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600,
               }}>
                 Esports Arena
@@ -161,9 +157,9 @@ export default function Landing() {
               background: 'rgba(63, 166, 92, 0.12)',
               border: '1px solid rgba(63, 166, 92, 0.3)',
               padding: '4px 10px', borderRadius: '20px',
-              fontSize: '11px', color: '#4ADE80', fontWeight: 600,
+              fontSize: '11px', color: '#2E7D32', fontWeight: 600,
             }} className="desktop-online-badge">
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ADE80', display: 'inline-block' }} />
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3FA65C', display: 'inline-block' }} />
               Live Matches Running
             </div>
 
@@ -183,10 +179,11 @@ export default function Landing() {
               <button
                 onClick={() => navigate('/login')}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  color: '#FAF8F5', border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: '#FFFFFF',
+                  color: '#2E2A26', border: '1px solid #EBE4DA',
                   borderRadius: '10px', padding: '8px 16px', fontSize: '13px',
                   fontWeight: 600, cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                 }}
               >
                 Log In
@@ -205,12 +202,12 @@ export default function Landing() {
         {/* Live Pill Badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px',
-          background: 'rgba(255, 107, 74, 0.12)',
-          border: '1px solid rgba(255, 107, 74, 0.3)',
-          padding: '6px 14px', borderRadius: '30px',
-          marginBottom: '22px', fontSize: '12px', color: '#FF8A65', fontWeight: 600,
+          background: 'rgba(255, 107, 74, 0.1)',
+          border: '1px solid rgba(255, 107, 74, 0.25)',
+          padding: '6px 16px', borderRadius: '30px',
+          marginBottom: '22px', fontSize: '12px', color: '#E8552F', fontWeight: 700,
         }}>
-          <Sparkles size={14} color="#F4B740" />
+          <Sparkles size={14} color="#FF6B4A" />
           <span>Totally Skill-Based Esports Tournament Platform</span>
         </div>
 
@@ -220,14 +217,14 @@ export default function Landing() {
           fontWeight: 900,
           fontSize: 'clamp(28px, 6vw, 54px)',
           lineHeight: 1.15,
-          color: '#FFFFFF',
+          color: '#2E2A26',
           margin: '0 auto 18px',
           maxWidth: '860px',
           letterSpacing: '-0.5px',
         }}>
           Play PUBG & Free Fire.{' '}
           <span style={{
-            background: 'linear-gradient(135deg, #FF7B59 0%, #F4B740 100%)',
+            background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
@@ -238,7 +235,7 @@ export default function Landing() {
         {/* Subtitle */}
         <p style={{
           fontSize: 'clamp(14px, 2.5vw, 17px)',
-          color: '#C4BCB2',
+          color: '#5E5851',
           maxWidth: '680px',
           margin: '0 auto 34px',
           lineHeight: 1.6,
@@ -268,7 +265,7 @@ export default function Landing() {
               background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
               color: '#FFFFFF',
               cursor: 'pointer',
-              boxShadow: '0 8px 24px rgba(255, 107, 74, 0.45)',
+              boxShadow: '0 8px 24px rgba(255, 107, 74, 0.35)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -294,10 +291,9 @@ export default function Landing() {
               flex: '1 1 220px',
               padding: '16px 24px',
               borderRadius: '14px',
-              border: '1.5px solid rgba(255, 255, 255, 0.2)',
-              background: 'rgba(255, 255, 255, 0.06)',
-              backdropFilter: 'blur(8px)',
-              color: '#FFFFFF',
+              border: '1.5px solid #E5DCD1',
+              background: '#FFFFFF',
+              color: '#2E2A26',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -305,29 +301,30 @@ export default function Landing() {
               gap: '10px',
               fontWeight: 700,
               fontSize: '15px',
+              boxShadow: '0 4px 14px rgba(46, 42, 38, 0.05)',
               transition: 'background 0.15s ease',
             }}
           >
-            <Globe size={19} color="#FF8A65" />
+            <Globe size={19} color="#FF6B4A" />
             <div style={{ textAlign: 'left' }}>
               <div>Continue in Browser</div>
-              <div style={{ fontSize: '11px', fontWeight: 400, color: '#A69E94' }}>
+              <div style={{ fontSize: '11px', fontWeight: 400, color: '#8A8078' }}>
                 Play Online No Download
               </div>
             </div>
-            <ArrowRight size={16} color="#A69E94" style={{ marginLeft: 'auto' }} />
+            <ArrowRight size={16} color="#8A8078" style={{ marginLeft: 'auto' }} />
           </button>
         </div>
 
         {/* Install Success Toast */}
         {installSuccess && (
           <div style={{
-            background: 'rgba(63, 166, 92, 0.2)', border: '1px solid #3FA65C',
-            borderRadius: '12px', padding: '12px 20px', color: '#4ADE80',
+            background: 'rgba(63, 166, 92, 0.15)', border: '1px solid #3FA65C',
+            borderRadius: '12px', padding: '12px 20px', color: '#2E7D32',
             fontSize: '13px', fontWeight: 600, maxWidth: '400px', margin: '0 auto 24px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           }}>
-            <CheckCircle2 size={16} /> App installed successfully! Launching Arena...
+            <CheckCircle2 size={16} color="#2E7D32" /> App installed successfully! Launching Arena...
           </div>
         )}
 
@@ -339,8 +336,9 @@ export default function Landing() {
           justifyContent: 'center',
           gap: '20px',
           fontSize: '13px',
-          color: '#A69E94',
+          color: '#5E5851',
           paddingTop: '8px',
+          fontWeight: 500,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Zap size={15} color="#FF6B4A" /> Instant JazzCash & EasyPaisa
@@ -362,44 +360,45 @@ export default function Landing() {
         maxWidth: '1140px', margin: '0 auto 50px', padding: '0 20px',
       }}>
         <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: '#FFFFFF',
+          border: '1px solid #F0E6D8',
           borderRadius: '20px',
-          padding: '24px',
+          padding: '28px 24px',
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
           gap: '20px',
           textAlign: 'center',
+          boxShadow: '0 4px 20px rgba(46, 42, 38, 0.04)',
         }}>
           <div>
-            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '30px', fontWeight: 800, color: '#FF7B59' }}>
+            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '32px', fontWeight: 800, color: '#E8552F' }}>
               10,000+
             </div>
-            <div style={{ fontSize: '12px', color: '#8A8078', marginTop: '2px', fontWeight: 500 }}>
+            <div style={{ fontSize: '12px', color: '#8A8078', marginTop: '4px', fontWeight: 600 }}>
               Registered Gamers
             </div>
           </div>
           <div>
-            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '30px', fontWeight: 800, color: '#F4B740' }}>
+            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '32px', fontWeight: 800, color: '#F4B740' }}>
               PKR 500K+
             </div>
-            <div style={{ fontSize: '12px', color: '#8A8078', marginTop: '2px', fontWeight: 500 }}>
+            <div style={{ fontSize: '12px', color: '#8A8078', marginTop: '4px', fontWeight: 600 }}>
               Skill Rewards Distributed
             </div>
           </div>
           <div>
-            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '30px', fontWeight: 800, color: '#3FA65C' }}>
+            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '32px', fontWeight: 800, color: '#3FA65C' }}>
               40+ Matches
             </div>
-            <div style={{ fontSize: '12px', color: '#8A8078', marginTop: '2px', fontWeight: 500 }}>
+            <div style={{ fontSize: '12px', color: '#8A8078', marginTop: '4px', fontWeight: 600 }}>
               Hosted Daily
             </div>
           </div>
           <div>
-            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '30px', fontWeight: 800, color: '#FAF8F5' }}>
+            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '32px', fontWeight: 800, color: '#2E2A26' }}>
               15 Minutes
             </div>
-            <div style={{ fontSize: '12px', color: '#8A8078', marginTop: '2px', fontWeight: 500 }}>
+            <div style={{ fontSize: '12px', color: '#8A8078', marginTop: '4px', fontWeight: 600 }}>
               Average Withdrawal Speed
             </div>
           </div>
@@ -411,35 +410,36 @@ export default function Landing() {
         maxWidth: '1140px', margin: '0 auto 60px', padding: '0 20px',
       }}>
         <div style={{
-          background: 'linear-gradient(135deg, #1C1512 0%, #2A1C16 100%)',
-          border: '1px solid rgba(255, 107, 74, 0.25)',
+          background: 'linear-gradient(135deg, #FFF0E6 0%, #FFFFFF 100%)',
+          border: '1px solid #F0DAC9',
           borderRadius: '24px',
-          padding: '36px 28px',
+          padding: '38px 30px',
           position: 'relative',
           overflow: 'hidden',
+          boxShadow: '0 8px 30px rgba(255, 107, 74, 0.07)',
         }}>
           <div style={{
             position: 'absolute', top: '-60px', right: '-60px',
             width: '200px', height: '200px',
-            background: 'radial-gradient(circle, rgba(255,107,74,0.2) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(255,107,74,0.15) 0%, transparent 70%)',
             borderRadius: '50%', pointerEvents: 'none',
           }} />
 
           <div style={{ maxWidth: '640px', position: 'relative', zIndex: 1 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px',
-              color: '#FF7B59', fontSize: '12px', fontWeight: 700,
+              color: '#E8552F', fontSize: '12px', fontWeight: 700,
               textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px',
             }}>
               <Smartphone size={14} /> PWA Mobile Experience
             </div>
             <h2 style={{
               fontFamily: "'Poppins', sans-serif", fontSize: 'clamp(22px, 4vw, 32px)',
-              fontWeight: 800, color: '#FFFFFF', margin: '0 0 12px', lineHeight: 1.25,
+              fontWeight: 800, color: '#2E2A26', margin: '0 0 12px', lineHeight: 1.25,
             }}>
               Install NabPrize on Your Phone in 5 Seconds
             </h2>
-            <p style={{ fontSize: '14px', color: '#C4BCB2', lineHeight: 1.6, margin: '0 0 24px' }}>
+            <p style={{ fontSize: '14px', color: '#5E5851', lineHeight: 1.6, margin: '0 0 24px' }}>
               No huge 2GB app store downloads. NabPrize installs directly onto your Android or iPhone home screen with zero lag, instant match ID notifications, and automatic cloud updates.
             </p>
 
@@ -447,19 +447,19 @@ export default function Landing() {
               display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '14px', marginBottom: '28px',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#2E2A26', fontWeight: 500 }}>
                 <CheckCircle2 size={16} color="#3FA65C" style={{ flexShrink: 0 }} />
                 <span>Instant Room ID/Pass push notifications</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#2E2A26', fontWeight: 500 }}>
                 <CheckCircle2 size={16} color="#3FA65C" style={{ flexShrink: 0 }} />
                 <span>Ultra-fast 60 FPS mobile interface</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#2E2A26', fontWeight: 500 }}>
                 <CheckCircle2 size={16} color="#3FA65C" style={{ flexShrink: 0 }} />
                 <span>Saves phone storage & mobile data</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#2E2A26', fontWeight: 500 }}>
                 <CheckCircle2 size={16} color="#3FA65C" style={{ flexShrink: 0 }} />
                 <span>1-Tap direct match joining</span>
               </div>
@@ -472,7 +472,7 @@ export default function Landing() {
                   padding: '13px 24px', borderRadius: '12px', border: 'none',
                   background: '#FF6B4A', color: '#FFFFFF', fontWeight: 800,
                   fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                  boxShadow: '0 4px 16px rgba(255, 107, 74, 0.4)',
+                  boxShadow: '0 4px 16px rgba(255, 107, 74, 0.35)',
                 }}
               >
                 <Download size={16} /> Install App Now
@@ -481,9 +481,10 @@ export default function Landing() {
                 onClick={handleContinueInBrowser}
                 style={{
                   padding: '13px 20px', borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  background: 'transparent', color: '#FAF8F5', fontWeight: 600,
+                  border: '1px solid #E5DCD1',
+                  background: '#FFFFFF', color: '#2E2A26', fontWeight: 600,
                   fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
                 }}
               >
                 Continue in Browser <ArrowRight size={14} />
@@ -500,7 +501,7 @@ export default function Landing() {
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <h2 style={{
             fontFamily: "'Poppins', sans-serif", fontSize: '28px',
-            fontWeight: 800, color: '#FFFFFF', margin: 0,
+            fontWeight: 800, color: '#2E2A26', margin: 0,
           }}>
             Compete In Top Mobile Titles
           </h2>
@@ -516,10 +517,11 @@ export default function Landing() {
         }}>
           {/* PUBG Mobile Card */}
           <div style={{
-            background: '#181412',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#FFFFFF',
+            border: '1px solid #F0E6D8',
             borderRadius: '20px',
             overflow: 'hidden',
+            boxShadow: '0 6px 20px rgba(46, 42, 38, 0.05)',
             transition: 'transform 0.2s',
           }}>
             <div style={{ height: '170px', position: 'relative', overflow: 'hidden' }}>
@@ -530,7 +532,7 @@ export default function Landing() {
               />
               <div style={{
                 position: 'absolute', top: '12px', left: '12px',
-                background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
+                background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
                 borderRadius: '8px', padding: '4px 10px',
                 fontSize: '11px', fontWeight: 700, color: '#F4B740',
               }}>
@@ -538,14 +540,14 @@ export default function Landing() {
               </div>
             </div>
             <div style={{ padding: '20px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#FFFFFF', margin: '0 0 8px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#2E2A26', margin: '0 0 8px' }}>
                 Daily Erangel & TDM Customs
               </h3>
-              <p style={{ fontSize: '13px', color: '#A69E94', lineHeight: 1.5, margin: '0 0 16px' }}>
+              <p style={{ fontSize: '13px', color: '#5E5851', lineHeight: 1.5, margin: '0 0 16px' }}>
                 Solo & Squad battle royale matches. Verified rooms with kill rewards and champion rewards sent directly to your wallet.
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#3FA65C', fontWeight: 700 }}>
+                <span style={{ fontSize: '12px', color: '#2E7D32', fontWeight: 700 }}>
                   Service Charges PKR 50
                 </span>
                 <button
@@ -564,10 +566,11 @@ export default function Landing() {
 
           {/* Free Fire Card */}
           <div style={{
-            background: '#181412',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#FFFFFF',
+            border: '1px solid #F0E6D8',
             borderRadius: '20px',
             overflow: 'hidden',
+            boxShadow: '0 6px 20px rgba(46, 42, 38, 0.05)',
           }}>
             <div style={{ height: '170px', position: 'relative', overflow: 'hidden' }}>
               <img
@@ -577,7 +580,7 @@ export default function Landing() {
               />
               <div style={{
                 position: 'absolute', top: '12px', left: '12px',
-                background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
+                background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
                 borderRadius: '8px', padding: '4px 10px',
                 fontSize: '11px', fontWeight: 700, color: '#FF6B4A',
               }}>
@@ -585,14 +588,14 @@ export default function Landing() {
               </div>
             </div>
             <div style={{ padding: '20px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#FFFFFF', margin: '0 0 8px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#2E2A26', margin: '0 0 8px' }}>
                 Clash Squad & Bermuda Cups
               </h3>
-              <p style={{ fontSize: '13px', color: '#A69E94', lineHeight: 1.5, margin: '0 0 16px' }}>
+              <p style={{ fontSize: '13px', color: '#5E5851', lineHeight: 1.5, margin: '0 0 16px' }}>
                 Compete in intense 4v4 clash squad battles or full lobby survival rooms. Verified room IDs and direct skill rewards.
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#3FA65C', fontWeight: 700 }}>
+                <span style={{ fontSize: '12px', color: '#2E7D32', fontWeight: 700 }}>
                   Service Charges PKR 50
                 </span>
                 <button
@@ -618,7 +621,7 @@ export default function Landing() {
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <h2 style={{
             fontFamily: "'Poppins', sans-serif", fontSize: '28px',
-            fontWeight: 800, color: '#FFFFFF', margin: 0,
+            fontWeight: 800, color: '#2E2A26', margin: 0,
           }}>
             How It Works (4 Simple Steps)
           </h2>
@@ -657,25 +660,25 @@ export default function Landing() {
             <div
               key={idx}
               style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.07)',
+                background: '#FFFFFF',
+                border: '1px solid #F0E6D8',
                 borderRadius: '16px',
                 padding: '24px 20px',
-                position: 'relative',
+                boxShadow: '0 4px 16px rgba(46, 42, 38, 0.04)',
               }}
             >
               <div style={{
                 width: '36px', height: '36px', borderRadius: '10px',
-                background: 'rgba(255, 107, 74, 0.15)', color: '#FF7B59',
+                background: 'rgba(255, 107, 74, 0.1)', color: '#FF6B4A',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontWeight: 800, fontSize: '16px', marginBottom: '14px',
               }}>
                 {step.num}
               </div>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#FFFFFF', margin: '0 0 8px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#2E2A26', margin: '0 0 8px' }}>
                 {step.title}
               </h3>
-              <p style={{ fontSize: '13px', color: '#A69E94', lineHeight: 1.5, margin: 0 }}>
+              <p style={{ fontSize: '13px', color: '#5E5851', lineHeight: 1.5, margin: 0 }}>
                 {step.desc}
               </p>
             </div>
@@ -683,15 +686,16 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* 7. BOTTOM CALL TO ACTION */}
+      {/* 7. BOTTOM CALL TO ACTION (Warm Dark Contrast Card) */}
       <section style={{
         maxWidth: '1140px', margin: '0 auto 80px', padding: '0 20px', textAlign: 'center',
       }}>
         <div style={{
-          background: 'linear-gradient(135deg, #241A14 0%, #15110E 100%)',
-          border: '1px solid rgba(255, 107, 74, 0.3)',
+          background: 'linear-gradient(135deg, #2E1B15 0%, #1A1310 100%)',
+          border: '1px solid rgba(255, 107, 74, 0.35)',
           borderRadius: '24px',
           padding: '48px 24px',
+          boxShadow: '0 12px 40px rgba(255, 107, 74, 0.15)',
         }}>
           <h2 style={{
             fontFamily: "'Poppins', sans-serif", fontSize: 'clamp(24px, 4.5vw, 36px)',
@@ -726,7 +730,7 @@ export default function Landing() {
               style={{
                 padding: '15px 26px', borderRadius: '12px',
                 border: '1.5px solid rgba(255, 255, 255, 0.25)',
-                background: 'rgba(255,255,255,0.06)', color: '#FAF8F5', fontWeight: 700,
+                background: 'rgba(255,255,255,0.08)', color: '#FFFFFF', fontWeight: 700,
                 fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
               }}
             >
@@ -738,7 +742,7 @@ export default function Landing() {
 
       {/* 8. FOOTER */}
       <footer style={{
-        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+        borderTop: '1px solid #F0E6D8',
         padding: '30px 20px',
         fontSize: '12px',
         color: '#8A8078',
@@ -753,9 +757,9 @@ export default function Landing() {
             © 2026 NabPrize Esports. All rights reserved. Made for Pakistani Gamers.
           </div>
           <div style={{ display: 'flex', gap: '16px' }}>
-            <Link to="/terms" style={{ color: '#A69E94', textDecoration: 'none' }}>Terms & Rules</Link>
-            <Link to="/how-it-works" style={{ color: '#A69E94', textDecoration: 'none' }}>How It Works</Link>
-            <Link to="/reviews" style={{ color: '#A69E94', textDecoration: 'none' }}>Player Reviews</Link>
+            <Link to="/terms" style={{ color: '#5E5851', textDecoration: 'none' }}>Terms & Rules</Link>
+            <Link to="/how-it-works" style={{ color: '#5E5851', textDecoration: 'none' }}>How It Works</Link>
+            <Link to="/reviews" style={{ color: '#5E5851', textDecoration: 'none' }}>Player Reviews</Link>
           </div>
         </div>
       </footer>
@@ -764,20 +768,20 @@ export default function Landing() {
       {showIOSModal && (
         <div style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)',
           zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '20px',
         }}>
           <div style={{
-            background: '#1E1A17', border: '1px solid rgba(255,107,74,0.3)',
+            background: '#FFFFFF', border: '1px solid #F0E6D8',
             borderRadius: '22px', padding: '24px', maxWidth: '380px', width: '100%',
-            textAlign: 'center', boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
+            textAlign: 'center', boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
           }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setShowIOSModal(false)}
                 style={{
-                  background: 'rgba(255,255,255,0.08)', border: 'none', color: '#FAF8F5',
+                  background: '#F5EFE6', border: 'none', color: '#5E5851',
                   borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
@@ -792,21 +796,21 @@ export default function Landing() {
               style={{
                 width: '64px', height: '64px', borderRadius: '16px',
                 margin: '0 auto 14px', display: 'block',
-                boxShadow: '0 4px 16px rgba(255,107,74,0.4)',
+                boxShadow: '0 4px 16px rgba(255,107,74,0.3)',
               }}
             />
 
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#FFFFFF', margin: '0 0 6px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#2E2A26', margin: '0 0 6px' }}>
               Install NabPrize App
             </h3>
-            <p style={{ fontSize: '13px', color: '#A69E94', margin: '0 0 20px', lineHeight: 1.4 }}>
+            <p style={{ fontSize: '13px', color: '#8A8078', margin: '0 0 20px', lineHeight: 1.4 }}>
               To install on your mobile device home screen:
             </p>
 
             <div style={{
-              background: 'rgba(255,255,255,0.04)', borderRadius: '12px',
+              background: '#FFF8F0', borderRadius: '12px',
               padding: '14px', textAlign: 'left', marginBottom: '20px',
-              fontSize: '13px', color: '#FAF8F5', display: 'flex', flexDirection: 'column', gap: '12px',
+              fontSize: '13px', color: '#2E2A26', display: 'flex', flexDirection: 'column', gap: '12px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{
@@ -814,7 +818,7 @@ export default function Landing() {
                   width: '22px', height: '22px', display: 'flex', alignItems: 'center',
                   justifyContent: 'center', fontSize: '11px', fontWeight: 800, flexShrink: 0,
                 }}>1</span>
-                <span>Tap the browser <strong>Share</strong> or <strong>Menu (⋮)</strong> button.</span>
+                <span>Tap the browser <strong>Share</strong> button <Share size={14} style={{ display: 'inline', verticalAlign: 'middle', color: '#007AFF' }} /></span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{
@@ -822,7 +826,7 @@ export default function Landing() {
                   width: '22px', height: '22px', display: 'flex', alignItems: 'center',
                   justifyContent: 'center', fontSize: '11px', fontWeight: 800, flexShrink: 0,
                 }}>2</span>
-                <span>Select <strong>Add to Home screen</strong> or <strong>Install App</strong>.</span>
+                <span>Select <strong>Add to Home screen</strong> <PlusSquare size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /></span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{
@@ -830,7 +834,7 @@ export default function Landing() {
                   width: '22px', height: '22px', display: 'flex', alignItems: 'center',
                   justifyContent: 'center', fontSize: '11px', fontWeight: 800, flexShrink: 0,
                 }}>3</span>
-                <span>Tap <strong>Add / Install</strong> to finish!</span>
+                <span>Tap <strong>Add</strong> to finish!</span>
               </div>
             </div>
 
