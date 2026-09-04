@@ -231,7 +231,7 @@ export default function Landing() {
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
-            Earn Skill Rewards.
+            Earn Fixed Skill Rewards.
           </span>
         </h1>
 
@@ -243,7 +243,7 @@ export default function Landing() {
           margin: '0 auto 34px',
           lineHeight: 1.6,
         }}>
-          Show your skills in daily verified PUBG Mobile & Free Fire custom rooms and withdraw cash rewards directly to <strong>JazzCash</strong> or <strong>EasyPaisa</strong>.
+          Earn fixed skill rewards, join daily small free to play tournaments & verified custom rooms, and withdraw cash rewards directly to <strong>JazzCash</strong> or <strong>EasyPaisa</strong>.
         </p>
 
         {/* 🌟 THE TWO PRIMARY CTA BUTTONS 🌟 */}
@@ -349,7 +349,10 @@ export default function Landing() {
             <ShieldCheck size={15} color="#3FA65C" /> 100% Fair Anti-Cheat
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Trophy size={15} color="#F4B740" /> Fair Play & Skill Rewards
+            <Gamepad2 size={15} color="#FF6B4A" /> Free to Play Tournaments
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Trophy size={15} color="#F4B740" /> Fixed Skill Rewards
           </div>
         </div>
       </header>

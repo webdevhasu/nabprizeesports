@@ -107,7 +107,7 @@ export default function SignUp() {
               Join Pakistan's #1 Esports Battleground
             </h2>
             <p style={{ fontSize: '13px', color: '#C4BCB2', lineHeight: 1.6, marginBottom: '28px' }}>
-              Show your skills in daily verified PUBG Mobile & Free Fire custom rooms and withdraw cash rewards directly to JazzCash or EasyPaisa.
+              Earn fixed skill rewards, join daily small free to play tournaments & verified custom rooms, and withdraw cash rewards directly to JazzCash or EasyPaisa.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
