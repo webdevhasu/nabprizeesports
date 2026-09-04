@@ -83,12 +83,24 @@ service cloud.firestore {
       // Players subcollection
       match /players/{playerId} {
         allow read: if isAuthenticated();
-        // Player can only join themselves; cannot tamper status or register others
+        // Player can only join themselves and MUST atomically deduct wallet if paid
         allow create: if isAuthenticated()
           && request.auth.uid == playerId
           && request.resource.data.userId == request.auth.uid
-          && request.resource.data.status == 'registered';
+          && request.resource.data.status == 'registered'
+          && (
+             get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.get('registrationCharge', 0) == 0
+             || 
+             getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.walletBalance == 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.walletBalance - get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.get('registrationCharge', 0)
+          );
         allow update, delete: if isAdmin();
+      }
+
+      // Room details subcollection (secure)
+      match /roomDetails/{docId} {
+        allow read: if isAdmin() || (isAuthenticated() && exists(/databases/$(database)/documents/tournaments/$(tournamentId)/players/$(request.auth.uid)));
+        allow create, update, delete: if isAdmin();
       }
     }
 
@@ -108,9 +120,9 @@ service cloud.firestore {
     // ─── TRANSACTIONS ───
     match /transactions/{userId}/{document=**} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId)
+      allow create: if (isOwner(userId)
         && request.resource.data.amount is number
-        && request.resource.data.amount > 0;
+        && request.resource.data.amount > 0) || isAdmin();
       allow update, delete: if isAdmin();
     }
 
@@ -126,7 +138,10 @@ service cloud.firestore {
         && request.resource.data.amount <= 50000
         && request.resource.data.method in ['jazzcash', 'easypaisa']
         && request.resource.data.accountNumber is string
-        && request.resource.data.accountNumber.size() >= 10;
+        && request.resource.data.accountNumber.size() >= 10
+        // Atomically enforce wallet deduction
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.walletBalance == 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.walletBalance - request.resource.data.amount;
       // CRITICAL: Only admin can approve or reject
       allow update, delete: if isAdmin();
     }

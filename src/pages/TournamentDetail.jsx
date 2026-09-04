@@ -25,6 +25,7 @@ export default function TournamentDetail() {
   const [joinError, setJoinError] = useState('');
   const [copiedField, setCopiedField] = useState(null);
   const [currentTime, setCurrentTime] = useState(() => getNow());
+  const [roomInfo, setRoomInfo] = useState(null);
 
   // Tick every second using server-corrected time (anti-cheat)
   useEffect(() => {
@@ -57,6 +58,24 @@ export default function TournamentDetail() {
     });
     return unsubscribe;
   }, [id]);
+
+  useEffect(() => {
+    if (!isRegistered || !tournament?.roomReleased) {
+      setRoomInfo(null);
+      return;
+    }
+    const unsub = onSnapshot(doc(db, 'tournaments', id, 'roomDetails', 'info'), (docSnap) => {
+      if (docSnap.exists()) {
+        setRoomInfo(docSnap.data());
+      } else {
+        setRoomInfo(null);
+      }
+    }, (err) => {
+      console.error('Room details snapshot error:', err);
+      setRoomInfo(null);
+    });
+    return unsub;
+  }, [id, isRegistered, tournament?.roomReleased]);
 
   const handleCopy = (text, fieldName) => {
     if (!text) return;
@@ -452,8 +471,8 @@ export default function TournamentDetail() {
             borderRadius: '16px',
             padding: '18px',
             marginBottom: '16px',
-            border: tournament.roomId ? '2px solid #F4B740' : '1px solid #FFE4D3',
-            boxShadow: tournament.roomId ? '0 4px 14px rgba(244, 183, 64, 0.15)' : 'none',
+            border: tournament.roomReleased ? '2px solid #F4B740' : '1px solid #FFE4D3',
+            boxShadow: tournament.roomReleased ? '0 4px 14px rgba(244, 183, 64, 0.15)' : 'none',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -467,14 +486,14 @@ export default function TournamentDetail() {
                 fontWeight: 700,
                 padding: '2px 8px',
                 borderRadius: '6px',
-                background: tournament.roomId ? '#E8F5E9' : '#FFF8E1',
-                color: tournament.roomId ? '#3FA65C' : '#E88B00',
+                background: tournament.roomReleased ? '#E8F5E9' : '#FFF8E1',
+                color: tournament.roomReleased ? '#3FA65C' : '#E88B00',
               }}>
-                {tournament.roomId ? 'Room Ready' : 'Pending Release'}
+                {tournament.roomReleased ? 'Room Ready' : 'Pending Release'}
               </span>
             </div>
 
-            {tournament.roomId ? (
+            {tournament.roomReleased && roomInfo ? (
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                   
@@ -493,10 +512,10 @@ export default function TournamentDetail() {
                       color: '#2E2A26',
                       margin: '4px 0 8px',
                     }}>
-                      {tournament.roomId}
+                      {roomInfo.roomId}
                     </div>
                     <button
-                      onClick={() => handleCopy(tournament.roomId, 'roomId')}
+                      onClick={() => handleCopy(roomInfo.roomId, 'roomId')}
                       style={{
                         width: '100%',
                         padding: '6px',
@@ -533,21 +552,21 @@ export default function TournamentDetail() {
                       color: '#2E2A26',
                       margin: '4px 0 8px',
                     }}>
-                      {tournament.roomPassword || 'No Pass'}
+                      {roomInfo.roomPassword || 'No Pass'}
                     </div>
                     <button
-                      onClick={() => handleCopy(tournament.roomPassword, 'roomPass')}
-                      disabled={!tournament.roomPassword}
+                      onClick={() => handleCopy(roomInfo.roomPassword, 'roomPass')}
+                      disabled={!roomInfo.roomPassword}
                       style={{
                         width: '100%',
                         padding: '6px',
                         borderRadius: '6px',
                         border: 'none',
-                        background: tournament.roomPassword ? '#2E2A26' : '#C4BCB2',
+                        background: roomInfo.roomPassword ? '#2E2A26' : '#C4BCB2',
                         color: '#FFFFFF',
                         fontWeight: 700,
                         fontSize: '11px',
-                        cursor: tournament.roomPassword ? 'pointer' : 'not-allowed',
+                        cursor: roomInfo.roomPassword ? 'pointer' : 'not-allowed',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',

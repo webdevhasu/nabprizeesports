@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDocs, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { notifyAllUsers, notifyMultipleUsers } from '../utils/notify';
 import {
@@ -286,18 +286,24 @@ export default function CreateTournament() {
           startTime: formData.startTime,
           mapName: formData.mapName,
           rules: formData.rules,
-          roomId: formData.roomId || '',
-          roomPassword: formData.roomPassword || '',
           roomReleased: Boolean(formData.roomId),
           status: formData.status || editingTournament.status || 'upcoming',
           updatedAt: serverTimestamp(),
         });
 
+        if (formData.roomId) {
+          await setDoc(doc(db, 'tournaments', editingTournament.id, 'roomDetails', 'info'), {
+            roomId: formData.roomId.trim(),
+            roomPassword: formData.roomPassword ? formData.roomPassword.trim() : ''
+          });
+        }
+
         alert(`Tournament "${formData.name}" updated successfully!`);
       } else {
-        // CREATE NEW TOURNAMENT
-        await addDoc(collection(db, 'tournaments'), {
-          ...formData,
+        // CREATE NEW TOURNAMENT — strip sensitive fields before writing public doc
+        const { roomId: _roomId, roomPassword: _roomPass, ...safeFormData } = formData;
+        const newDocRef = await addDoc(collection(db, 'tournaments'), {
+          ...safeFormData,
           name: formData.name.trim(),
           maxSlots,
           registrationCharge,
@@ -307,6 +313,13 @@ export default function CreateTournament() {
           roomReleased: Boolean(formData.roomId),
           createdAt: serverTimestamp(),
         });
+
+        if (formData.roomId) {
+          await setDoc(doc(db, 'tournaments', newDocRef.id, 'roomDetails', 'info'), {
+            roomId: formData.roomId.trim(),
+            roomPassword: formData.roomPassword ? formData.roomPassword.trim() : ''
+          });
+        }
 
         // Auto-notify all users about new tournament
         const gameLabel = formData.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire';
@@ -500,10 +513,20 @@ export default function CreateTournament() {
   };
 
   // Open Room ID & Password Modal
-  const openRoomModal = (tournament) => {
+  const openRoomModal = async (tournament) => {
     setRoomModalTournament(tournament);
-    setModalRoomId(tournament.roomId || '');
-    setModalPassword(tournament.roomPassword || '');
+    setModalRoomId('');
+    setModalPassword('');
+    // Fetch existing credentials from secure subcollection
+    try {
+      const roomSnap = await getDoc(doc(db, 'tournaments', tournament.id, 'roomDetails', 'info'));
+      if (roomSnap.exists()) {
+        setModalRoomId(roomSnap.data().roomId || '');
+        setModalPassword(roomSnap.data().roomPassword || '');
+      }
+    } catch (e) {
+      console.error('Error fetching room details:', e);
+    }
   };
 
   const handleSaveRoomDetails = async (e) => {
@@ -512,9 +535,11 @@ export default function CreateTournament() {
     setModalSaving(true);
     try {
       await updateDoc(doc(db, 'tournaments', roomModalTournament.id), {
+        roomReleased: true,
+      });
+      await setDoc(doc(db, 'tournaments', roomModalTournament.id, 'roomDetails', 'info'), {
         roomId: modalRoomId.trim(),
         roomPassword: modalPassword.trim(),
-        roomReleased: true,
       });
 
       // Auto-notify registered players about Room ID

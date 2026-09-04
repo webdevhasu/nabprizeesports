@@ -8,7 +8,8 @@ import {
   addDoc,
   serverTimestamp,
   getDoc,
-  deleteDoc
+  deleteDoc,
+  runTransaction
 } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
@@ -145,53 +146,55 @@ export default function AdminDeposits() {
 
     setActionLoading(dep.id);
     try {
-      // 1. Fresh read to verify still pending
-      const freshDoc = await getDoc(doc(db, 'deposits', dep.id));
-      if (!freshDoc.exists()) {
-        alert('Deposit request not found.');
-        setActionLoading(null);
-        return;
-      }
+      await runTransaction(db, async (transaction) => {
+        // 1. Fresh read to verify still pending
+        const depRef = doc(db, 'deposits', dep.id);
+        const freshDoc = await transaction.get(depRef);
+        if (!freshDoc.exists()) {
+          throw new Error('Deposit request not found.');
+        }
 
-      if (freshDoc.data().status !== 'pending') {
-        alert('This deposit request has already been processed.');
-        setActionLoading(null);
-        return;
-      }
+        if (freshDoc.data().status !== 'pending') {
+          throw new Error('This deposit request has already been processed.');
+        }
 
-      // 2. Update deposit status
-      await updateDoc(doc(db, 'deposits', dep.id), {
-        status: 'approved',
-        processedAt: serverTimestamp(),
-        processedBy: 'admin',
+        // 2. Update deposit status
+        transaction.update(depRef, {
+          status: 'approved',
+          processedAt: serverTimestamp(),
+          processedBy: 'admin',
+        });
+
+        // 3. Credit user's wallet balance
+        if (dep.userId && dep.amount) {
+          const userRef = doc(db, 'users', dep.userId);
+          transaction.update(userRef, {
+            walletBalance: increment(Number(dep.amount)),
+          });
+
+          // 4. Log transaction in user's history
+          const txnRef = doc(collection(db, 'transactions', dep.userId, 'history'));
+          transaction.set(txnRef, {
+            type: 'credit',
+            amount: Number(dep.amount),
+            description: `Deposit Approved (${dep.paymentMethod?.toUpperCase() || 'MANUAL'})`,
+            timestamp: serverTimestamp(),
+            status: 'completed',
+            depositId: dep.id,
+          });
+
+          // 5. Send notification to user
+          const notifRef = doc(collection(db, 'users', dep.userId, 'notifications'));
+          transaction.set(notifRef, {
+            type: 'deposit',
+            title: 'Deposit Approved! 🎉',
+            body: `Your deposit of Rs ${dep.amount} via ${dep.paymentMethod?.toUpperCase()} has been approved and added to your wallet.`,
+            url: '/wallet',
+            read: false,
+            createdAt: serverTimestamp(),
+          });
+        }
       });
-
-      // 3. Credit user's wallet balance
-      if (dep.userId && dep.amount) {
-        await updateDoc(doc(db, 'users', dep.userId), {
-          walletBalance: increment(Number(dep.amount)),
-        });
-
-        // 4. Log transaction in user's history
-        await addDoc(collection(db, 'transactions', dep.userId, 'history'), {
-          type: 'credit',
-          amount: Number(dep.amount),
-          description: `Deposit Approved (${dep.paymentMethod?.toUpperCase() || 'MANUAL'})`,
-          timestamp: serverTimestamp(),
-          status: 'completed',
-          depositId: dep.id,
-        });
-
-        // 5. Send notification to user
-        await addDoc(collection(db, 'users', dep.userId, 'notifications'), {
-          type: 'deposit',
-          title: 'Deposit Approved! 🎉',
-          body: `Your deposit of Rs ${dep.amount} via ${dep.paymentMethod?.toUpperCase()} has been approved and added to your wallet.`,
-          url: '/wallet',
-          read: false,
-          createdAt: serverTimestamp(),
-        });
-      }
 
       if (previewDeposit?.id === dep.id) {
         setPreviewDeposit(null);
@@ -213,33 +216,34 @@ export default function AdminDeposits() {
     const reason = rejectReason.trim() || 'Payment could not be verified.';
 
     try {
-      const freshDoc = await getDoc(doc(db, 'deposits', rejectDeposit.id));
-      if (!freshDoc.exists() || freshDoc.data().status !== 'pending') {
-        alert('This deposit request has already been processed or deleted.');
-        setRejectDeposit(null);
-        setActionLoading(null);
-        return;
-      }
+      await runTransaction(db, async (transaction) => {
+        const depRef = doc(db, 'deposits', rejectDeposit.id);
+        const freshDoc = await transaction.get(depRef);
+        if (!freshDoc.exists() || freshDoc.data().status !== 'pending') {
+          throw new Error('This deposit request has already been processed or deleted.');
+        }
 
-      // 1. Update deposit status
-      await updateDoc(doc(db, 'deposits', rejectDeposit.id), {
-        status: 'rejected',
-        rejectionReason: reason,
-        processedAt: serverTimestamp(),
-        processedBy: 'admin',
-      });
-
-      // 2. Notify user about rejection
-      if (rejectDeposit.userId) {
-        await addDoc(collection(db, 'users', rejectDeposit.userId, 'notifications'), {
-          type: 'deposit',
-          title: 'Deposit Rejected ⚠️',
-          body: `Your deposit request of Rs ${rejectDeposit.amount} was rejected. Reason: ${reason}`,
-          url: '/add-funds',
-          read: false,
-          createdAt: serverTimestamp(),
+        // 1. Update deposit status
+        transaction.update(depRef, {
+          status: 'rejected',
+          rejectionReason: reason,
+          processedAt: serverTimestamp(),
+          processedBy: 'admin',
         });
-      }
+
+        // 2. Notify user about rejection
+        if (rejectDeposit.userId) {
+          const notifRef = doc(collection(db, 'users', rejectDeposit.userId, 'notifications'));
+          transaction.set(notifRef, {
+            type: 'deposit',
+            title: 'Deposit Rejected ⚠️',
+            body: `Your deposit request of Rs ${rejectDeposit.amount} was rejected. Reason: ${reason}`,
+            url: '/add-funds',
+            read: false,
+            createdAt: serverTimestamp(),
+          });
+        }
+      });
 
       setRejectDeposit(null);
       setRejectReason('');
