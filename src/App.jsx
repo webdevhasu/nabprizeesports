@@ -23,6 +23,7 @@ import MatchResults from './admin/MatchResults';
 import AdminHallOfFame from './admin/AdminHallOfFame';
 import TopContributors from './admin/TopContributors';
 import Withdrawals from './admin/Withdrawals';
+import AdminDeposits from './admin/AdminDeposits';
 import UserManagement from './admin/UserManagement';
 import AdminReports from './admin/AdminReports';
 import Reviews from './components/Reviews';
@@ -207,6 +208,7 @@ export default function App() {
         <Route path="/admin/match-results" element={<AdminRoute><MatchResults /></AdminRoute>} />
         <Route path="/admin/hall-of-fame" element={<AdminRoute><AdminHallOfFame /></AdminRoute>} />
         <Route path="/admin/contributors" element={<AdminRoute><TopContributors /></AdminRoute>} />
+        <Route path="/admin/deposits" element={<AdminRoute><AdminDeposits /></AdminRoute>} />
         <Route path="/admin/withdrawals" element={<AdminRoute><Withdrawals /></AdminRoute>} />
         <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
         <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />

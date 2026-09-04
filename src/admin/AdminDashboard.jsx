@@ -12,7 +12,8 @@ import {
   Calendar,
   Plus,
   CheckCircle2,
-  ArrowUpRight
+  ArrowUpRight,
+  ArrowDownLeft
 } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import NotificationSender from './NotificationSender';
@@ -21,6 +22,7 @@ export default function AdminDashboard() {
   const [tournaments, setTournaments] = useState([]);
   const [users, setUsers] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [deposits, setDeposits] = useState([]);
 
   useEffect(() => {
     const unsubTournaments = onSnapshot(
@@ -46,7 +48,20 @@ export default function AdminDashboard() {
       },
       () => {}
     );
-    return () => { unsubTournaments(); unsubUsers(); unsubWithdrawals(); };
+    const unsubDeposits = onSnapshot(
+      collection(db, 'deposits'),
+      (snap) => {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        list.sort((a, b) => {
+          const timeA = a.createdAt?.toMillis?.() || (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+          const timeB = b.createdAt?.toMillis?.() || (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          return timeB - timeA;
+        });
+        setDeposits(list);
+      },
+      () => {}
+    );
+    return () => { unsubTournaments(); unsubUsers(); unsubWithdrawals(); unsubDeposits(); };
   }, []);
 
   const handleWithdrawalAction = async (w, status) => {
@@ -86,14 +101,15 @@ export default function AdminDashboard() {
   const liveTournaments = tournaments.filter(t => t.status === 'live').length;
   const upcomingTournaments = tournaments.filter(t => t.status === 'upcoming').length;
   const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending').length;
+  const pendingDeposits = deposits.filter(d => d.status === 'pending').length;
   const totalRevenue = tournaments.reduce((sum, t) => sum + ((t.registrationCharge || 0) * (t.slotsFilled || 0)), 0);
 
   const stats = [
     { label: 'Total Players', value: totalPlayers, sub: 'Registered users', color: '#FF6B4A', bg: '#FFF0EC', icon: Users },
     { label: 'Tournaments', value: totalTournaments, sub: 'All time', color: '#7B4FE0', bg: '#F3EEFF', icon: Trophy },
+    { label: 'Pending Deposits', value: pendingDeposits, sub: 'Needs verification', color: '#E88B00', bg: '#FFF6E5', icon: ArrowDownLeft, link: '/admin/deposits' },
+    { label: 'Pending Payouts', value: pendingWithdrawals, sub: 'Needs approval', color: '#D9503F', bg: '#FFEBEE', icon: AlertCircle, link: '/admin/withdrawals' },
     { label: 'Live Matches', value: liveTournaments, sub: 'Currently active', color: '#3FA65C', bg: '#E8F5E9', icon: Gamepad2 },
-    { label: 'Upcoming', value: upcomingTournaments, sub: 'Open for registration', color: '#E88B00', bg: '#FFF6E5', icon: Calendar },
-    { label: 'Pending Payouts', value: pendingWithdrawals, sub: 'Needs approval', color: '#D9503F', bg: '#FFEBEE', icon: AlertCircle },
     { label: 'Gross Revenue', value: `Rs ${totalRevenue.toLocaleString()}`, sub: 'From registrations', color: '#2B8A3E', bg: '#EBFBEE', icon: TrendingUp },
   ];
 
@@ -359,6 +375,86 @@ export default function AdminDashboard() {
                         Rs {t.fixedReward}
                       </div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pending Deposits Card */}
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '14px',
+            padding: '22px',
+            border: '1px solid #EBE4DA',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ fontWeight: 700, fontSize: '16px', color: '#2E2A26', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  Pending Deposits
+                  {pendingDeposits > 0 && (
+                    <span style={{ fontSize: '11px', background: '#E88B00', color: '#FFF', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                      {pendingDeposits}
+                    </span>
+                  )}
+                </h3>
+                <p style={{ fontSize: '11px', color: '#8A8078', margin: '2px 0 0' }}>Verify screenshot & credit balance</p>
+              </div>
+              <Link to="/admin/deposits" style={{ fontSize: '12px', color: '#FF6B4A', textDecoration: 'none', fontWeight: 600 }}>
+                Manage All →
+              </Link>
+            </div>
+
+            {pendingDeposits === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: '#3FA65C' }}>
+                <CheckCircle2 size={28} style={{ margin: '0 auto 6px', display: 'block', opacity: 0.8 }} />
+                <div style={{ fontWeight: 600, fontSize: '13px' }}>All deposits reviewed!</div>
+                <div style={{ fontSize: '11px', color: '#8A8078' }}>No pending verification requests.</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {deposits.filter(d => d.status === 'pending').slice(0, 3).map((d) => (
+                  <div
+                    key={d.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px',
+                      borderRadius: '10px',
+                      background: '#FFFBF5',
+                      border: '1px solid #FFE4C8',
+                      gap: '12px',
+                    }}
+                  >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
+                        @{d.username || 'Player'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
+                        {d.paymentMethod?.toUpperCase()} • {d.senderNumber}
+                      </div>
+                    </div>
+
+                    <div style={{ fontWeight: 800, fontSize: '15px', color: '#3FA65C', whiteSpace: 'nowrap' }}>
+                      Rs {d.amount}
+                    </div>
+
+                    <Link
+                      to="/admin/deposits"
+                      style={{
+                        background: '#FF6B4A',
+                        color: '#FFFFFF',
+                        textDecoration: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Review
+                    </Link>
                   </div>
                 ))}
               </div>

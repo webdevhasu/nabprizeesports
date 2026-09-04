@@ -17,7 +17,8 @@ import {
   ExternalLink,
   ShieldCheck,
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  ArrowDownLeft
 } from 'lucide-react';
 
 const navItems = [
@@ -26,6 +27,7 @@ const navItems = [
   { to: '/admin/match-results', label: 'Match Results', icon: Gamepad2 },
   { to: '/admin/hall-of-fame', label: 'All-Time Hall of Fame', icon: Crown },
   { to: '/admin/contributors', label: 'Top Contributors', icon: Star },
+  { to: '/admin/deposits', label: 'Deposits', icon: ArrowDownLeft, hasBadge: true },
   { to: '/admin/withdrawals', label: 'Withdrawals', icon: DollarSign, hasBadge: true },
   { to: '/admin/users', label: 'User Management', icon: Users },
   { to: '/admin/reports', label: 'Reports', icon: AlertTriangle, hasBadge: true },
@@ -35,8 +37,17 @@ export default function AdminLayout({ children, title, subtitle, actions }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pendingDeposits, setPendingDeposits] = useState(0);
   const [pendingWithdrawals, setPendingWithdrawals] = useState(0);
   const [pendingReports, setPendingReports] = useState(0);
+
+  useEffect(() => {
+    const q = query(collection(db, 'deposits'), where('status', '==', 'pending'));
+    const unsub = onSnapshot(q, (snap) => {
+      setPendingDeposits(snap.size);
+    }, () => {});
+    return unsub;
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, 'withdrawals'), where('status', '==', 'pending'));
@@ -188,20 +199,25 @@ export default function AdminLayout({ children, title, subtitle, actions }) {
               >
                 <Icon size={18} color={isActive ? '#FF6B4A' : '#8A8078'} />
                 <span style={{ flex: 1 }}>{item.label}</span>
-                {item.hasBadge && (
-                  (item.to === '/admin/reports' ? pendingReports : pendingWithdrawals) > 0
-                ) && (
-                  <span style={{
-                    background: '#D9503F',
-                    color: '#FFFFFF',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    padding: '2px 7px',
-                    borderRadius: '12px',
-                  }}>
-                    {item.to === '/admin/reports' ? pendingReports : pendingWithdrawals}
-                  </span>
-                )}
+                {item.hasBadge && (() => {
+                  const count = item.to === '/admin/deposits'
+                    ? pendingDeposits
+                    : item.to === '/admin/reports'
+                    ? pendingReports
+                    : pendingWithdrawals;
+                  return count > 0 ? (
+                    <span style={{
+                      background: '#D9503F',
+                      color: '#FFFFFF',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '2px 7px',
+                      borderRadius: '12px',
+                    }}>
+                      {count}
+                    </span>
+                  ) : null;
+                })()}
                 {isActive && <ChevronRight size={14} color="#FF6B4A" />}
               </NavLink>
             );

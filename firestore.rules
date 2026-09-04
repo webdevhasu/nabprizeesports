@@ -83,6 +83,14 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
 
+    // ─── DEPOSITS ───
+    match /deposits/{depositId} {
+      allow read: if (request.auth != null && request.auth.uid == resource.data.userId) || isAdmin();
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // CRITICAL: Only admin can approve/reject deposits
+      allow update, delete: if isAdmin();
+    }
+
     // ─── REPORTS ───
     match /reports/{reportId} {
       allow read: if request.auth != null;
