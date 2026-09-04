@@ -104,7 +104,7 @@ export default function HallOfFame() {
   return (
     <>
       <TopBar title="Hall of Fame" />
-      <div style={{ padding: '16px 16px 40px' }}>
+      <div className="responsive-page-container" style={{ padding: '16px 16px 40px' }}>
         
         {/* Banner Header */}
         <div style={{

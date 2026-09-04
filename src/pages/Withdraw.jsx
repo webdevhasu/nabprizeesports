@@ -193,7 +193,7 @@ export default function Withdraw() {
   return (
     <>
       <TopBar title="Withdraw Funds" showBack />
-      <div style={{ padding: '16px 16px 40px' }}>
+      <div className="responsive-page-container" style={{ padding: '16px 16px 40px', maxWidth: '680px', margin: '0 auto' }}>
         
         {/* Wallet Balance Header */}
         <div style={{

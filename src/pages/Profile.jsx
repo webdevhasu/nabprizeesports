@@ -139,7 +139,7 @@ export default function Profile() {
   return (
     <>
       <TopBar title="My Profile" />
-      <div style={{ padding: '16px 16px 40px' }}>
+      <div className="responsive-page-container" style={{ padding: '16px 16px 40px' }}>
         
         {/* Profile Header Card */}
         <div style={{

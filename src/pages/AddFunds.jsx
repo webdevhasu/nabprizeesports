@@ -240,7 +240,7 @@ export default function AddFunds() {
     <>
       <TopBar title="Deposit Funds" showBack />
 
-      <div style={{ padding: '16px', maxWidth: '540px', margin: '0 auto', paddingBottom: '90px' }}>
+      <div className="responsive-page-container" style={{ padding: '16px', maxWidth: '680px', margin: '0 auto', paddingBottom: '90px' }}>
         
         {/* Wallet Balance Card */}
         <div

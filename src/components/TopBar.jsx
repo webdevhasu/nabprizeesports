@@ -5,23 +5,25 @@ export default function TopBar({ title, rightAction, showBack = false, showNotif
   const navigate = useNavigate();
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '100%',
-      maxWidth: '480px',
-      height: '56px',
-      background: '#FFFFFF',
-      borderBottom: '1px solid #F0E6D8',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 16px',
-      zIndex: 100,
-    }}>
+    <div
+      className="user-mobile-topbar"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '56px',
+        background: '#FFFFFF',
+        borderBottom: '1px solid #F0E6D8',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 16px',
+        zIndex: 100,
+        boxSizing: 'border-box',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
         {showBack && (
           <button

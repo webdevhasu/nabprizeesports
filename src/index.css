@@ -13,7 +13,7 @@
 }
 
 body {
-  background: #F4EFEA;
+  background: #F8F6F1;
   color: #2E2A26;
   width: 100%;
   min-height: 100vh;
@@ -22,13 +22,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Base App Shell - Responsive */
 .mobile-app-shell {
-  max-width: 480px;
-  margin: 0 auto;
+  width: 100%;
   min-height: 100vh;
   background: #FFF8F0;
   position: relative;
-  box-shadow: 0 0 35px rgba(0, 0, 0, 0.07);
   overflow-x: hidden;
 }
 
@@ -94,13 +93,94 @@ p, span, div, label {
   overflow-wrap: break-word;
 }
 
+/* Responsive Layout Utilities */
+.responsive-page-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.tournaments-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .tournaments-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .tournaments-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+
+.dashboard-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 900px) {
+  .dashboard-hero-grid {
+    grid-template-columns: 1.15fr 1fr;
+    gap: 20px;
+  }
+}
+
+.stats-grid-responsive {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 600px) {
+  .stats-grid-responsive {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+}
+
 /* Small mobile devices (iPhone SE, Galaxy A, etc. <= 380px) */
 @media (max-width: 380px) {
   body {
     font-size: 13px;
   }
-  .mobile-app-shell {
-    box-shadow: none;
+}
+
+/* Tournament Detail & Modal Responsive Styles */
+@media (min-width: 900px) {
+  .tournament-sticky-action-bar {
+    bottom: 0 !important;
+    left: 260px !important;
+    width: calc(100% - 260px) !important;
+  }
+  .tournament-modal-backdrop {
+    align-items: center !important;
+  }
+  .tournament-modal-card {
+    border-radius: 20px !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .tournament-sticky-action-bar {
+    bottom: 64px !important;
+    left: 0 !important;
+    width: 100% !important;
+  }
+  .tournament-modal-backdrop {
+    align-items: flex-end !important;
+  }
+  .tournament-modal-card {
+    border-radius: 20px 20px 0 0 !important;
   }
 }
 

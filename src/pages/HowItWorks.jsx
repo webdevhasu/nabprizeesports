@@ -13,7 +13,7 @@ export default function HowItWorks() {
   return (
     <>
       <TopBar title="How It Works" showBack />
-      <div style={{ padding: '16px' }}>
+      <div className="responsive-page-container" style={{ padding: '16px', maxWidth: '860px', margin: '0 auto' }}>
         <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px' }}>
           <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: '18px', color: '#2E2A26', marginBottom: '20px' }}>
             How NabPrize Esports Works

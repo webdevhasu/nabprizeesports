@@ -10,22 +10,24 @@ const tabs = [
 
 export default function BottomNav() {
   return (
-    <nav style={{
-      position: 'fixed',
-      bottom: 0,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '100%',
-      maxWidth: '480px',
-      height: '64px',
-      background: '#FFFFFF',
-      borderTop: '1px solid #F0E6D8',
-      display: 'flex',
-      justifyContent: 'space-around',
-      alignItems: 'center',
-      paddingBottom: 'env(safe-area-inset-bottom)',
-      zIndex: 100,
-    }}>
+    <nav
+      className="user-bottom-nav"
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        height: '64px',
+        background: '#FFFFFF',
+        borderTop: '1px solid #F0E6D8',
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        zIndex: 100,
+        boxSizing: 'border-box',
+      }}
+    >
       {tabs.map(({ to, icon: Icon, label }) => (
         <NavLink
           key={to}

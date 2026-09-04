@@ -42,7 +42,7 @@ export default function TransactionHistory() {
   return (
     <>
       <TopBar title="Transaction History" showBack />
-      <div style={{ padding: '16px' }}>
+      <div className="responsive-page-container" style={{ padding: '16px', maxWidth: '780px', margin: '0 auto' }}>
         {loading ? (
           <LoadingSpinner text="Loading transactions..." />
         ) : transactions.length === 0 ? (

@@ -47,7 +47,7 @@ export default function Terms() {
   return (
     <>
       <TopBar title="Terms & Conditions" showBack />
-      <div style={{ padding: '16px 16px 40px' }}>
+      <div className="responsive-page-container" style={{ padding: '16px 16px 40px', maxWidth: '860px', margin: '0 auto' }}>
         <div style={{
           background: '#FFFFFF',
           borderRadius: '18px',

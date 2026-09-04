@@ -140,155 +140,167 @@ export default function Home() {
         {/* PWA Install App Prompt Banner */}
         <InstallAppBanner />
 
-        {/* Modern Wallet Card */}
-        <div style={{
-          background: 'linear-gradient(135deg, #1E1B18 0%, #362E27 100%)',
-          borderRadius: '20px',
-          padding: '22px',
-          marginBottom: '16px',
-          color: '#FFFFFF',
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-        }}>
-          {/* Subtle background glow */}
+        {/* Hero Area: Wallet Card + Stats (Side-by-Side on Desktop) */}
+        <div className="dashboard-hero-grid">
+          {/* Modern Wallet Card */}
           <div style={{
-            position: 'absolute',
-            top: '-20px',
-            right: '-20px',
-            width: '120px',
-            height: '120px',
-            background: 'radial-gradient(circle, rgba(255,107,74,0.3) 0%, rgba(255,107,74,0) 70%)',
-            borderRadius: '50%',
-          }} />
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: '#C4BCB2', fontWeight: 500, letterSpacing: '0.5px' }}>
-              TOTAL WALLET BALANCE
-            </span>
-            <button
-              onClick={() => setBalanceVisible(!balanceVisible)}
-              style={{
-                background: 'rgba(255,255,255,0.1)',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#FFFFFF',
-                borderRadius: '8px',
-                padding: '4px 8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-              }}
-            >
-              {balanceVisible ? <EyeOff size={14} /> : <Eye size={14} />}
-              <span>{balanceVisible ? 'Hide' : 'Show'}</span>
-            </button>
-          </div>
-
-          <div style={{
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 800,
-            fontSize: 'clamp(24px, 7vw, 32px)',
-            color: '#F4B740',
-            marginBottom: '18px',
-            letterSpacing: '-0.5px',
-            wordBreak: 'break-word',
-            minHeight: '38px',
+            background: 'linear-gradient(135deg, #1E1B18 0%, #362E27 100%)',
+            borderRadius: '20px',
+            padding: '24px',
+            color: '#FFFFFF',
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
           }}>
-            {!profileReady
-              ? <Shimmer width="140px" height="34px" radius="10px" />
-              : balanceVisible
-                ? `Rs ${(userProfile?.walletBalance || 0).toLocaleString()}`
-                : 'Rs ••••••'
-            }
-          </div>
+            {/* Subtle background glow */}
+            <div style={{
+              position: 'absolute',
+              top: '-20px',
+              right: '-20px',
+              width: '140px',
+              height: '140px',
+              background: 'radial-gradient(circle, rgba(255,107,74,0.3) 0%, rgba(255,107,74,0) 70%)',
+              borderRadius: '50%',
+            }} />
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <Link
-              to="/add-funds"
-              style={{
-                flex: 1,
-                padding: '12px',
-                background: '#FF6B4A',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '12px',
-                fontWeight: 700,
-                fontSize: '13px',
-                textAlign: 'center',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                boxShadow: '0 4px 12px rgba(255,107,74,0.35)',
-              }}
-            >
-              <Plus size={16} /> Add Funds
-            </Link>
-
-            <Link
-              to="/withdraw"
-              style={{
-                flex: 1,
-                padding: '12px',
-                background: 'rgba(255,255,255,0.1)',
-                color: '#FFFFFF',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '12px',
-                fontWeight: 700,
-                fontSize: '13px',
-                textAlign: 'center',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-              }}
-            >
-              Withdraw <ArrowUpRight size={15} />
-            </Link>
-          </div>
-        </div>
-
-        {/* Player Quick Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '22px' }}>
-          {stats.map(s => (
-            <div
-              key={s.label}
-              style={{
-                background: '#FFFFFF',
-                borderRadius: '14px',
-                padding: '12px 8px',
-                textAlign: 'center',
-                border: '1px solid #EBE4DA',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-              }}
-            >
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
-                background: s.bg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 6px',
-              }}>
-                {s.icon}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', color: '#C4BCB2', fontWeight: 600, letterSpacing: '0.5px' }}>
+                  TOTAL WALLET BALANCE
+                </span>
+                <button
+                  onClick={() => setBalanceVisible(!balanceVisible)}
+                  style={{
+                    background: 'rgba(255,255,255,0.12)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#FFFFFF',
+                    borderRadius: '8px',
+                    padding: '4px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {balanceVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                  <span>{balanceVisible ? 'Hide' : 'Show'}</span>
+                </button>
               </div>
-              {s.value === null
-                ? <ShimmerLight width="40px" height="20px" radius="6px" style={{ margin: '0 auto 2px' }} />
-                : <div style={{ fontWeight: 800, fontSize: '17px', color: '#2E2A26', lineHeight: 1.1 }}>{s.value}</div>
-              }
-              <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px', fontWeight: 500 }}>
-                {s.label}
+
+              <div style={{
+                fontFamily: "'Poppins', sans-serif",
+                fontWeight: 800,
+                fontSize: 'clamp(26px, 4vw, 36px)',
+                color: '#F4B740',
+                marginBottom: '18px',
+                letterSpacing: '-0.5px',
+                wordBreak: 'break-word',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+              }}>
+                {!profileReady
+                  ? <Shimmer width="160px" height="38px" radius="10px" />
+                  : balanceVisible
+                    ? `Rs ${(userProfile?.walletBalance || 0).toLocaleString()}`
+                    : 'Rs ••••••'
+                }
               </div>
             </div>
-          ))}
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <Link
+                to="/add-funds"
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px rgba(255,107,74,0.35)',
+                }}
+              >
+                <Plus size={16} /> Add Funds
+              </Link>
+
+              <Link
+                to="/withdraw"
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: '#FFFFFF',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '12px',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                }}
+              >
+                Withdraw <ArrowUpRight size={15} />
+              </Link>
+            </div>
+          </div>
+
+          {/* Player Quick Stats Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {stats.map(s => (
+              <div
+                key={s.label}
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '16px 12px',
+                  textAlign: 'center',
+                  border: '1px solid #EBE4DA',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  background: s.bg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '8px',
+                }}>
+                  {s.icon}
+                </div>
+                {s.value === null
+                  ? <ShimmerLight width="50px" height="22px" radius="6px" style={{ margin: '0 auto 2px' }} />
+                  : <div style={{ fontWeight: 800, fontSize: '20px', color: '#2E2A26', lineHeight: 1.1 }}>{s.value}</div>
+                }
+                <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '4px', fontWeight: 600 }}>
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Tournaments Section Header & Filter */}
@@ -296,45 +308,46 @@ export default function Home() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '14px',
+          marginBottom: '16px',
           flexWrap: 'wrap',
-          gap: '8px',
+          gap: '10px',
         }}>
           <div>
             <h2 style={{
               fontFamily: "'Poppins', sans-serif",
               fontWeight: 800,
-              fontSize: '17px',
+              fontSize: '18px',
               color: '#2E2A26',
               margin: 0,
             }}>
               Active Tournaments
             </h2>
-            <p style={{ fontSize: '11px', color: '#8A8078', margin: '2px 0 0' }}>
-              Daily matches & prize tournaments
+            <p style={{ fontSize: '12px', color: '#8A8078', margin: '2px 0 0' }}>
+              Daily matches, weekly championships & prize tournaments
             </p>
           </div>
 
           {/* Game Filter Chips */}
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             {[
-              { key: 'all', label: 'All' },
-              { key: 'pubg', label: 'PUBG' },
-              { key: 'freefire', label: 'FF' },
+              { key: 'all', label: 'All Matches' },
+              { key: 'pubg', label: 'PUBG Mobile' },
+              { key: 'freefire', label: 'Free Fire' },
             ].map(f => (
               <button
                 key={f.key}
                 onClick={() => setFilterGame(f.key)}
                 style={{
-                  padding: '4px 10px',
-                  borderRadius: '12px',
+                  padding: '6px 14px',
+                  borderRadius: '14px',
                   border: filterGame === f.key ? '1px solid #FF6B4A' : '1px solid #EBE4DA',
                   background: filterGame === f.key ? '#FF6B4A' : '#FFFFFF',
                   color: filterGame === f.key ? '#FFFFFF' : '#8A8078',
-                  fontSize: '11px',
+                  fontSize: '12px',
                   fontWeight: 700,
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
+                  boxShadow: filterGame === f.key ? '0 2px 8px rgba(255,107,74,0.25)' : 'none',
                 }}
               >
                 {f.label}
@@ -343,7 +356,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Tournament List */}
+        {/* Tournament List - Grid on Desktop, Stack on Mobile */}
         {loading ? (
           <LoadingSpinner text="Loading tournaments..." />
         ) : filteredTournaments.length === 0 ? (
@@ -351,19 +364,19 @@ export default function Home() {
             background: '#FFFFFF',
             borderRadius: '16px',
             textAlign: 'center',
-            padding: '50px 20px',
+            padding: '60px 20px',
             border: '1px solid #EBE4DA',
           }}>
-            <Trophy size={44} color="#C4BCB2" style={{ margin: '0 auto 12px' }} />
-            <h4 style={{ fontWeight: 700, fontSize: '15px', color: '#2E2A26', margin: '0 0 6px' }}>
+            <Trophy size={48} color="#C4BCB2" style={{ margin: '0 auto 12px' }} />
+            <h4 style={{ fontWeight: 700, fontSize: '16px', color: '#2E2A26', margin: '0 0 6px' }}>
               No matches available
             </h4>
-            <p style={{ fontSize: '12px', color: '#8A8078', margin: 0 }}>
+            <p style={{ fontSize: '13px', color: '#8A8078', margin: 0 }}>
               New matches drop daily. Check back soon!
             </p>
           </div>
         ) : (
-          <div>
+          <div className="tournaments-grid">
             {filteredTournaments.map(tournament => (
               <TournamentCard
                 key={tournament.id}

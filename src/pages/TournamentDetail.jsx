@@ -258,7 +258,7 @@ export default function TournamentDetail() {
   return (
     <>
       <TopBar title={tournament.name} showBack />
-      <div style={{ padding: '16px 16px 120px' }}>
+      <div className="responsive-page-container" style={{ padding: '16px 16px 120px' }}>
         
         {/* Esports Hero Card */}
         <div style={{
@@ -725,77 +725,90 @@ export default function TournamentDetail() {
       </div>
 
       {/* Sticky Bottom Action Bar */}
-      <div style={{
-        position: 'fixed',
-        bottom: '64px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '100%',
-        maxWidth: '480px',
-        padding: '12px 16px',
-        background: '#FFFFFF',
-        borderTop: '1px solid #EBE4DA',
-        zIndex: 90,
-      }}>
-        {isRegistered ? (
-          <div style={{
-            width: '100%',
-            padding: '13px',
-            background: '#E8F5E9',
-            color: '#2E7D32',
-            borderRadius: '12px',
-            fontWeight: 700,
-            fontSize: '14px',
-            textAlign: 'center',
-            border: '1px solid #C8E6C9',
-          }}>
-            ✓ You are Registered for this Match
-          </div>
-        ) : !timeline?.isRegOpen ? (
-          <div style={{
-            width: '100%',
-            padding: '13px',
-            background: '#F0ECE4',
-            color: '#8A8078',
-            borderRadius: '12px',
-            fontWeight: 700,
-            fontSize: '14px',
-            textAlign: 'center',
-          }}>
-            Registration Closed ({timeline?.regCloseStr})
-          </div>
-        ) : (
-          <button
-            onClick={() => { setShowJoinSheet(true); setJoinStep(1); setAgreed(false); setJoinError(''); }}
-            style={{
+      <div
+        className="tournament-sticky-action-bar"
+        style={{
+          position: 'fixed',
+          bottom: '64px',
+          left: 0,
+          width: '100%',
+          padding: '12px 16px',
+          background: '#FFFFFF',
+          borderTop: '1px solid #EBE4DA',
+          zIndex: 90,
+          boxSizing: 'border-box',
+        }}
+      >
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          {isRegistered ? (
+            <div style={{
               width: '100%',
-              padding: '14px',
-              background: '#FF6B4A',
-              color: '#FFFFFF',
-              border: 'none',
+              padding: '13px',
+              background: '#E8F5E9',
+              color: '#2E7D32',
               borderRadius: '12px',
               fontWeight: 700,
               fontSize: '14px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(255,107,74,0.35)',
-            }}
-          >
-            Join Tournament • Rs {tournament.registrationCharge}
-          </button>
-        )}
+              textAlign: 'center',
+              border: '1px solid #C8E6C9',
+            }}>
+              ✓ You are Registered for this Match
+            </div>
+          ) : !timeline?.isRegOpen ? (
+            <div style={{
+              width: '100%',
+              padding: '13px',
+              background: '#F0ECE4',
+              color: '#8A8078',
+              borderRadius: '12px',
+              fontWeight: 700,
+              fontSize: '14px',
+              textAlign: 'center',
+            }}>
+              Registration Closed ({timeline?.regCloseStr})
+            </div>
+          ) : (
+            <button
+              onClick={() => { setShowJoinSheet(true); setJoinStep(1); setAgreed(false); setJoinError(''); }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: '#FF6B4A',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '12px',
+                fontWeight: 700,
+                fontSize: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(255,107,74,0.35)',
+              }}
+            >
+              Join Tournament • Rs {tournament.registrationCharge}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Join Confirmation & Payment Bottom Sheet */}
+      {/* Join Confirmation & Payment Dialog / Sheet */}
       {showJoinSheet && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', zIndex: 200,
-          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        }} onClick={() => setShowJoinSheet(false)}>
-          <div onClick={e => e.stopPropagation()} style={{
-            width: '100%', maxWidth: '480px', background: '#FFFFFF', borderRadius: '20px 20px 0 0',
-            padding: '24px 20px', maxHeight: '80vh', overflowY: 'auto',
-          }}>
+        <div
+          className="tournament-modal-backdrop"
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', zIndex: 200,
+            display: 'flex', justifyContent: 'center',
+          }}
+          onClick={() => setShowJoinSheet(false)}
+        >
+          <div
+            className="tournament-modal-card"
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: '520px', background: '#FFFFFF',
+              padding: '24px 20px', maxHeight: '85vh', overflowY: 'auto',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+            }}
+          >
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
               <button onClick={() => setShowJoinSheet(false)} style={{
                 background: '#F0ECE4', border: 'none', borderRadius: '50%', width: '32px', height: '32px',

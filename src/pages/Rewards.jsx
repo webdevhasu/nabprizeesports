@@ -75,7 +75,7 @@ export default function Rewards() {
   return (
     <>
       <TopBar title="Rewards" />
-      <div style={{ padding: '16px' }}>
+      <div className="responsive-page-container" style={{ padding: '16px 16px 40px' }}>
         {/* Summary Card */}
         <div style={{
           background: '#FFFFFF', borderRadius: '16px', padding: '20px', marginBottom: '20px',

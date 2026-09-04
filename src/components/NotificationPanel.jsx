@@ -26,20 +26,42 @@ export default function NotificationPanel({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.4)', zIndex: 1000,
-      display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
-    }} onClick={onClose}>
-      <div style={{
-        background: '#FFF8F0', width: '100%', maxWidth: '480px',
-        maxHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
-        animation: 'slideUp 0.3s ease-out',
-      }} onClick={e => e.stopPropagation()}>
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(2px)',
+        zIndex: 1000,
+        display: 'flex',
+      }}
+      className="notification-panel-backdrop"
+      onClick={onClose}
+    >
+      <div
+        className="notification-panel-container"
+        style={{
+          background: '#FFF8F0',
+          maxHeight: '100vh',
+          height: '100%',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div style={{
-          padding: '16px 20px', borderBottom: '1px solid #F0E6D8',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid #F0E6D8',
+          background: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Bell size={20} color="#FF6B4A" />
@@ -66,7 +88,7 @@ export default function NotificationPanel({ isOpen, onClose }) {
                   background: 'none', border: 'none', cursor: 'pointer', color: '#D9503F',
                   fontSize: '11px', fontWeight: 600, padding: '4px 8px', whiteSpace: 'nowrap',
                 }}>
-                  <Trash2 size={14} /> Clear all
+                  <Trash2 size={14} /> Clear
                 </button>
               </>
             )}
@@ -113,7 +135,7 @@ export default function NotificationPanel({ isOpen, onClose }) {
                 onClick={() => !n.read && markAsRead(n.id)}
                 style={{
                   padding: '14px 20px', borderBottom: '1px solid #F0E6D8',
-                  background: n.read ? 'transparent' : '#FFF9F5',
+                  background: n.read ? '#FFFFFF' : '#FFF9F5',
                   cursor: n.read ? 'default' : 'pointer',
                   display: 'flex', gap: '12px', alignItems: 'flex-start',
                   transition: 'background 0.15s',
@@ -165,6 +187,33 @@ export default function NotificationPanel({ isOpen, onClose }) {
           )}
         </div>
       </div>
+
+      <style>{`
+        @media (min-width: 900px) {
+          .notification-panel-backdrop {
+            justify-content: flex-end !important;
+          }
+          .notification-panel-container {
+            width: 420px !important;
+            animation: slideLeft 0.25s ease-out !important;
+          }
+        }
+        @media (max-width: 899px) {
+          .notification-panel-backdrop {
+            justify-content: center !important;
+            align-items: flex-start !important;
+          }
+          .notification-panel-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            animation: slideUp 0.3s ease-out !important;
+          }
+        }
+        @keyframes slideLeft {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+      `}</style>
     </div>
   );
 }

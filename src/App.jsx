@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { NotificationProvider } from './hooks/useNotifications';
 import BottomNav from './components/BottomNav';
+import UserLayout from './components/UserLayout';
 import Splash from './pages/Splash';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
@@ -36,12 +37,12 @@ function UserShell({ children }) {
   );
 }
 
-function NavLayout({ children }) {
+function NavLayout({ children, title }) {
   return (
-    <div style={{ paddingTop: '56px', paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' }}>
+    <UserLayout title={title}>
       {children}
       <BottomNav />
-    </div>
+    </UserLayout>
   );
 }
 
@@ -188,18 +189,18 @@ export default function App() {
           </AccountSetupRoute>
         } />
 
-        {/* Main app routes (with bottom nav, protected) */}
-        <Route path="/" element={<ProtectedRoute><UserShell><NavLayout><Home /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/tournament/:id" element={<ProtectedRoute><UserShell><NavLayout><TournamentDetail /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/hall-of-fame" element={<ProtectedRoute><UserShell><NavLayout><HallOfFame /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/rewards" element={<ProtectedRoute><UserShell><NavLayout><Rewards /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><UserShell><NavLayout><Profile /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/add-funds" element={<ProtectedRoute><UserShell><NavLayout><AddFunds /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/withdraw" element={<ProtectedRoute><UserShell><NavLayout><Withdraw /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/transactions" element={<ProtectedRoute><UserShell><NavLayout><TransactionHistory /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/terms" element={<ProtectedRoute><UserShell><NavLayout><Terms /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/how-it-works" element={<ProtectedRoute><UserShell><NavLayout><HowItWorks /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/reviews" element={<ProtectedRoute><UserShell><NavLayout><Reviews /></NavLayout></UserShell></ProtectedRoute>} />
+        {/* Main app routes (with desktop sidebar tabs / mobile bottom nav, protected) */}
+        <Route path="/" element={<ProtectedRoute><UserShell><NavLayout title="Home / Matches"><Home /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/tournament/:id" element={<ProtectedRoute><UserShell><NavLayout title="Tournament Details"><TournamentDetail /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/hall-of-fame" element={<ProtectedRoute><UserShell><NavLayout title="Hall of Fame"><HallOfFame /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/rewards" element={<ProtectedRoute><UserShell><NavLayout title="Rewards & Winnings"><Rewards /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><UserShell><NavLayout title="My Profile"><Profile /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/add-funds" element={<ProtectedRoute><UserShell><NavLayout title="Deposit Funds"><AddFunds /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/withdraw" element={<ProtectedRoute><UserShell><NavLayout title="Withdraw Funds"><Withdraw /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/transactions" element={<ProtectedRoute><UserShell><NavLayout title="Transaction History"><TransactionHistory /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/terms" element={<ProtectedRoute><UserShell><NavLayout title="Rules & Terms"><Terms /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/how-it-works" element={<ProtectedRoute><UserShell><NavLayout title="How It Works"><HowItWorks /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/reviews" element={<ProtectedRoute><UserShell><NavLayout title="Player Reviews"><Reviews /></NavLayout></UserShell></ProtectedRoute>} />
 
         {/* Admin routes (no mobile shell constraint - full desktop responsive) */}
         <Route path="/admin/login" element={<AdminLogin />} />
