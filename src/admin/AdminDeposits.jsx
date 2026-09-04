@@ -780,51 +780,58 @@ export default function AdminDeposits() {
                       {/* Proof Thumbnail */}
                       <td style={{ padding: '14px', textAlign: 'center' }}>
                         {dep.screenshotUrl ? (
-                          <button
-                            type="button"
-                            onClick={() => setPreviewDeposit(dep)}
-                            style={{
-                              background: 'none',
-                              border: '1px solid #EBE4DA',
-                              padding: '2px',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              position: 'relative',
-                            }}
-                            title="Click to view player details & screenshot"
-                          >
-                            <img
-                              src={dep.screenshotUrl}
-                              alt="Proof"
-                              loading="lazy"
-                              decoding="async"
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDeposit(dep)}
                               style={{
-                                width: '48px',
-                                height: '48px',
-                                objectFit: 'cover',
-                                borderRadius: '6px',
-                                display: 'block',
-                                background: '#F5EFE6',
-                              }}
-                            />
-                            <div
-                              style={{
-                                position: 'absolute',
-                                inset: 0,
-                                background: 'rgba(0,0,0,0.3)',
-                                borderRadius: '6px',
-                                display: 'flex',
+                                background: 'none',
+                                border: '1px solid #EBE4DA',
+                                padding: '2px',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                opacity: 0.8,
+                                position: 'relative',
                               }}
+                              title="Click to view player details & screenshot"
                             >
-                              <Eye size={16} color="#FFFFFF" />
-                            </div>
-                          </button>
+                              <img
+                                src={dep.screenshotUrl}
+                                alt="Proof"
+                                loading="lazy"
+                                decoding="async"
+                                style={{
+                                  width: '48px',
+                                  height: '48px',
+                                  objectFit: 'cover',
+                                  borderRadius: '6px',
+                                  display: 'block',
+                                  background: '#F5EFE6',
+                                }}
+                              />
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  background: 'rgba(0,0,0,0.3)',
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: 0.8,
+                                }}
+                              >
+                                <Eye size={16} color="#FFFFFF" />
+                              </div>
+                            </button>
+                            {dep.screenshotSizeKb ? (
+                              <div style={{ fontSize: '10px', color: '#2E7D32', fontWeight: 700, marginTop: '2px', textAlign: 'center' }}>
+                                {dep.screenshotSizeKb} KB
+                              </div>
+                            ) : null}
+                          </>
                         ) : (
                           <span style={{ fontSize: '11px', color: '#A69E94' }}>No image</span>
                         )}
@@ -1058,7 +1065,7 @@ export default function AdminDeposits() {
                 {/* Left: Payment Screenshot */}
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#2E2A26', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Payment Proof Screenshot</span>
+                    <span>Payment Proof Screenshot {previewDeposit.screenshotSizeKb ? `(${previewDeposit.screenshotSizeKb} KB - Optimized)` : ''}</span>
                     <a
                       href={previewDeposit.screenshotUrl}
                       target="_blank"

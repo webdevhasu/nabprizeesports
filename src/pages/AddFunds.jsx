@@ -57,6 +57,8 @@ export default function AddFunds() {
   const [transactionId, setTransactionId] = useState('');
   const [screenshotFile, setScreenshotFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [compressingImage, setCompressingImage] = useState(false);
+  const [compressionStats, setCompressionStats] = useState(null);
 
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -74,9 +76,9 @@ export default function AddFunds() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Image select
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  // Image select & instant compression
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
@@ -84,18 +86,42 @@ export default function AddFunds() {
       return;
     }
 
-    if (file.size > 8 * 1024 * 1024) {
-      setErrorMsg('Screenshot file size must be less than 8MB.');
+    if (file.size > 15 * 1024 * 1024) {
+      setErrorMsg('Screenshot file size must be less than 15MB.');
       return;
     }
 
     setErrorMsg('');
-    setScreenshotFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    setCompressingImage(true);
+    setCompressionStats(null);
+
+    const originalKb = Math.round(file.size / 1024);
+
+    try {
+      const compressed = await compressImage(file, 1280, 1280, 0.8);
+      const compressedKb = Math.round(compressed.size / 1024);
+      const savedPercent = Math.max(0, Math.round(((file.size - compressed.size) / file.size) * 100));
+
+      setScreenshotFile(compressed);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(compressed));
+      setCompressionStats({ originalKb, compressedKb, savedPercent });
+
+      console.log(`🖼️ Auto-Compressed: ${originalKb} KB ➔ ${compressedKb} KB (${savedPercent}% saved)`);
+    } catch (err) {
+      console.warn('Compression error, using original:', err);
+      setScreenshotFile(file);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(file));
+      setCompressionStats(null);
+    } finally {
+      setCompressingImage(false);
+    }
   };
 
   const handleRemoveImage = () => {
     setScreenshotFile(null);
+    setCompressionStats(null);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl('');
@@ -166,9 +192,8 @@ export default function AddFunds() {
     setUploadProgress(10);
 
     try {
-      // 1. Auto-compress screenshot before upload (reduces 4MB down to ~100KB, saving 98% bandwidth)
-      const compressedFile = await compressImage(screenshotFile, 1280, 1280, 0.8);
-
+      // 1. Upload pre-compressed screenshot to Firebase Storage
+      const fileToUpload = screenshotFile;
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
       const storagePath = `deposits/${currentUser.uid}/${fileName}`;
       const storageRef = ref(storage, storagePath);
@@ -179,7 +204,7 @@ export default function AddFunds() {
         cacheControl: 'public, max-age=604800',
       };
 
-      const uploadTask = uploadBytesResumable(storageRef, compressedFile, metadata);
+      const uploadTask = uploadBytesResumable(storageRef, fileToUpload, metadata);
 
       uploadTask.on(
         'state_changed',
@@ -213,6 +238,7 @@ export default function AddFunds() {
               senderName: senderName.trim() || '',
               transactionId: transactionId.trim() || '',
               screenshotUrl: downloadUrl,
+              screenshotSizeKb: compressionStats?.compressedKb || Math.round(fileToUpload.size / 1024),
               storagePath: storagePath,
               status: 'pending',
               createdAt: serverTimestamp(),
@@ -823,6 +849,37 @@ export default function AddFunds() {
                   <div style={{ fontSize: '11px', color: '#10B981', fontWeight: 600, textAlign: 'center', marginTop: '6px' }}>
                     Screenshot attached successfully
                   </div>
+
+                  {compressionStats && (
+                    <div style={{
+                      marginTop: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: '#E8F5E9',
+                      border: '1px solid #A5D6A7',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      color: '#2E7D32',
+                      fontWeight: 600,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <CheckCircle2 size={13} color="#2E7D32" />
+                        <span>Optimized: <strong>{compressionStats.originalKb >= 1024 ? `${(compressionStats.originalKb / 1024).toFixed(1)} MB` : `${compressionStats.originalKb} KB`}</strong> ➔ <strong>{compressionStats.compressedKb} KB</strong></span>
+                      </div>
+                      <span style={{ background: '#2E7D32', color: '#FFF', borderRadius: '4px', padding: '1px 6px', fontSize: '10px', fontWeight: 700 }}>
+                        {compressionStats.savedPercent}% SAVED
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {compressingImage && (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#FF6B4A', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', border: '2px solid #FF6B4A', borderTopColor: 'transparent', animation: 'spin 0.6s linear infinite', display: 'inline-block' }} />
+                  Optimizing screenshot for fast upload...
                 </div>
               )}
             </div>
