@@ -195,6 +195,8 @@ export default function AddFunds() {
               userId: currentUser.uid,
               userEmail: currentUser.email || '',
               username: userProfile?.username || currentUser.displayName || 'Player',
+              fullName: userProfile?.fullName || '',
+              games: userProfile?.games || [],
               amount: parsedAmount,
               paymentMethod: selectedMethod || 'jazzcash',
               targetNumber: PAYMENT_ACCOUNTS[selectedMethod]?.cleanNumber || '',

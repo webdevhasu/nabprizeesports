@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
 const AuthCtx = createContext(null);
@@ -16,31 +16,48 @@ export function AuthProvider({ children }) {
   const [profileError, setProfileError] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let profileUnsub = null;
+
+    const authUnsub = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+
+      // Clean up previous profile listener if any
+      if (profileUnsub) {
+        profileUnsub();
+        profileUnsub = null;
+      }
+
       if (user) {
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            setUserProfile(docSnap.data());
-            setProfileError(false);
-          } else {
-            setUserProfile(null);
-            setProfileError(false);
+        const docRef = doc(db, 'users', user.uid);
+        profileUnsub = onSnapshot(
+          docRef,
+          (docSnap) => {
+            if (docSnap.exists()) {
+              setUserProfile(docSnap.data());
+              setProfileError(false);
+            } else {
+              setUserProfile(null);
+              setProfileError(false);
+            }
+            setLoading(false);
+          },
+          (error) => {
+            console.error('Error listening to user profile:', error);
+            setProfileError(true);
+            setLoading(false);
           }
-        } catch (error) {
-          console.error('Error fetching profile:', error);
-          setProfileError(true);
-          // Don't clear userProfile on network error — keep previous data if any
-        }
+        );
       } else {
         setUserProfile(null);
         setProfileError(false);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return unsubscribe;
+
+    return () => {
+      authUnsub();
+      if (profileUnsub) profileUnsub();
+    };
   }, []);
 
   const refreshProfile = async () => {
