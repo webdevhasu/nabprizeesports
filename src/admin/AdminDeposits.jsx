@@ -67,8 +67,8 @@ export default function AdminDeposits() {
       (snap) => {
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         list.sort((a, b) => {
-          const timeA = a.createdAt?.toMillis?.() || (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-          const timeB = b.createdAt?.toMillis?.() || (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          const timeA = a.createdAt?.toMillis?.() || (a.createdAt ? new Date(a.createdAt).getTime() : Date.now());
+          const timeB = b.createdAt?.toMillis?.() || (b.createdAt ? new Date(b.createdAt).getTime() : Date.now());
           return timeB - timeA;
         });
         setDeposits(list);

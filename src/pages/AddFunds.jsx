@@ -116,8 +116,8 @@ export default function AddFunds() {
       (snap) => {
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         list.sort((a, b) => {
-          const timeA = a.createdAt?.toMillis?.() || (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-          const timeB = b.createdAt?.toMillis?.() || (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          const timeA = a.createdAt?.toMillis?.() || (a.createdAt ? new Date(a.createdAt).getTime() : Date.now());
+          const timeB = b.createdAt?.toMillis?.() || (b.createdAt ? new Date(b.createdAt).getTime() : Date.now());
           return timeB - timeA;
         });
         setRecentDeposits(list.slice(0, 5));
@@ -191,24 +191,23 @@ export default function AddFunds() {
             setUploadProgress(95);
 
             // 2. Save deposit document in Firestore
-            await addDoc(collection(db, 'deposits'), {
+            const payload = {
               userId: currentUser.uid,
               userEmail: currentUser.email || '',
-              username: userProfile?.username || userProfile?.displayName || currentUser.displayName || 'Player',
+              username: userProfile?.username || currentUser.displayName || 'Player',
               amount: parsedAmount,
-              paymentMethod: selectedMethod, // 'jazzcash' | 'easypaisa'
-              targetNumber: PAYMENT_ACCOUNTS[selectedMethod].cleanNumber,
+              paymentMethod: selectedMethod || 'jazzcash',
+              targetNumber: PAYMENT_ACCOUNTS[selectedMethod]?.cleanNumber || '',
               senderNumber: senderNumber.trim(),
-              senderName: senderName.trim() || null,
-              transactionId: transactionId.trim() || null,
+              senderName: senderName.trim() || '',
+              transactionId: transactionId.trim() || '',
               screenshotUrl: downloadUrl,
-              storagePath,
-              status: 'pending', // pending, approved, rejected
+              storagePath: storagePath,
+              status: 'pending',
               createdAt: serverTimestamp(),
-              reviewedAt: null,
-              reviewedBy: null,
-              rejectionReason: null,
-            });
+            };
+
+            await addDoc(collection(db, 'deposits'), payload);
 
             setUploadProgress(100);
             setSuccessMsg(`Deposit request of Rs ${parsedAmount} submitted successfully! Admin will verify and credit your wallet shortly.`);
@@ -221,7 +220,7 @@ export default function AddFunds() {
             setSubmitting(false);
           } catch (dbErr) {
             console.error('Firestore save error:', dbErr);
-            setErrorMsg('Failed to save deposit request. Please try again.');
+            setErrorMsg('Failed to save deposit: ' + (dbErr.message || 'Please check Firestore rules.'));
             setSubmitting(false);
           }
         }

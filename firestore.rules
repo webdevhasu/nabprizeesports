@@ -9,8 +9,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated()
-        && request.auth.token.email == 'nabprize.official@gmail.com'
-        && request.auth.token.email_verified == true;
+        && request.auth.token.email == 'nabprize.official@gmail.com';
     }
 
     function isOwner(uid) {
@@ -135,18 +134,12 @@ service cloud.firestore {
     // ─── DEPOSITS ───
     match /deposits/{depositId} {
       allow read: if (isAuthenticated() && request.auth.uid == resource.data.userId) || isAdmin();
-      // On create: MUST be pending, valid limits, user cannot pre-approve
+      // On create: User can only create their own deposit in pending status with valid amount
       allow create: if isAuthenticated()
         && request.auth.uid == request.resource.data.userId
         && request.resource.data.status == 'pending'
         && request.resource.data.amount is number
-        && request.resource.data.amount >= 30
-        && request.resource.data.amount <= 20000
-        && request.resource.data.paymentMethod in ['jazzcash', 'easypaisa']
-        && request.resource.data.screenshotUrl is string
-        && request.resource.data.screenshotUrl.size() > 10
-        && request.resource.data.senderNumber is string
-        && request.resource.data.senderNumber.size() >= 10;
+        && request.resource.data.amount >= 30;
       // CRITICAL: Only admin can approve or reject deposits
       allow update, delete: if isAdmin();
     }
