@@ -145,8 +145,9 @@ export default function AddFunds() {
       return;
     }
 
-    if (!senderNumber.trim()) {
-      setErrorMsg('Please enter your sender mobile/account number.');
+    const cleanSender = senderNumber.replace(/\D/g, '');
+    if (!cleanSender || !/^03\d{9}$/.test(cleanSender)) {
+      setErrorMsg('Please enter a valid 11-digit Pakistani mobile number starting with 03 (e.g. 03001234567).');
       return;
     }
 
@@ -200,7 +201,7 @@ export default function AddFunds() {
               amount: parsedAmount,
               paymentMethod: selectedMethod || 'jazzcash',
               targetNumber: PAYMENT_ACCOUNTS[selectedMethod]?.cleanNumber || '',
-              senderNumber: senderNumber.trim(),
+              senderNumber: cleanSender,
               senderName: senderName.trim() || '',
               transactionId: transactionId.trim() || '',
               screenshotUrl: downloadUrl,
@@ -402,12 +403,12 @@ export default function AddFunds() {
                   Rs
                 </span>
                 <input
-                  type="number"
-                  min="30"
-                  max="20000"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={5}
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Enter amount (Min Rs 30)"
+                  onChange={(e) => setAmount(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                  placeholder="Enter amount (Min Rs 30, Max 20,000)"
                   style={{
                     width: '100%',
                     padding: '12px 14px 12px 42px',
@@ -627,26 +628,43 @@ export default function AddFunds() {
             {/* Sender Number Input */}
             <div style={{ marginBottom: '12px' }}>
               <label style={{ fontSize: '12px', color: '#5E5851', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
-                Your Sender Account / Mobile Number *
+                Your Sender Account / Mobile Number * (11 digits)
               </label>
               <input
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={11}
                 value={senderNumber}
-                onChange={(e) => setSenderNumber(e.target.value)}
-                placeholder="e.g. 0312-3456789"
+                onChange={(e) => setSenderNumber(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                placeholder="03XXXXXXXXX"
                 style={{
                   width: '100%',
                   padding: '10px 14px',
                   borderRadius: '10px',
-                  border: '1px solid #D9D3CC',
-                  fontSize: '13px',
+                  border: senderNumber.length === 11
+                    ? (/^03\d{9}$/.test(senderNumber) ? '1px solid #3FA65C' : '1px solid #D9503F')
+                    : '1px solid #D9D3CC',
+                  fontSize: '14px',
+                  fontWeight: 600,
                   color: '#2E2A26',
                   background: '#FFFFFF',
                   outline: 'none',
                   boxSizing: 'border-box',
+                  letterSpacing: '0.5px',
                 }}
                 required
               />
+              {senderNumber.length > 0 && (
+                <div style={{ fontSize: '11px', marginTop: '4px', fontWeight: 500 }}>
+                  {!senderNumber.startsWith('03') ? (
+                    <span style={{ color: '#D9503F' }}>✕ Must start with 03 (e.g. 03001234567)</span>
+                  ) : senderNumber.length < 11 ? (
+                    <span style={{ color: '#E88B00' }}>⚠ {11 - senderNumber.length} digits remaining</span>
+                  ) : (
+                    <span style={{ color: '#3FA65C' }}>✓ Valid 11-digit mobile number</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Sender Account Name (Optional) */}
@@ -656,8 +674,9 @@ export default function AddFunds() {
               </label>
               <input
                 type="text"
+                maxLength={40}
                 value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
+                onChange={(e) => setSenderName(e.target.value.slice(0, 40))}
                 placeholder="Name on your JazzCash/EasyPaisa"
                 style={{
                   width: '100%',
@@ -680,8 +699,9 @@ export default function AddFunds() {
               </label>
               <input
                 type="text"
+                maxLength={25}
                 value={transactionId}
-                onChange={(e) => setTransactionId(e.target.value)}
+                onChange={(e) => setTransactionId(e.target.value.trim().slice(0, 25))}
                 placeholder="e.g. 01234567890"
                 style={{
                   width: '100%',

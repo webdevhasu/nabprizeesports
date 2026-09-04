@@ -127,8 +127,9 @@ export default function Login() {
           <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Email</label>
           <input
             type="email"
+            maxLength={60}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value.slice(0, 60))}
             placeholder="Enter your email"
             required
             style={{
@@ -143,8 +144,9 @@ export default function Login() {
           <div style={{ position: 'relative' }}>
             <input
               type={showPassword ? 'text' : 'password'}
+              maxLength={60}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value.slice(0, 60))}
               placeholder="Enter your password"
               required
               style={{

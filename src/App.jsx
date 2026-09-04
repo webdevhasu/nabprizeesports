@@ -193,7 +193,7 @@ export default function App() {
         <Route path="/" element={<ProtectedRoute><UserShell><NavLayout title="Home / Matches"><Home /></NavLayout></UserShell></ProtectedRoute>} />
         <Route path="/tournament/:id" element={<ProtectedRoute><UserShell><NavLayout title="Tournament Details"><TournamentDetail /></NavLayout></UserShell></ProtectedRoute>} />
         <Route path="/hall-of-fame" element={<ProtectedRoute><UserShell><NavLayout title="Hall of Fame"><HallOfFame /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/rewards" element={<ProtectedRoute><UserShell><NavLayout title="Rewards & Winnings"><Rewards /></NavLayout></UserShell></ProtectedRoute>} />
+        <Route path="/rewards" element={<ProtectedRoute><UserShell><NavLayout title="Rewards"><Rewards /></NavLayout></UserShell></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><UserShell><NavLayout title="My Profile"><Profile /></NavLayout></UserShell></ProtectedRoute>} />
         <Route path="/add-funds" element={<ProtectedRoute><UserShell><NavLayout title="Deposit Funds"><AddFunds /></NavLayout></UserShell></ProtectedRoute>} />
         <Route path="/withdraw" element={<ProtectedRoute><UserShell><NavLayout title="Withdraw Funds"><Withdraw /></NavLayout></UserShell></ProtectedRoute>} />

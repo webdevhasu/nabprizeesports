@@ -93,8 +93,9 @@ export default function SignUp() {
           <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Email</label>
           <input
             type="email"
+            maxLength={60}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value.slice(0, 60))}
             placeholder="Enter your email"
             required
             style={{
@@ -109,8 +110,9 @@ export default function SignUp() {
           <div style={{ position: 'relative' }}>
             <input
               type={showPassword ? 'text' : 'password'}
+              maxLength={60}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value.slice(0, 60))}
               placeholder="Min 8 characters"
               required
               style={{
@@ -143,8 +145,9 @@ export default function SignUp() {
           <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Confirm Password</label>
           <input
             type="password"
+            maxLength={60}
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(e) => setConfirmPassword(e.target.value.slice(0, 60))}
             placeholder="Confirm your password"
             required
             style={{

@@ -30,7 +30,7 @@ import {
 const mainNavItems = [
   { to: '/', label: 'Home / Matches', icon: Home, exact: true },
   { to: '/hall-of-fame', label: 'Hall of Fame', icon: Trophy },
-  { to: '/rewards', label: 'Rewards & Winnings', icon: Gift },
+  { to: '/rewards', label: 'Rewards', icon: Gift },
   { to: '/profile', label: 'My Profile', icon: User },
 ];
 

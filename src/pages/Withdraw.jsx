@@ -21,7 +21,8 @@ export default function Withdraw() {
 
   const balance = userProfile?.walletBalance || 0;
   const numAmount = parseInt(amount) || 0;
-  const isValid = numAmount >= 200 && numAmount <= balance && accountNumber.length >= 11;
+  const isPhoneValid = /^03\d{9}$/.test(accountNumber);
+  const isValid = numAmount >= 200 && numAmount <= 50000 && numAmount <= balance && isPhoneValid;
 
   // Listen to user's real-time withdrawal requests
   useEffect(() => {
@@ -228,12 +229,12 @@ export default function Withdraw() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
             <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '28px', color: '#2E2A26' }}>Rs</span>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => setAmount(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="200"
-              min="200"
-              max={balance}
+              maxLength={6}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -330,25 +331,41 @@ export default function Withdraw() {
         {/* Account Number */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>
-            Your {method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'} Mobile Account Number
+            Your {method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'} Mobile Account Number (11 digits)
           </label>
           <input
             type="tel"
+            inputMode="numeric"
             value={accountNumber}
             onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 11))}
             placeholder="03XXXXXXXXX"
+            maxLength={11}
             style={{
               width: '100%',
               padding: '14px',
               background: '#FFFFFF',
-              border: '1px solid #D9D3CC',
+              border: accountNumber.length === 11
+                ? (isPhoneValid ? '1px solid #3FA65C' : '1px solid #D9503F')
+                : '1px solid #D9D3CC',
               borderRadius: '12px',
-              fontSize: '14px',
+              fontSize: '15px',
               outline: 'none',
               boxSizing: 'border-box',
-              fontWeight: 500,
+              fontWeight: 600,
+              letterSpacing: '0.5px',
             }}
           />
+          {accountNumber.length > 0 && (
+            <div style={{ fontSize: '11px', marginTop: '6px', fontWeight: 500 }}>
+              {!accountNumber.startsWith('03') ? (
+                <span style={{ color: '#D9503F' }}>✕ Must start with 03 (e.g. 03001234567)</span>
+              ) : accountNumber.length < 11 ? (
+                <span style={{ color: '#E88B00' }}>⚠ {11 - accountNumber.length} digits remaining</span>
+              ) : (
+                <span style={{ color: '#3FA65C' }}>✓ Valid 11-digit mobile account number</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Submit Button */}

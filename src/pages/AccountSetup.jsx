@@ -124,8 +124,10 @@ export default function AccountSetup() {
         <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Full Name</label>
         <input
           type="text"
+          maxLength={40}
           value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
+          onChange={(e) => setFullName(e.target.value.slice(0, 40))}
+          placeholder="Your full name"
           style={{
             width: '100%', padding: '14px', background: '#FFFFFF', border: '1px solid #F0E6D8',
             borderRadius: '12px', fontSize: '14px', outline: 'none',
@@ -137,8 +139,9 @@ export default function AccountSetup() {
         <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Username</label>
         <input
           type="text"
+          maxLength={20}
           value={username}
-          onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase())}
+          onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20).toLowerCase())}
           placeholder="3-20 chars, alphanumeric + underscore"
           style={{
             width: '100%', padding: '14px', background: '#FFFFFF', border: '1px solid #F0E6D8',
@@ -175,12 +178,14 @@ export default function AccountSetup() {
 
       {selectedGames.includes('pubg') && (
         <div style={{ marginBottom: '16px', padding: '16px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid #F0E6D8' }}>
-          <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>PUBG Mobile UID</label>
+          <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>PUBG Mobile UID (Numbers only)</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            maxLength={14}
             value={pubgUid}
-            onChange={(e) => setPubgUid(e.target.value)}
-            placeholder="Numeric UID"
+            onChange={(e) => setPubgUid(e.target.value.replace(/\D/g, '').slice(0, 14))}
+            placeholder="Numeric UID (e.g. 5123456789)"
             style={{
               width: '100%', padding: '12px', background: '#FFF8F0', border: '1px solid #F0E6D8',
               borderRadius: '10px', fontSize: '14px', outline: 'none', marginBottom: '12px',
@@ -189,9 +194,10 @@ export default function AccountSetup() {
           <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>In-Game Name (IGN)</label>
           <input
             type="text"
+            maxLength={20}
             value={pubgIgn}
-            onChange={(e) => setPubgIgn(e.target.value)}
-            placeholder="Your PUBG IGN"
+            onChange={(e) => setPubgIgn(e.target.value.slice(0, 20))}
+            placeholder="Your PUBG IGN (max 20 chars)"
             style={{
               width: '100%', padding: '12px', background: '#FFF8F0', border: '1px solid #F0E6D8',
               borderRadius: '10px', fontSize: '14px', outline: 'none',
@@ -202,11 +208,13 @@ export default function AccountSetup() {
 
       {selectedGames.includes('freefire') && (
         <div style={{ marginBottom: '16px', padding: '16px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid #F0E6D8' }}>
-          <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Free Fire UID</label>
+          <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Free Fire UID (Numbers only)</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            maxLength={14}
             value={ffUid}
-            onChange={(e) => setFfUid(e.target.value)}
+            onChange={(e) => setFfUid(e.target.value.replace(/\D/g, '').slice(0, 14))}
             placeholder="Numeric UID"
             style={{
               width: '100%', padding: '12px', background: '#FFF8F0', border: '1px solid #F0E6D8',
@@ -216,9 +224,10 @@ export default function AccountSetup() {
           <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>In-Game Name (IGN)</label>
           <input
             type="text"
+            maxLength={20}
             value={ffIgn}
-            onChange={(e) => setFfIgn(e.target.value)}
-            placeholder="Your Free Fire IGN"
+            onChange={(e) => setFfIgn(e.target.value.slice(0, 20))}
+            placeholder="Your Free Fire IGN (max 20 chars)"
             style={{
               width: '100%', padding: '12px', background: '#FFF8F0', border: '1px solid #F0E6D8',
               borderRadius: '10px', fontSize: '14px', outline: 'none',

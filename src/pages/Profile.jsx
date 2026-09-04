@@ -422,9 +422,10 @@ export default function Profile() {
             <form onSubmit={handleSaveUsername}>
               <input
                 type="text"
-                placeholder="Enter new username"
+                placeholder="Enter new username (3-20 chars)"
+                maxLength={20}
                 value={newUsername}
-                onChange={e => setNewUsername(e.target.value)}
+                onChange={e => setNewUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20))}
                 required
                 style={{
                   width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D9D3CC',
@@ -476,9 +477,10 @@ export default function Profile() {
                 </div>
                 <input
                   type="text"
-                  placeholder="PUBG In-Game Name (IGN)"
+                  placeholder="PUBG In-Game Name (IGN, max 20 chars)"
+                  maxLength={20}
                   value={pubgIgn}
-                  onChange={e => setPubgIgn(e.target.value)}
+                  onChange={e => setPubgIgn(e.target.value.slice(0, 20))}
                   style={{
                     width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D9D3CC',
                     fontSize: '13px', marginBottom: '8px', boxSizing: 'border-box', outline: 'none',
@@ -486,9 +488,11 @@ export default function Profile() {
                 />
                 <input
                   type="text"
-                  placeholder="PUBG Character UID (e.g. 5123456789)"
+                  inputMode="numeric"
+                  placeholder="PUBG Character UID (Numbers only, max 14 digits)"
+                  maxLength={14}
                   value={pubgUid}
-                  onChange={e => setPubgUid(e.target.value)}
+                  onChange={e => setPubgUid(e.target.value.replace(/\D/g, '').slice(0, 14))}
                   style={{
                     width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D9D3CC',
                     fontSize: '13px', boxSizing: 'border-box', outline: 'none',
@@ -502,9 +506,10 @@ export default function Profile() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Free Fire In-Game Name (IGN)"
+                  placeholder="Free Fire In-Game Name (IGN, max 20 chars)"
+                  maxLength={20}
                   value={ffIgn}
-                  onChange={e => setFfIgn(e.target.value)}
+                  onChange={e => setFfIgn(e.target.value.slice(0, 20))}
                   style={{
                     width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D9D3CC',
                     fontSize: '13px', marginBottom: '8px', boxSizing: 'border-box', outline: 'none',
@@ -512,9 +517,11 @@ export default function Profile() {
                 />
                 <input
                   type="text"
-                  placeholder="Free Fire Character UID"
+                  inputMode="numeric"
+                  placeholder="Free Fire Character UID (Numbers only, max 14 digits)"
+                  maxLength={14}
                   value={ffUid}
-                  onChange={e => setFfUid(e.target.value)}
+                  onChange={e => setFfUid(e.target.value.replace(/\D/g, '').slice(0, 14))}
                   style={{
                     width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D9D3CC',
                     fontSize: '13px', boxSizing: 'border-box', outline: 'none',
