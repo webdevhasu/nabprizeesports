@@ -7,9 +7,11 @@ import {
   increment,
   addDoc,
   serverTimestamp,
-  getDoc
+  getDoc,
+  deleteDoc
 } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { ref, deleteObject } from 'firebase/storage';
+import { db, storage } from '../firebase/config';
 import {
   CheckCircle,
   XCircle,
@@ -32,7 +34,8 @@ import {
   Trophy,
   Flame,
   Mail,
-  ShieldAlert
+  ShieldAlert,
+  Trash2
 } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 
@@ -251,6 +254,70 @@ export default function AdminDeposits() {
     }
   };
 
+  // Delete Single Deposit & Remove Screenshot from Storage
+  const handleDelete = async (dep) => {
+    if (!window.confirm(`Delete deposit record of Rs ${dep.amount} (@${dep.username}) and permanently delete its screenshot from Firebase Storage?`)) {
+      return;
+    }
+
+    setActionLoading(dep.id);
+    try {
+      // 1. Delete image from Firebase Storage if storagePath exists
+      if (dep.storagePath) {
+        try {
+          const imageRef = ref(storage, dep.storagePath);
+          await deleteObject(imageRef);
+        } catch (storageErr) {
+          console.warn('Storage delete warning:', storageErr);
+        }
+      }
+
+      // 2. Delete Firestore document
+      await deleteDoc(doc(db, 'deposits', dep.id));
+
+      if (previewDeposit?.id === dep.id) {
+        setPreviewDeposit(null);
+      }
+    } catch (e) {
+      console.error('Error deleting deposit:', e);
+      alert('Failed to delete deposit: ' + (e.message || 'Unknown error'));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Batch delete all approved deposits and screenshots to clean up storage
+  const handleDeleteAllApproved = async () => {
+    if (approvedList.length === 0) {
+      alert('No approved deposit records to delete.');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete ALL ${approvedList.length} approved deposit records and permanently delete their screenshots from Firebase Storage? This will free up your storage space.`)) {
+      return;
+    }
+
+    setActionLoading('batch');
+    let deletedCount = 0;
+    try {
+      for (const dep of approvedList) {
+        if (dep.storagePath) {
+          try {
+            await deleteObject(ref(storage, dep.storagePath));
+          } catch (_) {}
+        }
+        await deleteDoc(doc(db, 'deposits', dep.id));
+        deletedCount++;
+      }
+      alert(`Cleaned up ${deletedCount} approved deposit records and their screenshots from Storage!`);
+    } catch (err) {
+      console.error('Batch delete error:', err);
+      alert('Error during batch delete: ' + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // Filter & Search (supports user name, email, game UID, IGN, TID, phone)
   const filteredDeposits = deposits.filter((d) => {
     if (filter !== 'all' && d.status !== filter) return false;
@@ -454,6 +521,32 @@ export default function AdminDeposits() {
                 </span>
               </button>
             ))}
+
+            {approvedList.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDeleteAllApproved}
+                disabled={actionLoading === 'batch'}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: actionLoading === 'batch' ? 'not-allowed' : 'pointer',
+                  border: '1px solid #FFD1D1',
+                  background: '#FFF5F5',
+                  color: '#D9503F',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s',
+                }}
+                title="Delete all approved deposit records and permanently delete their screenshots to free up Firebase Storage"
+              >
+                <Trash2 size={13} />
+                <span>Clean Up Approved ({approvedList.length})</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -808,22 +901,47 @@ export default function AdminDeposits() {
                             </button>
                           </div>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => setPreviewDeposit(dep)}
-                            style={{
-                              background: '#F0ECE4',
-                              color: '#5E5851',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '5px 10px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            View Details
-                          </button>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDeposit(dep)}
+                              style={{
+                                background: '#F0ECE4',
+                                color: '#5E5851',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '5px 10px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              View Details
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(dep)}
+                              disabled={actionLoading === dep.id}
+                              title="Delete deposit record and remove screenshot from Storage"
+                              style={{
+                                background: '#FFF5F5',
+                                color: '#D9503F',
+                                border: '1px solid #FFD1D1',
+                                borderRadius: '6px',
+                                padding: '5px 8px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                              }}
+                            >
+                              <Trash2 size={12} />
+                              Delete
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -1255,22 +1373,45 @@ export default function AdminDeposits() {
                       </button>
                     </>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => setPreviewDeposit(null)}
-                      style={{
-                        background: '#F0ECE4',
-                        color: '#2E2A26',
-                        border: 'none',
-                        borderRadius: '8px',
-                        padding: '8px 18px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Close
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(previewDeposit)}
+                        disabled={actionLoading === previewDeposit.id}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: '#FFF5F5',
+                          color: '#D9503F',
+                          border: '1px solid #FFD1D1',
+                          borderRadius: '8px',
+                          padding: '8px 16px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Trash2 size={14} /> Delete & Free Storage
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDeposit(null)}
+                        style={{
+                          background: '#F0ECE4',
+                          color: '#2E2A26',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '8px 18px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Close
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
