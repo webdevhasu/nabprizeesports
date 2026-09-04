@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { sounds } from '../utils/sounds';
+import { Gamepad2, Trophy, Zap, ShieldCheck } from 'lucide-react';
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -56,13 +57,94 @@ export default function SignUp() {
   const strength = getPasswordStrength();
 
   return (
-    <div style={{ padding: '40px 20px', maxWidth: '400px', margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '28px', color: '#E8552F' }}>
-          NabPrize Esports
-        </h1>
-        <p style={{ color: '#8A8078', fontSize: '14px', marginTop: '4px' }}>Create your account</p>
-      </div>
+    <div className="auth-page-wrapper">
+      <div className="auth-desktop-card auth-desktop-split">
+        
+        {/* Left Side: Esports Showcase for Desktop */}
+        <div
+          className="auth-banner-side"
+          style={{
+            background: 'linear-gradient(135deg, #1E1B18 0%, #342A22 100%)',
+            padding: '40px 32px',
+            color: '#FFFFFF',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Background decorative glow */}
+          <div style={{
+            position: 'absolute', top: '-40px', right: '-40px', width: '180px', height: '180px',
+            background: 'radial-gradient(circle, rgba(255,107,74,0.35) 0%, rgba(255,107,74,0) 70%)',
+            borderRadius: '50%',
+          }} />
+
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '32px' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
+                color: '#FFFFFF', fontWeight: 800, fontSize: '15px', padding: '6px 12px',
+                borderRadius: '8px', letterSpacing: '0.5px', boxShadow: '0 2px 8px rgba(255,107,74,0.35)',
+              }}>
+                NP
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '18px', color: '#FFFFFF', lineHeight: 1.1 }}>
+                  NabPrize
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Gamepad2 size={12} /> Esports Arena
+                </div>
+              </div>
+            </div>
+
+            <h2 style={{
+              fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '26px',
+              color: '#FFFFFF', lineHeight: 1.3, marginBottom: '14px',
+            }}>
+              Join Pakistan's #1 Esports Battleground
+            </h2>
+            <p style={{ fontSize: '13px', color: '#C4BCB2', lineHeight: 1.6, marginBottom: '28px' }}>
+              Compete against top players in daily PUBG & Free Fire tournaments and win real cash deposited straight to your wallet.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#FAF8F5' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Trophy size={16} color="#F4B740" />
+                </div>
+                <span>Guaranteed Prize Pools & Fair Rankings</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#FAF8F5' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Zap size={16} color="#FF6B4A" />
+                </div>
+                <span>Fast JazzCash & EasyPaisa Withdrawals</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#FAF8F5' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ShieldCheck size={16} color="#3FA65C" />
+                </div>
+                <span>Verified Anti-Cheat & Fair Play Protection</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ position: 'relative', zIndex: 2, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', fontSize: '11px', color: '#A69E94' }}>
+            Instant Registration • Safe & Secure • Real Cash
+          </div>
+        </div>
+
+        {/* Right Side: Sign Up Form */}
+        <div className="auth-form-side">
+          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '26px', color: '#E8552F', margin: 0 }}>
+              Create Account
+            </h1>
+            <p style={{ color: '#8A8078', fontSize: '13px', marginTop: '4px' }}>Sign up to start competing</p>
+          </div>
 
       {error && (
         <div style={{
@@ -171,6 +253,8 @@ export default function SignUp() {
         Already have an account?{' '}
         <Link to="/login" style={{ color: '#FF6B4A', textDecoration: 'none', fontWeight: 600 }}>Log In</Link>
       </p>
+        </div>
+      </div>
     </div>
   );
 }

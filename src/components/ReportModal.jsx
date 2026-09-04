@@ -96,6 +96,7 @@ export default function ReportModal({ isOpen, onClose }) {
     try {
       const tournament = recentTournaments.find(t => t.id === selectedTournament);
       await addDoc(collection(db, 'reports'), {
+        userId: user.uid,
         reporterUid: user.uid,
         reporterName: user.displayName || 'Anonymous',
         reporterEmail: user.email || '',
@@ -105,6 +106,7 @@ export default function ReportModal({ isOpen, onClose }) {
         suspectUid: suspectUid.trim(),
         reason,
         details: details.trim(),
+        description: details.trim(),
         status: 'pending',
         createdAt: serverTimestamp(),
       });
