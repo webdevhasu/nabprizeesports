@@ -6,6 +6,8 @@ import UserLayout from './components/UserLayout';
 import Splash from './pages/Splash';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import Landing from './pages/Landing';
+import { isStandalone } from './utils/pwa';
 import AccountSetup from './pages/AccountSetup';
 import Home from './pages/Home';
 import TournamentDetail from './pages/TournamentDetail';
@@ -65,7 +67,10 @@ function ProtectedRoute({ children }) {
     );
   }
 
-  if (!currentUser) return <Navigate to="/login" replace />;
+  if (!currentUser) {
+    if (isStandalone()) return <Navigate to="/login" replace />;
+    return <Navigate to="/landing" replace />;
+  }
 
   if (userProfile?.isBanned) {
     return (
@@ -177,6 +182,10 @@ export default function App() {
     <AuthProvider>
       <NotificationProvider>
       <Routes>
+        {/* Landing Page */}
+        <Route path="/landing" element={<Landing />} />
+        <Route path="/welcome" element={<Navigate to="/landing" replace />} />
+
         {/* Splash */}
         <Route path="/splash" element={<UserShell><Splash /></UserShell>} />
 
