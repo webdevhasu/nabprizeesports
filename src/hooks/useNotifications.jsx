@@ -29,6 +29,18 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
+  // Auto-sync token to Firestore if user has already granted permission
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window && window.Notification?.permission === 'granted') {
+      const unsub = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          requestPermission().catch(() => {});
+        }
+      });
+      return unsub;
+    }
+  }, [requestPermission]);
+
   // Listen to notifications from Firestore — use onAuthStateChanged to avoid race condition
   useEffect(() => {
     let unsub = () => { };

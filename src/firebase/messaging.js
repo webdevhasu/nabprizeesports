@@ -35,8 +35,17 @@ export const requestNotificationPermission = async () => {
 
     const permission = await window.Notification.requestPermission();
     if (permission === 'granted') {
+      let swReg = null;
+      if ('serviceWorker' in navigator) {
+        swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(err => {
+          console.warn('Service worker registration error:', err);
+          return null;
+        });
+      }
+
       const token = await getToken(messaging, {
         vapidKey: 'BGMG8pFL5N4gSfsNnufQlK8v_ZRkaHOcOrG87Ti5ClbuBnqsxcOO3Q_37wT_JlZGlrSTOLhPiaotJEOVnkfQceA',
+        serviceWorkerRegistration: swReg || undefined,
       });
       return token;
     }
