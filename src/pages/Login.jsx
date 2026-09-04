@@ -80,7 +80,7 @@ export default function Login() {
   return (
     <div className="auth-page-wrapper">
       <div className="auth-desktop-card auth-desktop-split">
-        
+
         {/* Left Side: Esports Branding Showcase (Visible on Desktop >= 900px) */}
         <div
           className="auth-banner-side"
@@ -128,7 +128,7 @@ export default function Login() {
               Pakistan's Premier Esports Battleground
             </h2>
             <p style={{ fontSize: '13px', color: '#C4BCB2', lineHeight: 1.6, marginBottom: '28px' }}>
-              Compete in daily verified PUBG Mobile & Free Fire custom rooms and withdraw real cash winnings directly to JazzCash or EasyPaisa.
+              Show your skills in daily verified PUBG Mobile & Free Fire custom rooms and withdraw cash rewards directly to JazzCash or EasyPaisa.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
