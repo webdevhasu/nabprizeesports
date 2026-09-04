@@ -1,0 +1,41 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated()
+        && request.auth.token.email == 'nabprize.official@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    // ─── DEPOSIT SCREENSHOTS ───
+    match /deposits/{userId}/{fileName} {
+      // Authenticated users and admin can view proof
+      allow read: if isAuthenticated();
+
+      // STRICT UPLOAD RESTRICTIONS (Anti-Abuse & Blaze Bill Protection):
+      // 1. User must be authenticated and uploading to their own user folder
+      // 2. Maximum file size: 5 MB (strictly prevents large video / zip file abuse)
+      // 3. Must be valid image MIME type (jpeg, png, webp, jpg)
+      allow create: if isAuthenticated()
+        && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp|jpg)');
+
+      // Overwriting existing files is BLOCKED
+      allow update: if false;
+
+      // Only admin can delete uploaded files
+      allow delete: if isAdmin();
+    }
+
+    // Block all other bucket uploads/reads by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

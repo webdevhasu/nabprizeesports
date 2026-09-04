@@ -3,107 +3,178 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ─── HELPER FUNCTIONS ───
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'nabprize.official@gmail.com';
+      return isAuthenticated()
+        && request.auth.token.email == 'nabprize.official@gmail.com'
+        && request.auth.token.email_verified == true;
     }
 
     function isOwner(uid) {
-      return request.auth != null && request.auth.uid == uid;
+      return isAuthenticated() && request.auth.uid == uid;
     }
 
     function isWithdrawalOwner() {
-      return request.auth != null && request.auth.uid == resource.data.userId;
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
     }
 
     // ─── USERS ───
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow create: if isOwner(uid);
-      // Owner can update own profile (username, gameIDs, fcmTokens, walletBalance)
-      // NOTE: walletBalance can be tampered via console — needs Cloud Functions for full protection
-      allow update: if isOwner(uid) || isAdmin();
+
+      // On signup / account setup: wallet balance, wins, kills must start at 0
+      allow create: if isOwner(uid)
+        && request.resource.data.walletBalance == 0
+        && request.resource.data.totalWins == 0
+        && request.resource.data.totalKills == 0
+        && request.resource.data.tournamentsPlayed == 0
+        && (!('isBanned' in request.resource.data) || request.resource.data.isBanned == false);
+
+      // On profile updates:
+      // - Admin can update any field (including adding funds, banning, awarding prizes)
+      // - Normal user CAN NEVER INCREASE their wallet balance! Only decrement for join/withdraw
+      // - Normal user CANNOT change isBanned, email, totalWins, totalKills, createdAt
+      allow update: if isAdmin() || (
+        isOwner(uid)
+        // Wallet balance can NEVER be increased by client console
+        && request.resource.data.walletBalance <= resource.data.walletBalance
+        && request.resource.data.walletBalance >= 0
+        // Administrative fields are immutable by user
+        && request.resource.data.get('isBanned', false) == resource.data.get('isBanned', false)
+        && request.resource.data.get('totalWins', 0) == resource.data.get('totalWins', 0)
+        && request.resource.data.get('totalKills', 0) == resource.data.get('totalKills', 0)
+        && request.resource.data.email == resource.data.email
+      );
+
+      allow delete: if isAdmin();
 
       // ─── NOTIFICATIONS (subcollection) ───
       match /notifications/{notifId} {
         allow read: if isOwner(uid) || isAdmin();
         allow create: if isAdmin();
-        // Owner can mark as read / delete own notifications
-        allow update: if isOwner(uid) || isAdmin();
+        // User can only mark as read; cannot modify content or inject fake alerts
+        allow update: if (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])) || isAdmin();
         allow delete: if isOwner(uid) || isAdmin();
       }
 
       // ─── TOURNAMENTS PLAYED (subcollection) ───
       match /tournamentsPlayed/{tpId} {
         allow read: if isOwner(uid) || isAdmin();
-        allow create, update: if isAdmin();
+        allow create, update, delete: if isAdmin();
       }
     }
 
     // ─── TOURNAMENTS ───
     match /tournaments/{tournamentId} {
-      allow read: if request.auth != null;
+      allow read: if isAuthenticated();
       allow create, delete: if isAdmin();
-      // Admin can update all fields; users can only update slotsFilled (join flow)
-      allow update: if isAdmin() || (request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slotsFilled']));
+
+      // Admin can update all fields (room ID, pass, status, prizes)
+      // Users can ONLY increment slotsFilled by exactly 1 during valid join flow
+      allow update: if isAdmin() || (
+        isAuthenticated()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slotsFilled'])
+        && request.resource.data.slotsFilled == resource.data.slotsFilled + 1
+        && resource.data.slotsFilled < resource.data.maxSlots
+      );
 
       // Players subcollection
       match /players/{playerId} {
-        allow read: if request.auth != null;
-        // Player can join (create own registration), admin can manage all
-        allow create: if request.auth != null && request.auth.uid == playerId;
+        allow read: if isAuthenticated();
+        // Player can only join themselves; cannot tamper status or register others
+        allow create: if isAuthenticated()
+          && request.auth.uid == playerId
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.status == 'registered';
         allow update, delete: if isAdmin();
       }
     }
 
     // ─── TOURNAMENT TEMPLATES ───
     match /tournamentTemplates/{templateId} {
-      allow read: if request.auth != null;
+      allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
 
     // ─── MATCH RESULTS ───
     match /matchResults/{resultId} {
-      allow read: if request.auth != null;
-      // CRITICAL: Only admin can declare winners and submit fraggers
+      allow read: if isAuthenticated();
+      // CRITICAL: Only admin can declare winners, fraggers, or submit scores
       allow create, update, delete: if isAdmin();
     }
 
     // ─── TRANSACTIONS ───
     match /transactions/{userId}/{document=**} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0;
       allow update, delete: if isAdmin();
     }
 
     // ─── WITHDRAWALS ───
     match /withdrawals/{withdrawalId} {
       allow read: if isWithdrawalOwner() || isAdmin();
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      // CRITICAL: Only admin can approve/reject
-      allow update: if isAdmin();
+      // On create: MUST be pending, valid limits, user cannot pre-approve
+      allow create: if isAuthenticated()
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.status == 'pending'
+        && request.resource.data.amount is number
+        && request.resource.data.amount >= 200
+        && request.resource.data.amount <= 50000
+        && request.resource.data.method in ['jazzcash', 'easypaisa']
+        && request.resource.data.accountNumber is string
+        && request.resource.data.accountNumber.size() >= 10;
+      // CRITICAL: Only admin can approve or reject
+      allow update, delete: if isAdmin();
     }
 
     // ─── DEPOSITS ───
     match /deposits/{depositId} {
-      allow read: if (request.auth != null && request.auth.uid == resource.data.userId) || isAdmin();
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      // CRITICAL: Only admin can approve/reject deposits
+      allow read: if (isAuthenticated() && request.auth.uid == resource.data.userId) || isAdmin();
+      // On create: MUST be pending, valid limits, user cannot pre-approve
+      allow create: if isAuthenticated()
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.status == 'pending'
+        && request.resource.data.amount is number
+        && request.resource.data.amount >= 30
+        && request.resource.data.amount <= 20000
+        && request.resource.data.paymentMethod in ['jazzcash', 'easypaisa']
+        && request.resource.data.screenshotUrl is string
+        && request.resource.data.screenshotUrl.size() > 10
+        && request.resource.data.senderNumber is string
+        && request.resource.data.senderNumber.size() >= 10;
+      // CRITICAL: Only admin can approve or reject deposits
       allow update, delete: if isAdmin();
     }
 
     // ─── REPORTS ───
     match /reports/{reportId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      // Only admin can update status
+      allow read: if isAuthenticated();
+      // Rate-limiting / anti-abuse: prevent infinite payload spam
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 1500;
       allow update, delete: if isAdmin();
     }
 
     // ─── REVIEWS ───
     match /reviews/{reviewId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.rating is number
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() <= 600;
       // Reviews are immutable
+      allow update, delete: if isAdmin();
     }
   }
 }
