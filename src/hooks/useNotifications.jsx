@@ -17,6 +17,20 @@ export function NotificationProvider({ children }) {
   const [showPanel, setShowPanel] = useState(false);
   const [foregroundPayload, setForegroundPayload] = useState(null);
 
+  const requestPermission = useCallback(async () => {
+    const token = await requestNotificationPermission();
+    if (token) {
+      setPermission('granted');
+      const user = auth.currentUser;
+      if (user) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          fcmTokens: arrayUnion(token),
+        }).catch(() => { });
+      }
+    }
+    return token;
+  }, []);
+
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -91,19 +105,6 @@ export function NotificationProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const requestPermission = useCallback(async () => {
-    const token = await requestNotificationPermission();
-    if (token) {
-      setPermission('granted');
-      const user = auth.currentUser;
-      if (user) {
-        await updateDoc(doc(db, 'users', user.uid), {
-          fcmTokens: arrayUnion(token),
-        }).catch(() => { });
-      }
-    }
-    return token;
-  }, []);
 
   const markAsRead = useCallback(async (notifId) => {
     const user = auth.currentUser;
