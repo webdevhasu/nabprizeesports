@@ -211,7 +211,7 @@ export default function Landing() {
           marginBottom: '22px', fontSize: '12px', color: '#FF8A65', fontWeight: 600,
         }}>
           <Sparkles size={14} color="#F4B740" />
-          <span>Pakistan's #1 Competitive Mobile Esports Arena</span>
+          <span>Totally Skill-Based Esports Tournament Platform</span>
         </div>
 
         {/* Main Headline */}
@@ -231,7 +231,7 @@ export default function Landing() {
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
-            Win Real Cash.
+            Earn Skill Rewards.
           </span>
         </h1>
 
@@ -243,7 +243,7 @@ export default function Landing() {
           margin: '0 auto 34px',
           lineHeight: 1.6,
         }}>
-          Join 10,000+ Pakistani gamers fighting in daily verified custom rooms. Instant payouts directly to your <strong>JazzCash</strong> or <strong>EasyPaisa</strong> account.
+          Show your skills in daily verified PUBG Mobile & Free Fire custom rooms and withdraw cash rewards directly to <strong>JazzCash</strong> or <strong>EasyPaisa</strong>.
         </p>
 
         {/* 🌟 THE TWO PRIMARY CTA BUTTONS 🌟 */}
@@ -349,7 +349,7 @@ export default function Landing() {
             <ShieldCheck size={15} color="#3FA65C" /> 100% Fair Anti-Cheat
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Trophy size={15} color="#F4B740" /> Guaranteed Prize Pools
+            <Trophy size={15} color="#F4B740" /> Fair Play & Skill Rewards
           </div>
         </div>
       </header>
@@ -381,7 +381,7 @@ export default function Landing() {
               PKR 500K+
             </div>
             <div style={{ fontSize: '12px', color: '#8A8078', marginTop: '2px', fontWeight: 500 }}>
-              Prize Rewards Distributed
+              Skill Rewards Distributed
             </div>
           </div>
           <div>
@@ -502,7 +502,7 @@ export default function Landing() {
             Compete In Top Mobile Titles
           </h2>
           <p style={{ fontSize: '14px', color: '#8A8078', marginTop: '6px' }}>
-            Daily custom rooms, solo, duo, and squad formats with guaranteed cash prizes
+            Totally skill-based esports tournaments with verified custom rooms and direct rewards
           </p>
         </div>
 
@@ -539,11 +539,11 @@ export default function Landing() {
                 Daily Erangel & TDM Customs
               </h3>
               <p style={{ fontSize: '13px', color: '#A69E94', lineHeight: 1.5, margin: '0 0 16px' }}>
-                Solo & Squad battle royale matches. Fast kill rewards + chicken dinner prize pool sent directly to your wallet.
+                Solo & Squad battle royale matches. Verified rooms with kill rewards and champion rewards sent directly to your wallet.
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: '#3FA65C', fontWeight: 700 }}>
-                  Entry from PKR 50
+                  Service Charges PKR 50
                 </span>
                 <button
                   onClick={handleContinueInBrowser}
@@ -586,11 +586,11 @@ export default function Landing() {
                 Clash Squad & Bermuda Cups
               </h3>
               <p style={{ fontSize: '13px', color: '#A69E94', lineHeight: 1.5, margin: '0 0 16px' }}>
-                Compete in intense 4v4 clash squad battles or full lobby survival rooms. Instant kill bonuses and verified room IDs.
+                Compete in intense 4v4 clash squad battles or full lobby survival rooms. Verified room IDs and direct skill rewards.
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: '#3FA65C', fontWeight: 700 }}>
-                  Entry from PKR 50
+                  Service Charges PKR 50
                 </span>
                 <button
                   onClick={handleContinueInBrowser}
@@ -620,7 +620,7 @@ export default function Landing() {
             How It Works (4 Simple Steps)
           </h2>
           <p style={{ fontSize: '14px', color: '#8A8078', marginTop: '6px' }}>
-            Get into the arena and withdraw winnings within minutes
+            Get into the arena and withdraw your rewards within minutes
           </p>
         </div>
 
@@ -638,7 +638,7 @@ export default function Landing() {
             {
               num: '2',
               title: 'Deposit Funds',
-              desc: 'Add balance via your JazzCash or EasyPaisa mobile account instantly.',
+              desc: 'Add wallet balance easily via JazzCash or EasyPaisa for tournament service charges.',
             },
             {
               num: '3',
@@ -647,8 +647,8 @@ export default function Landing() {
             },
             {
               num: '4',
-              title: 'Win & Withdraw',
-              desc: 'Score kills & victories. Withdraw cash directly to JazzCash / EasyPaisa.',
+              title: 'Earn Rewards & Withdraw',
+              desc: 'Show your skills & top the lobby. Withdraw cash rewards directly to JazzCash / EasyPaisa.',
             },
           ].map((step, idx) => (
             <div
@@ -697,7 +697,7 @@ export default function Landing() {
             Ready to Prove Your Gaming Skills?
           </h2>
           <p style={{ fontSize: '15px', color: '#C4BCB2', maxWidth: '540px', margin: '0 auto 28px' }}>
-            Install the NabPrize app or jump straight into the browser arena now.
+            Join Pakistan's premier totally skill-based esports platform with guaranteed fair play.
           </p>
 
           <div style={{
