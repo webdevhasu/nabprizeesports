@@ -17,6 +17,9 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCooldown, setResetCooldown] = useState(0);
   const [showSupport, setShowSupport] = useState(false);
 
   // Check if user has completed account setup, navigate accordingly
@@ -69,15 +72,24 @@ export default function Login() {
   };
 
   const handleForgotPassword = async () => {
-    if (!email) { setError('Enter your email first.'); return; }
+    const targetEmail = resetEmail.trim();
+    if (!targetEmail) return;
+    if (resetCooldown > 0) return;
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, targetEmail);
       setResetSent(true);
       setError('');
+      setResetCooldown(60);
     } catch {
       setError('Could not send reset email. Check your email address.');
     }
   };
+
+  useEffect(() => {
+    if (resetCooldown <= 0) return undefined;
+    const timer = window.setInterval(() => setResetCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [resetCooldown]);
 
   return (
     <div className="auth-page-wrapper">
@@ -247,7 +259,7 @@ export default function Login() {
             </div>
 
             <div style={{ textAlign: 'right', marginBottom: '20px' }}>
-              <button type="button" onClick={handleForgotPassword} style={{
+              <button type="button" onClick={() => { setResetEmail(email); setShowForgotPassword(true); setResetSent(false); setError(''); }} style={{
                 background: 'none', border: 'none', color: '#FF6B4A', fontSize: '12px',
                 cursor: 'pointer', fontWeight: 600,
               }}>
@@ -282,6 +294,22 @@ export default function Login() {
           </p>
         </div>
       </div>
+      {showForgotPassword && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(17,28,53,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '390px', background: '#FFFFFF', borderRadius: '18px', padding: '24px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <h2 style={{ margin: 0, color: '#111C35', fontSize: '20px' }}>Reset your password</h2>
+            <p style={{ color: '#6E675F', fontSize: '13px', lineHeight: 1.5, margin: '8px 0 18px' }}>Enter your account email and we’ll send you a secure password reset link.</p>
+            <input type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value.slice(0, 100))} placeholder="Enter your email" autoFocus style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', border: '1px solid #D9D3CC', borderRadius: '10px', fontSize: '14px', outline: 'none' }} />
+            {resetSent && <div style={{ marginTop: '10px', color: '#2E7D32', fontSize: '12px', lineHeight: 1.5 }}>Reset link sent. Check your inbox and Spam/Junk folder.</div>}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+              <button type="button" onClick={() => setShowForgotPassword(false)} style={{ flex: 1, padding: '11px', border: '1px solid #D9D3CC', background: '#FFF', borderRadius: '9px', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button type="button" onClick={handleForgotPassword} disabled={!resetEmail.trim() || resetCooldown > 0} style={{ flex: 1, padding: '11px', border: 0, background: !resetEmail.trim() || resetCooldown > 0 ? '#C4BCB2' : '#E30613', color: '#FFF', borderRadius: '9px', fontWeight: 700, cursor: 'pointer' }}>
+                {resetCooldown > 0 ? `Retry in ${resetCooldown}s` : resetSent ? 'Send again' : 'Send reset link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <SupportModal isOpen={showSupport} onClose={() => setShowSupport(false)} />
     </div>
   );
