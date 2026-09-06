@@ -654,7 +654,7 @@ export default function Landing() {
             {
               num: '4',
               title: 'Earn Rewards & Withdraw',
-              desc: 'Show your skills & top the lobby. Withdraw cash rewards directly to JazzCash / EasyPaisa.',
+              desc: 'Show your skills & top the lobby. Earn fixed platform rewards and withdraw eligible balances to JazzCash / EasyPaisa.',
             },
           ].map((step, idx) => (
             <div

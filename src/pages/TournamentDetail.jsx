@@ -835,9 +835,15 @@ export default function TournamentDetail() {
                 <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '20px', cursor: 'pointer' }}>
                   <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: '2px' }} />
                   <span style={{ fontSize: '13px', color: '#2E2A26', fontWeight: 500 }}>
-                    I agree to follow the match rules and join within the 10-minute room window.
+                    I have read and agree to the <Link to="/terms" target="_blank" rel="noreferrer" style={{ color: '#FF6B4A', fontWeight: 700 }}>Terms & Refund Policy</Link>. I will follow the match rules and join within the 10-minute room window.
                   </span>
                 </label>
+
+                {tournament?.registrationCharge > 0 && (
+                  <div style={{ background: '#F8F6F1', border: '1px solid #EBE4DA', borderRadius: '10px', padding: '10px 12px', marginBottom: '14px', fontSize: '11px', color: '#6F675F', lineHeight: 1.5 }}>
+                    This payment is a tournament service/registration fee. The displayed reward is fixed by the platform and is not a player-funded prize pool. Platform-side cancellation or failure to conduct the match is refundable; player no-shows, losses and rule violations are non-refundable.
+                  </div>
+                )}
 
                 <button
                   onClick={() => {
@@ -914,7 +920,7 @@ export default function TournamentDetail() {
                       opacity: joining ? 0.7 : 1,
                     }}
                   >
-                    {joining ? 'Processing Registration...' : `Pay Rs ${tournament.registrationCharge} & Confirm Slot`}
+                    {joining ? 'Processing Registration...' : `Pay Service Fee Rs ${tournament.registrationCharge} & Confirm Slot`}
                   </button>
                 ) : (
                   <div style={{ textAlign: 'center' }}>

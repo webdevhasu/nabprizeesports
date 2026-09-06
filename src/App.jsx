@@ -207,7 +207,8 @@ export default function App() {
         <Route path="/add-funds" element={<ProtectedRoute><UserShell><NavLayout title="Deposit Funds"><AddFunds /></NavLayout></UserShell></ProtectedRoute>} />
         <Route path="/withdraw" element={<ProtectedRoute><UserShell><NavLayout title="Withdraw Funds"><Withdraw /></NavLayout></UserShell></ProtectedRoute>} />
         <Route path="/transactions" element={<ProtectedRoute><UserShell><NavLayout title="Transaction History"><TransactionHistory /></NavLayout></UserShell></ProtectedRoute>} />
-        <Route path="/terms" element={<ProtectedRoute><UserShell><NavLayout title="Rules & Terms"><Terms /></NavLayout></UserShell></ProtectedRoute>} />
+        {/* Public so users can read terms before signing in or paying */}
+        <Route path="/terms" element={<Terms />} />
         <Route path="/how-it-works" element={<ProtectedRoute><UserShell><NavLayout title="How It Works"><HowItWorks /></NavLayout></UserShell></ProtectedRoute>} />
         <Route path="/reviews" element={<ProtectedRoute><UserShell><NavLayout title="Player Reviews"><Reviews /></NavLayout></UserShell></ProtectedRoute>} />
 
