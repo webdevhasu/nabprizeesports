@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, where, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { AlertTriangle, CheckCircle2, XCircle, Shield, Clock, Search, Ban, Eye } from 'lucide-react';
 import AdminLayout from './AdminLayout';
@@ -19,15 +19,18 @@ export default function AdminReports() {
   const [reportType, setReportType] = useState('player');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState(null);
+  const [pageSize, setPageSize] = useState(100);
+  const [hasMoreReports, setHasMoreReports] = useState(false);
 
   useEffect(() => {
-    const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(pageSize));
     const unsub = onSnapshot(q, (snap) => {
       setReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setHasMoreReports(snap.size === pageSize);
       setLoading(false);
     }, () => setLoading(false));
     return unsub;
-  }, []);
+  }, [pageSize]);
 
   const filteredReports = reports.filter(r => {
     if (reportType === 'player' && r.type === 'support') return false;
@@ -213,6 +216,15 @@ export default function AdminReports() {
               );
             })}
           </div>
+        )}
+
+        {hasMoreReports && (
+          <button
+            onClick={() => setPageSize(size => size + 100)}
+            style={{ display: 'block', margin: '18px auto 0', padding: '10px 22px', borderRadius: '8px', border: '1px solid #FF6B4A', background: '#FFF3EC', color: '#FF6B4A', fontWeight: 700, cursor: 'pointer' }}
+          >
+            Load more reports
+          </button>
         )}
 
         {/* Report Detail Modal */}

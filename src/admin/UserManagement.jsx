@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, limit } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import {
   Users,
@@ -36,17 +36,22 @@ const inputStyle = {
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
+  const [pageSize, setPageSize] = useState(100);
+  const [hasMoreUsers, setHasMoreUsers] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     const unsub = onSnapshot(
-      query(collection(db, 'users')),
-      (snap) => setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      query(collection(db, 'users'), limit(pageSize)),
+      (snap) => {
+        setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setHasMoreUsers(snap.size === pageSize);
+      },
       () => {}
     );
     return unsub;
-  }, []);
+  }, [pageSize]);
 
   const handleBanUser = async (userId, currentBanned) => {
     const actionText = currentBanned ? 'unban' : 'ban';
@@ -343,6 +348,14 @@ export default function UserManagement() {
             </tbody>
           </table>
         </div>
+        {hasMoreUsers && (
+          <button
+            onClick={() => setPageSize(size => size + 100)}
+            style={{ display: 'block', margin: '18px auto 0', padding: '10px 22px', borderRadius: '8px', border: '1px solid #FF6B4A', background: '#FFF3EC', color: '#FF6B4A', fontWeight: 700, cursor: 'pointer' }}
+          >
+            Load more users
+          </button>
+        )}
       </div>
     </AdminLayout>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, updateDoc, increment, addDoc, serverTimestamp, getDoc, runTransaction } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, increment, addDoc, serverTimestamp, getDoc, runTransaction, query, limit } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import {
   CheckCircle,
@@ -38,11 +38,13 @@ export default function Withdrawals() {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
+  const [pageSize, setPageSize] = useState(100);
+  const [hasMoreWithdrawals, setHasMoreWithdrawals] = useState(false);
 
   useEffect(() => {
     // Listen to withdrawals collection directly without orderBy constraint so docs with requestedAt / createdAt are never dropped
     const unsub = onSnapshot(
-      collection(db, 'withdrawals'),
+      query(collection(db, 'withdrawals'), limit(pageSize)),
       (snap) => {
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         list.sort((a, b) => {
@@ -51,13 +53,14 @@ export default function Withdrawals() {
           return timeB - timeA;
         });
         setWithdrawals(list);
+        setHasMoreWithdrawals(snap.size === pageSize);
       },
       (error) => {
         console.error('Error listening to withdrawals:', error);
       }
     );
     return unsub;
-  }, []);
+  }, [pageSize]);
 
   const handleAction = async (w, status) => {
     setActionLoading(w.id);
@@ -391,6 +394,14 @@ export default function Withdrawals() {
             </tbody>
           </table>
         </div>
+        {hasMoreWithdrawals && (
+          <button
+            onClick={() => setPageSize(size => size + 100)}
+            style={{ display: 'block', margin: '18px auto 0', padding: '10px 22px', borderRadius: '8px', border: '1px solid #FF6B4A', background: '#FFF3EC', color: '#FF6B4A', fontWeight: 700, cursor: 'pointer' }}
+          >
+            Load more withdrawals
+          </button>
+        )}
       </div>
     </AdminLayout>
   );

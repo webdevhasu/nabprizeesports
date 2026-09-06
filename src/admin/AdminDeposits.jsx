@@ -9,7 +9,9 @@ import {
   serverTimestamp,
   getDoc,
   deleteDoc,
-  runTransaction
+  runTransaction,
+  query,
+  limit
 } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
@@ -65,6 +67,8 @@ export default function AdminDeposits() {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
+  const [pageSize, setPageSize] = useState(100);
+  const [hasMoreDeposits, setHasMoreDeposits] = useState(false);
 
   // Copied state tracking
   const [copiedId, setCopiedId] = useState(null);
@@ -86,7 +90,7 @@ export default function AdminDeposits() {
   // Real-time deposits listener
   useEffect(() => {
     const unsub = onSnapshot(
-      collection(db, 'deposits'),
+      query(collection(db, 'deposits'), limit(pageSize)),
       (snap) => {
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         list.sort((a, b) => {
@@ -95,18 +99,19 @@ export default function AdminDeposits() {
           return timeB - timeA;
         });
         setDeposits(list);
+        setHasMoreDeposits(snap.size === pageSize);
       },
       (error) => {
         console.error('Error listening to deposits:', error);
       }
     );
     return unsub;
-  }, []);
+  }, [pageSize]);
 
   // Real-time users map listener (to fetch live game IDs, balances, stats)
   useEffect(() => {
     const unsub = onSnapshot(
-      collection(db, 'users'),
+      query(collection(db, 'users'), limit(100)),
       (snap) => {
         const map = {};
         snap.forEach((d) => {
@@ -1012,6 +1017,14 @@ export default function AdminDeposits() {
             </tbody>
           </table>
         </div>
+        {hasMoreDeposits && (
+          <button
+            onClick={() => setPageSize(size => size + 100)}
+            style={{ display: 'block', margin: '18px auto 0', padding: '10px 22px', borderRadius: '8px', border: '1px solid #FF6B4A', background: '#FFF3EC', color: '#FF6B4A', fontWeight: 700, cursor: 'pointer' }}
+          >
+            Load more deposits
+          </button>
+        )}
       </div>
 
       {/* Comprehensive Details & Screenshot Modal */}
