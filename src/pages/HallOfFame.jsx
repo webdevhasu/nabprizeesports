@@ -60,7 +60,7 @@ export default function HallOfFame() {
             userId: doc.id,
             username: data.username || 'Player',
             totalKills: data.totalKills || 0,
-            totalWins: data.totalWins || 0,
+            totalChampionships: data.totalChampionships || 0,
             games: data.games || [],
           });
         }
@@ -120,7 +120,7 @@ export default function HallOfFame() {
       });
     }
   }
-  const allTimeTopWinners = Array.from(winnerStatsMap.values())
+  const allTimeTopChampions = Array.from(winnerStatsMap.values())
     .sort((a, b) => b.wins - a.wins || b.totalKills - a.totalKills)
     .slice(0, 10);
 
@@ -230,7 +230,7 @@ export default function HallOfFame() {
           border: '1px solid #EBE4DA',
         }}>
           {[
-            { key: 'winners', label: 'Winners', icon: <Trophy size={14} /> },
+            { key: 'winners', label: 'Champions', icon: <Trophy size={14} /> },
             { key: 'recent', label: 'Recent Top 3', icon: <Flame size={14} /> },
             { key: 'alltime', label: 'All-Time', icon: <Star size={14} /> },
           ].map(tab => (
@@ -266,8 +266,8 @@ export default function HallOfFame() {
           <LoadingSpinner text="Loading leaderboard..." />
         ) : activeTab === 'winners' ? (
           /* ─── WINNERS TAB ─── */
-          !mostRecentWinner && allTimeTopWinners.length === 0 ? (
-            <EmptyState icon={<Trophy size={44} />} title="No tournament winners yet" text="Compete in daily tournaments to claim your spot!" />
+          !mostRecentWinner && allTimeTopChampions.length === 0 ? (
+            <EmptyState icon={<Trophy size={44} />} title="No tournament champions yet" text="Compete in daily tournaments to claim your spot!" />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
@@ -282,7 +282,7 @@ export default function HallOfFame() {
                     boxShadow: '0 6px 20px rgba(63, 166, 92, 0.2)',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#3FA65C', fontSize: '11px', fontWeight: 800, letterSpacing: '0.5px', marginBottom: '10px' }}>
-                      <Trophy size={14} /> RECENT WINNER
+                      <Trophy size={14} /> RECENT CHAMPION
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
@@ -323,12 +323,12 @@ export default function HallOfFame() {
               })()}
 
               {/* ALL-TIME BEST TOP 10 */}
-              {allTimeTopWinners.length > 0 && (
+              {allTimeTopChampions.length > 0 && (
                 <>
                   <p style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '4px' }}>
-                    All-Time Best Winners
+                    All-Time Best Champions
                   </p>
-                  {allTimeTopWinners.map((player, i) => {
+                  {allTimeTopChampions.map((player, i) => {
                     const rank = getRankBadge(i);
                     const uid = player.gameUid;
                     return (
@@ -372,7 +372,7 @@ export default function HallOfFame() {
                               {player.wins}
                             </div>
                             <div style={{ fontSize: '10px', fontWeight: 700, color: '#8A8078', marginTop: '2px', textTransform: 'uppercase' }}>
-                              Wins
+                              Championships
                             </div>
                             <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 700, marginTop: '2px' }}>
                               {player.totalKills} Kills
@@ -502,7 +502,7 @@ export default function HallOfFame() {
                             )}
                           </div>
                           <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '3px' }}>
-                            {frag.totalWins || 0} wins
+                            {frag.totalChampionships || 0} wins
                           </div>
                         </div>
 
