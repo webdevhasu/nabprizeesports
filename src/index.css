@@ -49,7 +49,7 @@ body {
 }
 
 /* Keep legacy inline component styles aligned with the NabPrize logo palette. */
-[style*="#FF6B4A"], [style*="#E8552F"], [style*="rgba(255,107,74"] {
+[style*="#FF6B4A"], [style*="#E8552F"], [style*="rgb(255, 107, 74)"], [style*="rgb(232, 85, 47)"], [style*="rgba(255,107,74"] {
   color: #E30613 !important;
   background: #E30613 !important;
   border-color: #E30613 !important;
