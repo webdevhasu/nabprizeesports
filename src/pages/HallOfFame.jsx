@@ -81,7 +81,32 @@ export default function HallOfFame() {
     setTimeout(() => setCopiedUid(null), 2000);
   };
 
-  // 1. RECENT WINNERS — Most Recent Match Champions
+  // 1. ALL-TIME BEST WINNER — Most wins, then most kills as tiebreaker
+  const winnerStatsMap = new Map();
+  for (const r of results) {
+    if (!r.isWinner || !r.userId) continue;
+    const existing = winnerStatsMap.get(r.userId);
+    if (existing) {
+      existing.wins += 1;
+      existing.totalKills += Number(r.kills) || 0;
+    } else {
+      winnerStatsMap.set(r.userId, {
+        userId: r.userId,
+        username: r.username,
+        ign: r.ign || '',
+        gameUid: r.gameUid || r.uid || '',
+        wins: 1,
+        totalKills: Number(r.kills) || 0,
+        lastTournament: r.tournamentName,
+        lastTimestamp: r.timestamp,
+        game: r.game,
+      });
+    }
+  }
+  const allTimeBestWinner = Array.from(winnerStatsMap.values())
+    .sort((a, b) => b.wins - a.wins || b.totalKills - a.totalKills)[0] || null;
+
+  // 2. RECENT WINNERS — Most Recent Match Champions (excluding all-time best if shown above)
   const recentWinners = results
     .filter(r => r.isWinner)
     .sort((a, b) => {
@@ -91,7 +116,7 @@ export default function HallOfFame() {
     })
     .slice(0, 10);
 
-  // 2. RECENT TOP 3 FRAGGERS — From last 3 matches, deduplicated best performance per player
+  // 3. RECENT TOP 3 FRAGGERS — From last 5 matches, best kill per player (WINNERS INCLUDED)
   const recentMatches = results
     .filter(r => (Number(r.kills) || 0) > 0)
     .sort((a, b) => {
@@ -237,14 +262,72 @@ export default function HallOfFame() {
             <EmptyState icon={<Trophy size={44} />} title="No tournament winners yet" text="Compete in daily tournaments to claim your spot!" />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+              {/* ALL-TIME BEST WINNER — Top card */}
+              {allTimeBestWinner && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #FFF8E1 0%, #FFFFFF 100%)',
+                  borderRadius: '16px', padding: '18px',
+                  border: '2px solid #F4B740',
+                  boxShadow: '0 6px 20px rgba(244, 183, 64, 0.2)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F4B740', fontSize: '11px', fontWeight: 800, letterSpacing: '0.5px', marginBottom: '10px' }}>
+                    <Crown size={14} /> ALL TIME BEST
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '48px', height: '48px', borderRadius: '14px',
+                      background: 'linear-gradient(135deg, #F4B740 0%, #E88B00 100%)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Crown size={24} color="#FFFFFF" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, fontSize: '16px', color: '#2E2A26' }}>@{allTimeBestWinner.username}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
+                          IGN: {allTimeBestWinner.ign || 'Player'}
+                        </span>
+                        {allTimeBestWinner.gameUid && (
+                          <button onClick={() => handleCopyUid(allTimeBestWinner.gameUid)} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px',
+                            fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4',
+                            padding: '2px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                          }}>
+                            <span>UID: {allTimeBestWinner.gameUid}</span>
+                            {copiedUid === allTimeBestWinner.gameUid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '22px', color: '#F4B740', lineHeight: 1 }}>
+                        {allTimeBestWinner.wins}
+                      </div>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: '#8A8078', marginTop: '2px', textTransform: 'uppercase' }}>
+                        Wins
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 700, marginTop: '2px' }}>
+                        {allTimeBestWinner.totalKills} Kills
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* RECENT WINNERS — List below */}
+              <p style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '4px' }}>
+                Recent Winners
+              </p>
               {recentWinners.map((winner, i) => {
                 const rank = getRankBadge(i);
                 const uid = winner.gameUid || winner.uid;
                 return (
                   <div key={`${winner.tournamentId}-${winner.userId}-${i}`} style={{
                     background: '#FFFFFF', borderRadius: '16px', padding: '16px',
-                    border: i === 0 ? '2px solid #F4B740' : '1px solid #EBE4DA',
-                    boxShadow: i === 0 ? '0 4px 14px rgba(244, 183, 64, 0.15)' : '0 1px 3px rgba(0,0,0,0.02)',
+                    border: '1px solid #EBE4DA',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
@@ -257,9 +340,6 @@ export default function HallOfFame() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{winner.username}</span>
-                          {i === 0 && (
-                            <span style={{ fontSize: '10px', background: '#FFF8E1', color: '#F4B740', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>LATEST CHAMP</span>
-                          )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
                           <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
