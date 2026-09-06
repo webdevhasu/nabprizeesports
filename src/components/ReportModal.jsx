@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { X, AlertTriangle, Shield, Send, Target, ChevronDown } from 'lucide-react';
@@ -23,6 +23,8 @@ export default function ReportModal({ isOpen, onClose }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [website, setWebsite] = useState('');
+  const formStartedAt = useRef(Date.now());
 
   // Fetch today's recent tournaments
   useEffect(() => {
@@ -54,6 +56,10 @@ export default function ReportModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (website || Date.now() - formStartedAt.current < 1500) {
+      setError('Please complete the form normally and try again.');
+      return;
+    }
     setError('');
 
     if (!selectedTournament) {
@@ -190,6 +196,16 @@ export default function ReportModal({ isOpen, onClose }) {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
+              <input
+                type="text"
+                name="website"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                style={{ position: 'absolute', left: '-10000px', opacity: 0, height: 0, width: 0 }}
+              />
 
               {/* Tournament Selector */}
               <div style={{ marginBottom: '14px' }}>

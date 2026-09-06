@@ -66,6 +66,8 @@ export default function AddFunds() {
   const [successMsg, setSuccessMsg] = useState('');
 
   const [recentDeposits, setRecentDeposits] = useState([]);
+  const [website, setWebsite] = useState('');
+  const formStartedAt = useRef(Date.now());
   const fileInputRef = useRef(null);
 
   // Copy payment number
@@ -149,6 +151,11 @@ export default function AddFunds() {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    if (website || Date.now() - formStartedAt.current < 1500) {
+      setErrorMsg('Please complete the form normally and try again.');
+      return;
+    }
 
     const parsedAmount = Number(amount);
     if (!parsedAmount || parsedAmount < 30) {
@@ -355,6 +362,16 @@ export default function AddFunds() {
         )}
 
         <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            name="website"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            style={{ position: 'absolute', left: '-10000px', opacity: 0, height: 0, width: 0 }}
+          />
           
           {/* STEP 1: Select Amount */}
           <div

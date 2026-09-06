@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase/config';
@@ -14,6 +14,8 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [website, setWebsite] = useState('');
+  const formStartedAt = useRef(Date.now());
 
   const getPasswordStrength = () => {
     if (password.length < 8) return { text: 'Too short', color: '#D9503F' };
@@ -29,6 +31,10 @@ export default function SignUp() {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
+    if (website || Date.now() - formStartedAt.current < 1500) {
+      setError('Please complete the form normally and try again.');
+      return;
+    }
     setError('');
 
     if (password !== confirmPassword) {
@@ -156,6 +162,16 @@ export default function SignUp() {
       )}
 
       <form onSubmit={handleSignUp}>
+        <input
+          type="text"
+          name="website"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          style={{ position: 'absolute', left: '-10000px', opacity: 0, height: 0, width: 0 }}
+        />
         <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Full Name</label>
           <input
