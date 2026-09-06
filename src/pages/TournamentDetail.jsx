@@ -620,10 +620,11 @@ export default function TournamentDetail() {
           marginBottom: '16px',
         }}>
           {[
-            { label: 'Registration Fee', value: `Rs ${tournament.registrationCharge}`, color: '#2E2A26' },
+            { label: 'Registration Fee', value: tournament.registrationCharge > 0 ? `Rs ${tournament.registrationCharge}` : 'FREE', color: '#2E2A26' },
             { label: 'Winner Cash Reward', value: `Rs ${tournament.fixedReward}`, color: '#FF6B4A' },
-            { label: 'Player Slots', value: `${tournament.slotsFilled || 0}/${tournament.maxSlots}`, color: '#2E2A26' },
+            { label: 'Per Kill Reward', value: (tournament.perKillReward || 0) > 0 ? `Rs ${tournament.perKillReward}` : '—', color: '#7B4FE0' },
             { label: 'Match Format', value: tournament.matchType || 'Solo', color: '#2E2A26' },
+            { label: 'Player Slots', value: `${tournament.slotsFilled || 0}/${tournament.maxSlots}`, color: '#2E2A26' },
           ].map(item => (
             <div key={item.label} style={{
               background: '#FFFFFF',

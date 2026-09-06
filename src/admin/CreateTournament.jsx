@@ -283,6 +283,7 @@ export default function CreateTournament() {
           maxSlots,
           registrationCharge,
           fixedReward,
+          perKillReward: Number(formData.perKillReward) || 0,
           startTime: formData.startTime,
           mapName: formData.mapName,
           rules: formData.rules,
@@ -308,6 +309,7 @@ export default function CreateTournament() {
           maxSlots,
           registrationCharge,
           fixedReward,
+          perKillReward: Number(formData.perKillReward) || 0,
           status: 'upcoming',
           slotsFilled: 0,
           roomReleased: Boolean(formData.roomId),
@@ -340,7 +342,8 @@ export default function CreateTournament() {
         tournamentType: 'Daily',
         maxSlots: '25',
         registrationCharge: '',
-        fixedReward: '',
+      fixedReward: '',
+      perKillReward: '',
         startTime: '',
         mapName: 'Erangel',
         rules: '',
@@ -1041,6 +1044,22 @@ export default function CreateTournament() {
                       style={inputStyle}
                       required
                     />
+                  </div>
+
+                  {/* Per Kill Reward */}
+                  <div>
+                    <label style={labelStyle}>Per Kill Reward (PKR)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="e.g. 10 (0 = no kill reward)"
+                      value={formData.perKillReward || ''}
+                      onChange={e => setFormData({ ...formData, perKillReward: e.target.value })}
+                      style={inputStyle}
+                    />
+                    <p style={{ fontSize: '11px', color: '#8A8078', marginTop: '4px' }}>
+                      Each player gets this amount per kill. Set 0 to disable.
+                    </p>
                   </div>
 
                   {/* Start Time (Registration Close Time) */}

@@ -303,9 +303,9 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
                 color: '#FF6B4A',
               },
               {
-                label: 'Slots',
-                value: `${slotsFilled}/${maxSlots}`,
-                color: isNearlyFull ? '#F4B740' : '#E0D8CC',
+                label: 'Per Kill',
+                value: (tournament.perKillReward || 0) > 0 ? `Rs ${tournament.perKillReward}` : '—',
+                color: '#7B4FE0',
               },
             ].map((m) => (
               <div key={m.label} style={{

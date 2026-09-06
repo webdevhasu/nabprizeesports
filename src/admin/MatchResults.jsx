@@ -156,6 +156,7 @@ export default function MatchResults() {
 
       const winnerTargetUid = winnerPlayer.userId || winnerPlayer.id;
       const prizeAmount = Number(selectedTournament.fixedReward) || 0;
+      const perKillReward = Number(selectedTournament.perKillReward) || 0;
       const winnerKillsCount = Number(playerKills[winnerId]) || 0;
 
       const players = registeredPlayers.map(p => {
@@ -169,6 +170,7 @@ export default function MatchResults() {
           gameUid: p.uid || p.gameUid || '',
           uid: p.uid || p.gameUid || '',
           kills: killsCount,
+          killReward: killsCount * perKillReward,
           reward: isWinner ? prizeAmount : 0,
           isWinner,
           placement: isWinner ? 1 : 0,
@@ -182,6 +184,7 @@ export default function MatchResults() {
         winnerDeclared: true,
         winnerId: winnerTargetUid,
         winnerUsername: winnerPlayer.username || 'Winner',
+        perKillReward,
         submittedAt: serverTimestamp(),
       }, { merge: true });
 
@@ -190,27 +193,56 @@ export default function MatchResults() {
         status: 'completed',
       });
 
-      // Update winner user profile stats
+      // Credit winner: fixed reward + per-kill reward
+      const winnerKillReward = winnerKillsCount * perKillReward;
+      const winnerTotalCredit = prizeAmount + winnerKillReward;
       await updateDoc(doc(db, 'users', winnerTargetUid), {
-        walletBalance: increment(prizeAmount),
+        walletBalance: increment(winnerTotalCredit),
         totalWins: increment(1),
         totalKills: increment(winnerKillsCount),
       });
 
-      // Log transaction in winner's history ledger
-      await addDoc(collection(db, 'transactions', winnerTargetUid, 'history'), {
-        type: 'credit',
-        amount: prizeAmount,
-        description: `Prize Won: ${selectedTournament.name}`,
-        timestamp: serverTimestamp(),
-        status: 'completed',
-      });
+      // Log winner transactions
+      if (prizeAmount > 0) {
+        await addDoc(collection(db, 'transactions', winnerTargetUid, 'history'), {
+          type: 'credit',
+          amount: prizeAmount,
+          description: `Prize Won: ${selectedTournament.name}`,
+          timestamp: serverTimestamp(),
+          status: 'completed',
+        });
+      }
+      if (winnerKillReward > 0) {
+        await addDoc(collection(db, 'transactions', winnerTargetUid, 'history'), {
+          type: 'credit',
+          amount: winnerKillReward,
+          description: `Kill Reward (${winnerKillsCount} kills × Rs ${perKillReward}): ${selectedTournament.name}`,
+          timestamp: serverTimestamp(),
+          status: 'completed',
+        });
+      }
 
-      // Update kill stats for other participants
+      // Credit per-kill reward to other participants + update totalKills
       for (const player of players) {
-        if (player.kills > 0 && player.userId !== winnerTargetUid) {
-          await updateDoc(doc(db, 'users', player.userId), {
-            totalKills: increment(player.kills),
+        if (player.userId === winnerTargetUid) continue;
+        const updateData = {};
+        if (player.kills > 0) {
+          updateData.totalKills = increment(player.kills);
+        }
+        if (player.killReward > 0) {
+          updateData.walletBalance = increment(player.killReward);
+        }
+        if (Object.keys(updateData).length > 0) {
+          await updateDoc(doc(db, 'users', player.userId), updateData);
+        }
+        // Log kill reward transaction
+        if (player.killReward > 0) {
+          await addDoc(collection(db, 'transactions', player.userId, 'history'), {
+            type: 'credit',
+            amount: player.killReward,
+            description: `Kill Reward (${player.kills} kills × Rs ${perKillReward}): ${selectedTournament.name}`,
+            timestamp: serverTimestamp(),
+            status: 'completed',
           });
         }
       }
