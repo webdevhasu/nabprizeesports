@@ -125,7 +125,7 @@ export default function Landing() {
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img
-              src="/icon-192.png"
+              src="/logo.png"
               alt="NabPrize Esports"
               style={{
                 width: '36px', height: '36px', borderRadius: '10px',
@@ -791,7 +791,7 @@ export default function Landing() {
             </div>
 
             <img
-              src="/icon-192.png"
+              src="/logo.png"
               alt="NabPrize Esports"
               style={{
                 width: '64px', height: '64px', borderRadius: '16px',

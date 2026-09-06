@@ -13,8 +13,8 @@
 }
 
 body {
-  background: #F8F6F1;
-  color: #2E2A26;
+  background: #FFF4DE;
+  color: #111C35;
   width: 100%;
   min-height: 100vh;
   margin: 0;
@@ -26,21 +26,21 @@ body {
 .mobile-app-shell {
   width: 100%;
   min-height: 100vh;
-  background: #FFF8F0;
+  background: #FFF4DE;
   position: relative;
   overflow-x: hidden;
 }
 
 :root {
-  --bg-base: #FFF8F0;
+  --bg-base: #FFF4DE;
   --bg-card: #FFFFFF;
-  --bg-card-soft: #FFF4EC;
-  --primary-coral: #FF6B4A;
-  --primary-deep: #E8552F;
-  --secondary-purple: #7B4FE0;
+  --bg-card-soft: #FFF0D2;
+  --primary-coral: #E30613;
+  --primary-deep: #B8000B;
+  --secondary-purple: #111C35;
   --accent-gold: #F4B740;
   --accent-gold-soft: #FFF6E0;
-  --text-primary: #2E2A26;
+  --text-primary: #111C35;
   --text-secondary: #8A8078;
   --text-disabled: #C4BCB2;
   --success-green: #3FA65C;

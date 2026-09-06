@@ -113,18 +113,7 @@ export default function UserLayout({ children, title, showBack = false }) {
           justifyContent: 'space-between',
         }}>
           <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{
-              background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
-              color: '#FFFFFF',
-              fontWeight: 800,
-              fontSize: '14px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              letterSpacing: '0.5px',
-              boxShadow: '0 2px 8px rgba(255, 107, 74, 0.35)'
-            }}>
-              NP
-            </div>
+            <img src="/logo.png" alt="NabPrize" style={{ width: '42px', height: '42px', objectFit: 'cover', borderRadius: '10px' }} />
             <div>
               <div style={{ fontWeight: 800, fontSize: '15px', color: '#2E2A26', lineHeight: 1.2 }}>
                 NabPrize

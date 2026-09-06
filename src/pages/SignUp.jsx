@@ -89,13 +89,7 @@ export default function SignUp() {
 
           <div style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '32px' }}>
-              <div style={{
-                background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
-                color: '#FFFFFF', fontWeight: 800, fontSize: '15px', padding: '6px 12px',
-                borderRadius: '8px', letterSpacing: '0.5px', boxShadow: '0 2px 8px rgba(255,107,74,0.35)',
-              }}>
-                NP
-              </div>
+              <img src="/logo.png" alt="NabPrize" style={{ width: '46px', height: '46px', objectFit: 'cover', borderRadius: '12px' }} />
               <div>
                 <div style={{ fontWeight: 800, fontSize: '18px', color: '#FFFFFF', lineHeight: 1.1 }}>
                   NabPrize
