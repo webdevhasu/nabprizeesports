@@ -81,7 +81,16 @@ export default function HallOfFame() {
     setTimeout(() => setCopiedUid(null), 2000);
   };
 
-  // 1. ALL-TIME BEST WINNER — Most wins, then most kills as tiebreaker
+  // 1. MOST RECENT WINNER — Latest match winner
+  const mostRecentWinner = results
+    .filter(r => r.isWinner)
+    .sort((a, b) => {
+      const timeA = a.timestamp?.toMillis?.() || (a.timestamp ? new Date(a.timestamp).getTime() : 0);
+      const timeB = b.timestamp?.toMillis?.() || (b.timestamp ? new Date(b.timestamp).getTime() : 0);
+      return timeB - timeA;
+    })[0] || null;
+
+  // 2. ALL-TIME BEST TOP 10 — Most wins, then most kills as tiebreaker
   const winnerStatsMap = new Map();
   for (const r of results) {
     if (!r.isWinner || !r.userId) continue;
@@ -89,7 +98,14 @@ export default function HallOfFame() {
     if (existing) {
       existing.wins += 1;
       existing.totalKills += Number(r.kills) || 0;
+      const tTime = r.timestamp?.toMillis?.() || (r.timestamp ? new Date(r.timestamp).getTime() : 0);
+      if (tTime > existing.lastTimestampMs) {
+        existing.lastTournament = r.tournamentName;
+        existing.lastTimestamp = r.timestamp;
+        existing.lastTimestampMs = tTime;
+      }
     } else {
+      const tTime = r.timestamp?.toMillis?.() || (r.timestamp ? new Date(r.timestamp).getTime() : 0);
       winnerStatsMap.set(r.userId, {
         userId: r.userId,
         username: r.username,
@@ -99,21 +115,13 @@ export default function HallOfFame() {
         totalKills: Number(r.kills) || 0,
         lastTournament: r.tournamentName,
         lastTimestamp: r.timestamp,
+        lastTimestampMs: tTime,
         game: r.game,
       });
     }
   }
-  const allTimeBestWinner = Array.from(winnerStatsMap.values())
-    .sort((a, b) => b.wins - a.wins || b.totalKills - a.totalKills)[0] || null;
-
-  // 2. RECENT WINNERS — Most Recent Match Champions (excluding all-time best if shown above)
-  const recentWinners = results
-    .filter(r => r.isWinner)
-    .sort((a, b) => {
-      const timeA = a.timestamp?.toMillis?.() || (a.timestamp ? new Date(a.timestamp).getTime() : 0);
-      const timeB = b.timestamp?.toMillis?.() || (b.timestamp ? new Date(b.timestamp).getTime() : 0);
-      return timeB - timeA;
-    })
+  const allTimeTopWinners = Array.from(winnerStatsMap.values())
+    .sort((a, b) => b.wins - a.wins || b.totalKills - a.totalKills)
     .slice(0, 10);
 
   // 3. RECENT TOP 3 FRAGGERS — From last 5 matches, best kill per player (WINNERS INCLUDED)
@@ -258,92 +266,41 @@ export default function HallOfFame() {
           <LoadingSpinner text="Loading leaderboard..." />
         ) : activeTab === 'winners' ? (
           /* ─── WINNERS TAB ─── */
-          recentWinners.length === 0 ? (
+          !mostRecentWinner && allTimeTopWinners.length === 0 ? (
             <EmptyState icon={<Trophy size={44} />} title="No tournament winners yet" text="Compete in daily tournaments to claim your spot!" />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-              {/* ALL-TIME BEST WINNER — Top card */}
-              {allTimeBestWinner && (
-                <div style={{
-                  background: 'linear-gradient(135deg, #FFF8E1 0%, #FFFFFF 100%)',
-                  borderRadius: '16px', padding: '18px',
-                  border: '2px solid #F4B740',
-                  boxShadow: '0 6px 20px rgba(244, 183, 64, 0.2)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F4B740', fontSize: '11px', fontWeight: 800, letterSpacing: '0.5px', marginBottom: '10px' }}>
-                    <Crown size={14} /> ALL TIME BEST
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '48px', height: '48px', borderRadius: '14px',
-                      background: 'linear-gradient(135deg, #F4B740 0%, #E88B00 100%)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <Crown size={24} color="#FFFFFF" />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, fontSize: '16px', color: '#2E2A26' }}>@{allTimeBestWinner.username}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
-                          IGN: {allTimeBestWinner.ign || 'Player'}
-                        </span>
-                        {allTimeBestWinner.gameUid && (
-                          <button onClick={() => handleCopyUid(allTimeBestWinner.gameUid)} style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px',
-                            fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4',
-                            padding: '2px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                          }}>
-                            <span>UID: {allTimeBestWinner.gameUid}</span>
-                            {copiedUid === allTimeBestWinner.gameUid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '22px', color: '#F4B740', lineHeight: 1 }}>
-                        {allTimeBestWinner.wins}
-                      </div>
-                      <div style={{ fontSize: '10px', fontWeight: 700, color: '#8A8078', marginTop: '2px', textTransform: 'uppercase' }}>
-                        Wins
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 700, marginTop: '2px' }}>
-                        {allTimeBestWinner.totalKills} Kills
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* RECENT WINNERS — List below */}
-              <p style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '4px' }}>
-                Recent Winners
-              </p>
-              {recentWinners.map((winner, i) => {
-                const rank = getRankBadge(i);
-                const uid = winner.gameUid || winner.uid;
+              {/* MOST RECENT WINNER — Top card */}
+              {mostRecentWinner && (() => {
+                const uid = mostRecentWinner.gameUid || mostRecentWinner.uid;
                 return (
-                  <div key={`${winner.tournamentId}-${winner.userId}-${i}`} style={{
-                    background: '#FFFFFF', borderRadius: '16px', padding: '16px',
-                    border: '1px solid #EBE4DA',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                  <div style={{
+                    background: 'linear-gradient(135deg, #E8F5E9 0%, #FFFFFF 100%)',
+                    borderRadius: '16px', padding: '18px',
+                    border: '2px solid #3FA65C',
+                    boxShadow: '0 6px 20px rgba(63, 166, 92, 0.2)',
                   }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#3FA65C', fontSize: '11px', fontWeight: 800, letterSpacing: '0.5px', marginBottom: '10px' }}>
+                      <Trophy size={14} /> RECENT WINNER
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
-                        width: '36px', height: '36px', borderRadius: '10px',
-                        background: rank.bg, border: `1px solid ${rank.border}`,
+                        width: '48px', height: '48px', borderRadius: '14px',
+                        background: 'linear-gradient(135deg, #3FA65C 0%, #2E7D32 100%)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 800, fontSize: i < 3 ? '18px' : '12px', color: rank.color, flexShrink: 0,
-                      }}>{rank.icon}</div>
-
+                        flexShrink: 0,
+                      }}>
+                        <Trophy size={24} color="#FFFFFF" />
+                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{winner.username}</span>
+                        <div style={{ fontWeight: 800, fontSize: '16px', color: '#2E2A26' }}>@{mostRecentWinner.username}</div>
+                        <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px', fontWeight: 600 }}>
+                          {mostRecentWinner.tournamentName}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
                           <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
-                            IGN: {winner.ign || 'Player'}
+                            IGN: {mostRecentWinner.ign || 'Player'}
                           </span>
                           {uid && (
                             <button onClick={() => handleCopyUid(uid)} style={{
@@ -356,18 +313,77 @@ export default function HallOfFame() {
                             </button>
                           )}
                         </div>
-                        <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '4px' }}>
-                          {winner.tournamentName} • {formatDate(winner.timestamp)}
-                        </div>
                       </div>
-
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 700 }}>{winner.kills || 0} Kills</div>
+                        <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 700 }}>{mostRecentWinner.kills || 0} Kills</div>
                       </div>
                     </div>
                   </div>
                 );
-              })}
+              })()}
+
+              {/* ALL-TIME BEST TOP 10 */}
+              {allTimeTopWinners.length > 0 && (
+                <>
+                  <p style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '4px' }}>
+                    All-Time Best Winners
+                  </p>
+                  {allTimeTopWinners.map((player, i) => {
+                    const rank = getRankBadge(i);
+                    const uid = player.gameUid;
+                    return (
+                      <div key={player.userId} style={{
+                        background: '#FFFFFF', borderRadius: '14px', padding: '14px',
+                        border: i < 3 ? `2px solid ${rank.border}` : '1px solid #EBE4DA',
+                        boxShadow: i < 3 ? `0 4px 14px ${rank.color}22` : 'none',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{
+                            width: '36px', height: '36px', borderRadius: '10px',
+                            background: rank.bg, border: `1px solid ${rank.border}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontWeight: 800, fontSize: i < 3 ? '18px' : '12px', color: rank.color, flexShrink: 0,
+                          }}>{rank.icon}</div>
+
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{player.username}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '3px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
+                                IGN: {player.ign || 'Player'}
+                              </span>
+                              {uid && (
+                                <button onClick={() => handleCopyUid(uid)} style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px',
+                                  fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4',
+                                  padding: '2px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                                }}>
+                                  <span>UID: {uid}</span>
+                                  {copiedUid === uid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
+                                </button>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '3px' }}>
+                              {player.lastTournament}
+                            </div>
+                          </div>
+
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '20px', color: '#FF6B4A', lineHeight: 1 }}>
+                              {player.wins}
+                            </div>
+                            <div style={{ fontSize: '10px', fontWeight: 700, color: '#8A8078', marginTop: '2px', textTransform: 'uppercase' }}>
+                              Wins
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 700, marginTop: '2px' }}>
+                              {player.totalKills} Kills
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </div>
           )
         ) : activeTab === 'recent' ? (
