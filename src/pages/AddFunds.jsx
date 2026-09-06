@@ -175,16 +175,18 @@ export default function AddFunds() {
       return;
     }
 
+    const cleanSenderName = senderName.trim();
+    if (cleanSenderName.length < 2 || cleanSenderName.length > 40) {
+      setErrorMsg('Please enter the account holder name shown on your payment account.');
+      return;
+    }
+
     if (!screenshotFile) {
       setErrorMsg('Please attach the payment screenshot as proof.');
       return;
     }
 
     const cleanTransactionId = transactionId.trim();
-    if (cleanTransactionId.length < 4 || cleanTransactionId.length > 100) {
-      setErrorMsg('Please enter a valid payment transaction ID (4-100 characters).');
-      return;
-    }
 
     if (!currentUser?.uid) {
       setErrorMsg('Please log in to submit a deposit request.');
@@ -238,7 +240,7 @@ export default function AddFunds() {
               paymentMethod: selectedMethod || 'jazzcash',
               targetNumber: PAYMENT_ACCOUNTS[selectedMethod]?.cleanNumber || '',
               senderNumber: cleanSender,
-              senderName: senderName.trim() || '',
+              senderName: cleanSenderName,
               transactionId: cleanTransactionId,
               screenshotUrl: downloadUrl,
               screenshotSizeKb: Math.round(fileToUpload.size / 1024),
@@ -247,9 +249,7 @@ export default function AddFunds() {
               createdAt: serverTimestamp(),
             };
 
-            const depositKey = `${currentUser.uid}_${cleanTransactionId
-              .replace(/[^a-zA-Z0-9_-]/g, '_')
-              .slice(0, 80)}`;
+            const depositKey = `${currentUser.uid}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
             await setDoc(doc(db, 'deposits', depositKey), payload);
 
             setUploadProgress(100);
@@ -717,10 +717,10 @@ export default function AddFunds() {
               )}
             </div>
 
-            {/* Sender Account Name (Optional) */}
+            {/* Sender Account Name (Required) */}
             <div style={{ marginBottom: '12px' }}>
               <label style={{ fontSize: '12px', color: '#5E5851', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
-                Sender Account Title / Name (Optional)
+                Sender Account Title / Name *
               </label>
               <input
                 type="text"
@@ -742,10 +742,10 @@ export default function AddFunds() {
               />
             </div>
 
-            {/* Transaction ID / TID (Required for duplicate-payment protection) */}
+            {/* Transaction ID / TID (Optional; screenshot is the payment proof) */}
             <div style={{ marginBottom: '16px' }}>
               <label style={{ fontSize: '12px', color: '#5E5851', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
-                Transaction ID / TID *
+                Transaction ID / TID (Optional)
               </label>
               <input
                 type="text"
