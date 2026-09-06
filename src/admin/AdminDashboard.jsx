@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { db } from '../firebase/config';
+import { db, functions } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
 import { collection, query, onSnapshot, orderBy, doc, runTransaction, serverTimestamp, increment } from 'firebase/firestore';
 import {
   Users,
@@ -13,7 +14,8 @@ import {
   Plus,
   CheckCircle2,
   ArrowUpRight,
-  ArrowDownLeft
+  ArrowDownLeft,
+  Download
 } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import NotificationSender from './NotificationSender';
@@ -24,8 +26,13 @@ export default function AdminDashboard() {
   const [withdrawals, setWithdrawals] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [platformLedger, setPlatformLedger] = useState([]);
+  const [installStats, setInstallStats] = useState({ total: 0, today: 0 });
 
   useEffect(() => {
+    httpsCallable(functions, 'getInstallClickStats')().then(result => {
+      setInstallStats(result.data || { total: 0, today: 0 });
+    }).catch(() => {});
+
     const unsubTournaments = onSnapshot(
       query(collection(db, 'tournaments'), orderBy('createdAt', 'desc')),
       (snap) => setTournaments(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
@@ -115,6 +122,7 @@ export default function AdminDashboard() {
     { label: 'Live Matches', value: liveTournaments, sub: 'Currently active', color: '#3FA65C', bg: '#E8F5E9', icon: Gamepad2 },
     { label: 'Gross Revenue', value: `Rs ${totalRevenue.toLocaleString()}`, sub: 'Confirmed registrations', color: '#2B8A3E', bg: '#EBFBEE', icon: TrendingUp },
     { label: 'Estimated Profit', value: `Rs ${estimatedProfit.toLocaleString()}`, sub: 'Revenue minus payouts', color: '#0F766E', bg: '#E6FFFB', icon: TrendingUp },
+    { label: 'Install Clicks', value: installStats.total, sub: `${installStats.today} today`, color: '#111C35', bg: '#FFF4DE', icon: Download },
   ];
 
   return (

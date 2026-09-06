@@ -139,6 +139,33 @@ exports.declareMatchWinner = onCall(async (request) => {
   return { ok: true, tournamentId, winnerId: winner.userId };
 });
 
+// Lightweight aggregate for public PWA install CTA clicks. The client applies
+// a 24-hour cooldown; this function stores counters only, not individual users.
+exports.trackInstallClick = onCall(async (request) => {
+  const source = typeof request.data?.source === 'string' ? request.data.source.slice(0, 40) : 'unknown';
+  const day = new Date().toISOString().slice(0, 10);
+  const summaryRef = db.doc('analytics/installClicks');
+  const dailyRef = db.doc(`analytics/installClicks/daily/${day}`);
+  await db.runTransaction(async (transaction) => {
+    transaction.set(summaryRef, { total: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    transaction.set(dailyRef, { total: FieldValue.increment(1), [source]: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  });
+  return { ok: true };
+});
+
+exports.getInstallClickStats = onCall(async (request) => {
+  assertAdmin(request);
+  const day = new Date().toISOString().slice(0, 10);
+  const [summarySnap, dailySnap] = await Promise.all([
+    db.doc('analytics/installClicks').get(),
+    db.doc(`analytics/installClicks/daily/${day}`).get(),
+  ]);
+  return {
+    total: Number(summarySnap.data()?.total) || 0,
+    today: Number(dailySnap.data()?.total) || 0,
+  };
+});
+
 // Firestore notification documents are the app's durable inbox. This trigger
 // also delivers them as real FCM pushes when the app/PWA is backgrounded or closed.
 exports.sendNotificationPush = onDocumentCreated(

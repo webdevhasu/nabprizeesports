@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { functions } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
 import { isStandalone, isIOSDevice, promptPwaInstall } from '../utils/pwa';
 import {
   Download,
@@ -60,6 +62,15 @@ export default function Landing() {
 
   // Handle "Install App" button
   const handleInstallClick = async () => {
+    try {
+      const lastTracked = Number(window.localStorage.getItem('np_install_click_tracked_at') || 0);
+      if (Date.now() - lastTracked > 24 * 60 * 60 * 1000) {
+        await httpsCallable(functions, 'trackInstallClick')({ source: isIOSDevice() ? 'ios' : 'web' });
+        window.localStorage.setItem('np_install_click_tracked_at', String(Date.now()));
+      }
+    } catch (_) {
+      // Analytics must never block the install flow.
+    }
     if (isIOSDevice()) {
       setShowIOSModal(true);
       return;
