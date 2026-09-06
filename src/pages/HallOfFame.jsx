@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
 import { FaMedal } from 'react-icons/fa';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, limit as fsLimit } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { Trophy, Target, Crown, Medal, Flame, Copy, Check } from 'lucide-react';
+import { Trophy, Crown, Flame, Copy, Check, Users, Star } from 'lucide-react';
 
 export default function HallOfFame() {
   const [activeTab, setActiveTab] = useState('winners');
   const [results, setResults] = useState([]);
+  const [allTimeFraggers, setAllTimeFraggers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copiedUid, setCopiedUid] = useState(null);
 
   useEffect(() => {
     setLoading(true);
-    const unsubscribe = onSnapshot(
+
+    // Listen to matchResults for winners and recent fraggers
+    const unsubResults = onSnapshot(
       query(collection(db, 'matchResults')),
       (snapshot) => {
         const allResults = [];
@@ -41,7 +44,34 @@ export default function HallOfFame() {
         setLoading(false);
       }
     );
-    return unsubscribe;
+
+    // Listen to all users sorted by totalKills for all-time fraggers
+    const qUsers = query(
+      collection(db, 'users'),
+      orderBy('totalKills', 'desc'),
+      fsLimit(20)
+    );
+    const unsubUsers = onSnapshot(qUsers, (snap) => {
+      const users = [];
+      snap.forEach(doc => {
+        const data = doc.data();
+        if ((data.totalKills || 0) > 0) {
+          users.push({
+            userId: doc.id,
+            username: data.username || 'Player',
+            totalKills: data.totalKills || 0,
+            totalWins: data.totalWins || 0,
+            games: data.games || [],
+          });
+        }
+      });
+      setAllTimeFraggers(users);
+    });
+
+    return () => {
+      unsubResults();
+      unsubUsers();
+    };
   }, []);
 
   const handleCopyUid = (uid) => {
@@ -51,8 +81,8 @@ export default function HallOfFame() {
     setTimeout(() => setCopiedUid(null), 2000);
   };
 
-  // 1. RECENT WINNERS — Top 10 Most Recent Match Champions
-  const top10Winners = results
+  // 1. RECENT WINNERS — Most Recent Match Champions
+  const recentWinners = results
     .filter(r => r.isWinner)
     .sort((a, b) => {
       const timeA = a.timestamp?.toMillis?.() || (a.timestamp ? new Date(a.timestamp).getTime() : 0);
@@ -61,20 +91,40 @@ export default function HallOfFame() {
     })
     .slice(0, 10);
 
-  // 2. TOP FRAGGERS — Strictly Top 10 Highest Killers (Deduplicated by Player ID)
-  // If Ali got 10 kills in Match 1 and 20 kills in Match 2, his 10-kill record is replaced by 20 kills!
-  const fraggerMap = new Map();
-  for (const r of results) {
+  // 2. RECENT TOP 3 FRAGGERS — From last 3 matches, deduplicated best performance per player
+  const recentMatches = results
+    .filter(r => (Number(r.kills) || 0) > 0)
+    .sort((a, b) => {
+      const timeA = a.timestamp?.toMillis?.() || (a.timestamp ? new Date(a.timestamp).getTime() : 0);
+      const timeB = b.timestamp?.toMillis?.() || (b.timestamp ? new Date(b.timestamp).getTime() : 0);
+      return timeB - timeA;
+    });
+
+  // Get unique recent matches by tournamentId, take top 5
+  const seenMatchIds = new Set();
+  const recentMatchIds = [];
+  for (const r of recentMatches) {
+    if (!seenMatchIds.has(r.tournamentId)) {
+      seenMatchIds.add(r.tournamentId);
+      recentMatchIds.push(r.tournamentId);
+    }
+    if (recentMatchIds.length >= 5) break;
+  }
+
+  // Get fraggers from recent matches, best kill per player
+  const recentFraggerMap = new Map();
+  for (const r of recentMatches) {
+    if (!recentMatchIds.includes(r.tournamentId)) continue;
     const kills = Number(r.kills) || 0;
     if (kills > 0 && r.userId) {
-      const existing = fraggerMap.get(r.userId);
+      const existing = recentFraggerMap.get(r.userId);
       if (!existing || kills > existing.kills) {
-        fraggerMap.set(r.userId, {
+        recentFraggerMap.set(r.userId, {
           userId: r.userId,
           username: r.username,
           ign: r.ign || '',
           gameUid: r.gameUid || r.uid || '',
-          kills: kills,
+          kills,
           tournamentName: r.tournamentName,
           timestamp: r.timestamp,
           game: r.game,
@@ -83,9 +133,9 @@ export default function HallOfFame() {
     }
   }
 
-  const top10Fraggers = Array.from(fraggerMap.values())
+  const recentTop3Fraggers = Array.from(recentFraggerMap.values())
     .sort((a, b) => b.kills - a.kills)
-    .slice(0, 10);
+    .slice(0, 3);
 
   const formatDate = (timestamp) => {
     if (!timestamp) return 'Recent';
@@ -101,11 +151,18 @@ export default function HallOfFame() {
     return { icon: `#${index + 1}`, color: '#8A8078', bg: '#F8F6F1', border: '#EBE4DA' };
   };
 
+  const getFraggerRankBadge = (index) => {
+    if (index === 0) return { icon: <Crown size={18} color="#F4B740" />, color: '#F4B740', bg: '#FFF8E1', border: '#FFE082', label: '1ST' };
+    if (index === 1) return { icon: <Medal size={18} color="#9E9E9E" />, color: '#9E9E9E', bg: '#F5F5F5', border: '#E0E0E0', label: '2ND' };
+    if (index === 2) return { icon: <Medal size={18} color="#CD7F32" />, color: '#CD7F32', bg: '#FFF3E0', border: '#FFCC80', label: '3RD' };
+    return { icon: `#${index + 1}`, color: '#8A8078', bg: '#F8F6F1', border: '#EBE4DA', label: `#${index + 1}` };
+  };
+
   return (
     <>
       <TopBar title="Hall of Fame" />
       <div className="responsive-page-container" style={{ padding: '16px 16px 40px' }}>
-        
+
         {/* Banner Header */}
         <div style={{
           background: 'linear-gradient(135deg, #1F1B18 0%, #3B322A 100%)',
@@ -122,10 +179,10 @@ export default function HallOfFame() {
               <Crown size={16} /> NABPRIZE LEGENDS
             </div>
             <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '20px', margin: '0 0 4px' }}>
-              Top 10 Champions & Fraggers
+              Hall of Fame
             </h2>
             <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>
-              Live leaderboard of top 10 match winners and deadliest killers
+              Champions, recent fraggers & all-time kill leaders
             </p>
           </div>
         </div>
@@ -140,25 +197,28 @@ export default function HallOfFame() {
           border: '1px solid #EBE4DA',
         }}>
           {[
-            { key: 'winners', label: 'Top 10 Recent Winners', icon: <Trophy size={16} /> },
-            { key: 'fraggers', label: 'Top 10 Kill Leaders', icon: <Flame size={16} /> },
+            { key: 'winners', label: 'Winners', icon: <Trophy size={14} /> },
+            { key: 'recent', label: 'Recent Top 3', icon: <Flame size={14} /> },
+            { key: 'alltime', label: 'All-Time', icon: <Star size={14} /> },
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               style={{
                 flex: 1,
-                padding: '10px',
+                padding: '10px 6px',
                 borderRadius: '8px',
                 border: 'none',
                 cursor: 'pointer',
                 fontWeight: 700,
-                fontSize: '12px',
+                fontSize: '11px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
-                background: activeTab === tab.key ? (tab.key === 'winners' ? '#FF6B4A' : '#7B4FE0') : 'transparent',
+                gap: '4px',
+                background: activeTab === tab.key
+                  ? (tab.key === 'winners' ? '#FF6B4A' : tab.key === 'recent' ? '#7B4FE0' : '#F4B740')
+                  : 'transparent',
                 color: activeTab === tab.key ? '#FFFFFF' : '#8A8078',
                 transition: 'all 0.15s ease',
               }}
@@ -172,277 +232,214 @@ export default function HallOfFame() {
         {loading ? (
           <LoadingSpinner text="Loading leaderboard..." />
         ) : activeTab === 'winners' ? (
-          /* WINNERS TAB — TOP 10 RECENT WINNERS */
-          top10Winners.length === 0 ? (
-            <div style={{
-              background: '#FFFFFF',
-              borderRadius: '16px',
-              textAlign: 'center',
-              padding: '50px 20px',
-              border: '1px solid #F0ECE4',
-            }}>
-              <Trophy size={44} color="#C4BCB2" style={{ margin: '0 auto 12px' }} />
-              <p style={{ fontWeight: 700, fontSize: '15px', color: '#2E2A26', margin: '0 0 6px' }}>
-                No tournament winners yet
-              </p>
-              <p style={{ fontSize: '12px', color: '#8A8078', margin: 0 }}>
-                Compete in daily tournaments to claim your spot in the Top 10 Winners!
-              </p>
-            </div>
+          /* ─── WINNERS TAB ─── */
+          recentWinners.length === 0 ? (
+            <EmptyState icon={<Trophy size={44} />} title="No tournament winners yet" text="Compete in daily tournaments to claim your spot!" />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {top10Winners.map((winner, i) => {
+              {recentWinners.map((winner, i) => {
                 const rank = getRankBadge(i);
                 const uid = winner.gameUid || winner.uid;
-
                 return (
-                  <div
-                    key={`${winner.tournamentId}-${winner.userId}-${i}`}
-                    style={{
-                      background: '#FFFFFF',
-                      borderRadius: '16px',
-                      padding: '16px',
-                      border: i === 0 ? '2px solid #F4B740' : '1px solid #EBE4DA',
-                      boxShadow: i === 0 ? '0 4px 14px rgba(244, 183, 64, 0.15)' : '0 1px 3px rgba(0,0,0,0.02)',
-                    }}
-                  >
+                  <div key={`${winner.tournamentId}-${winner.userId}-${i}`} style={{
+                    background: '#FFFFFF', borderRadius: '16px', padding: '16px',
+                    border: i === 0 ? '2px solid #F4B740' : '1px solid #EBE4DA',
+                    boxShadow: i === 0 ? '0 4px 14px rgba(244, 183, 64, 0.15)' : '0 1px 3px rgba(0,0,0,0.02)',
+                  }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      
-                      {/* Rank Indicator */}
                       <div style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '10px',
-                        background: rank.bg,
-                        border: `1px solid ${rank.border}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 800,
-                        fontSize: i < 3 ? '18px' : '12px',
-                        color: rank.color,
-                        flexShrink: 0,
-                      }}>
-                        {rank.icon}
-                      </div>
+                        width: '36px', height: '36px', borderRadius: '10px',
+                        background: rank.bg, border: `1px solid ${rank.border}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 800, fontSize: i < 3 ? '18px' : '12px', color: rank.color, flexShrink: 0,
+                      }}>{rank.icon}</div>
 
-                      {/* User Info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>
-                            @{winner.username}
-                          </span>
+                          <span style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{winner.username}</span>
                           {i === 0 && (
-                            <span style={{ fontSize: '10px', background: '#FFF8E1', color: '#F4B740', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>
-                              LATEST CHAMP
-                            </span>
+                            <span style={{ fontSize: '10px', background: '#FFF8E1', color: '#F4B740', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>LATEST CHAMP</span>
                           )}
                         </div>
-
-                        {/* PUBG / Free Fire In-Game Name & Game UID Badges */}
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          flexWrap: 'wrap',
-                          gap: '6px',
-                          marginTop: '4px',
-                        }}>
-                          {/* In-Game Name (IGN) */}
-                          <span style={{
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            color: '#FF6B4A',
-                            background: '#FFF0EC',
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                          }}>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
                             IGN: {winner.ign || 'Player'}
                           </span>
-
-                          {/* Game UID */}
                           {uid && (
-                            <button
-                              onClick={() => handleCopyUid(uid)}
-                              title="Click to copy UID"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                                fontSize: '11px',
-                                fontFamily: 'monospace',
-                                fontWeight: 600,
-                                color: '#5E5851',
-                                background: '#F0ECE4',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                border: 'none',
-                                cursor: 'pointer',
-                              }}
-                            >
+                            <button onClick={() => handleCopyUid(uid)} style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px',
+                              fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4',
+                              padding: '2px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                            }}>
                               <span>UID: {uid}</span>
                               {copiedUid === uid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
                             </button>
                           )}
                         </div>
-
-                        {/* Tournament & Date */}
                         <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '4px' }}>
                           {winner.tournamentName} • {formatDate(winner.timestamp)}
                         </div>
                       </div>
 
-                      {/* Tournament Info */}
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{
-                          fontSize: '11px',
-                          color: '#7B4FE0',
-                          fontWeight: 700,
-                          marginTop: '2px',
-                        }}>
-                          {winner.kills || 0} Kills
-                        </div>
+                        <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 700 }}>{winner.kills || 0} Kills</div>
                       </div>
-
                     </div>
                   </div>
                 );
               })}
             </div>
           )
-        ) : (
-          /* TOP 10 FRAGGERS TAB — Top 10 Single-Match Peak Killers */
-          top10Fraggers.length === 0 ? (
-            <div style={{
-              background: '#FFFFFF',
-              borderRadius: '16px',
-              textAlign: 'center',
-              padding: '50px 20px',
-              border: '1px solid #F0ECE4',
-            }}>
-              <Flame size={44} color="#C4BCB2" style={{ margin: '0 auto 12px' }} />
-              <p style={{ fontWeight: 700, fontSize: '15px', color: '#2E2A26', margin: '0 0 6px' }}>
-                No fraggers recorded yet
-              </p>
-              <p style={{ fontSize: '12px', color: '#8A8078', margin: 0 }}>
-                Score frags in tournaments to enter the Top 10 Kill Leaderboard!
-              </p>
-            </div>
+        ) : activeTab === 'recent' ? (
+          /* ─── RECENT TOP 3 FRAGGERS ─── */
+          recentTop3Fraggers.length === 0 ? (
+            <EmptyState icon={<Flame size={44} />} title="No recent fraggers" text="Admin needs to submit match results with kills first." />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {top10Fraggers.map((frag, i) => {
-                const rank = getRankBadge(i);
-                const uid = frag.gameUid || frag.uid;
-
-                return (
-                  <div
-                    key={`${frag.userId}-${i}`}
-                    style={{
-                      background: '#FFFFFF',
-                      borderRadius: '16px',
-                      padding: '16px',
-                      border: i < 3 ? '2px solid #7B4FE0' : '1px solid #EBE4DA',
-                      boxShadow: i < 3 ? '0 4px 14px rgba(123, 79, 224, 0.15)' : '0 1px 3px rgba(0,0,0,0.02)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      
-                      {/* Rank Indicator */}
-                      <div style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '10px',
-                        background: rank.bg,
-                        border: `1px solid ${rank.border}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 800,
-                        fontSize: i < 3 ? '18px' : '12px',
-                        color: rank.color,
-                        flexShrink: 0,
-                      }}>
-                        {rank.icon}
-                      </div>
-
-                      {/* Player Info */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>
-                          @{frag.username}
-                        </div>
-
-                        {/* In Game Name & UID */}
+            <>
+              <p style={{ fontSize: '12px', color: '#8A8078', marginBottom: '12px', textAlign: 'center' }}>
+                Top 3 killers from recent matches
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {recentTop3Fraggers.map((frag, i) => {
+                  const rank = getFraggerRankBadge(i);
+                  const uid = frag.gameUid || frag.uid;
+                  return (
+                    <div key={`${frag.userId}-recent-${i}`} style={{
+                      background: '#FFFFFF', borderRadius: '16px', padding: '16px',
+                      border: i === 0 ? '2px solid #F4B740' : i === 1 ? '2px solid #C0C0C0' : i === 2 ? '2px solid #CD7F32' : '1px solid #EBE4DA',
+                      boxShadow: i < 3 ? '0 4px 14px rgba(123, 79, 224, 0.15)' : 'none',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {/* Rank Badge with 1ST/2ND/3RD */}
                         <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          flexWrap: 'wrap',
-                          gap: '6px',
-                          marginTop: '4px',
+                          width: '48px', height: '48px', borderRadius: '12px',
+                          background: rank.bg, border: `2px solid ${rank.border}`,
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0,
                         }}>
-                          <span style={{
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            color: '#7B4FE0',
-                            background: '#F3EEFF',
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                          }}>
-                            IGN: {frag.ign || 'Player'}
-                          </span>
-
-                          {uid && (
-                            <button
-                              onClick={() => handleCopyUid(uid)}
-                              title="Click to copy UID"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                                fontSize: '11px',
-                                fontFamily: 'monospace',
-                                fontWeight: 600,
-                                color: '#5E5851',
-                                background: '#F0ECE4',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                border: 'none',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <span>UID: {uid}</span>
-                              {copiedUid === uid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
-                            </button>
-                          )}
+                          {rank.icon}
+                          <span style={{ fontSize: '8px', fontWeight: 800, color: rank.color, marginTop: '-2px' }}>{rank.label}</span>
                         </div>
 
-                        <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '4px' }}>
-                          Match Peak: {frag.tournamentName} • {formatDate(frag.timestamp)}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{frag.username}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#7B4FE0', background: '#F3EEFF', padding: '2px 8px', borderRadius: '6px' }}>
+                              IGN: {frag.ign || 'Player'}
+                            </span>
+                            {uid && (
+                              <button onClick={() => handleCopyUid(uid)} style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px',
+                                fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4',
+                                padding: '2px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                              }}>
+                                <span>UID: {uid}</span>
+                                {copiedUid === uid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '4px' }}>
+                            {frag.tournamentName} • {formatDate(frag.timestamp)}
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '22px', color: '#7B4FE0', lineHeight: 1 }}>
+                            {frag.kills}
+                          </div>
+                          <div style={{ fontSize: '10px', fontWeight: 700, color: '#8A8078', marginTop: '2px', textTransform: 'uppercase' }}>
+                            Kills
+                          </div>
                         </div>
                       </div>
-
-                      {/* Highest Kills Badge */}
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{
-                          fontFamily: "'Poppins', sans-serif",
-                          fontWeight: 800,
-                          fontSize: '20px',
-                          color: '#7B4FE0',
-                          lineHeight: 1,
-                        }}>
-                          {frag.kills || 0}
-                        </div>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#8A8078', marginTop: '2px', textTransform: 'uppercase' }}>
-                          Peak Kills
-                        </div>
-                      </div>
-
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
+          )
+        ) : (
+          /* ─── ALL-TIME TOP FRAGGERS ─── */
+          allTimeFraggers.length === 0 ? (
+            <EmptyState icon={<Star size={44} />} title="No fraggers yet" text="Play tournaments to appear on the All-Time leaderboard!" />
+          ) : (
+            <>
+              <p style={{ fontSize: '12px', color: '#8A8078', marginBottom: '12px', textAlign: 'center' }}>
+                Players with most kills across all matches
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {allTimeFraggers.map((frag, i) => {
+                  const rank = getRankBadge(i);
+                  const pubgGame = frag.games.find(g => g.game === 'pubg');
+                  const ign = pubgGame?.ign || frag.games[0]?.ign || 'Player';
+                  const uid = pubgGame?.uid || frag.games[0]?.uid || '';
+
+                  return (
+                    <div key={frag.userId} style={{
+                      background: '#FFFFFF', borderRadius: '14px', padding: '14px',
+                      border: i < 3 ? `2px solid ${rank.border}` : '1px solid #EBE4DA',
+                      boxShadow: i < 3 ? `0 4px 14px ${rank.color}22` : 'none',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '36px', height: '36px', borderRadius: '10px',
+                          background: rank.bg, border: `1px solid ${rank.border}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: 800, fontSize: i < 3 ? '18px' : '12px', color: rank.color, flexShrink: 0,
+                        }}>{rank.icon}</div>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{frag.username}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '3px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
+                              IGN: {ign}
+                            </span>
+                            {uid && (
+                              <button onClick={() => handleCopyUid(uid)} style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px',
+                                fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4',
+                                padding: '2px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                              }}>
+                                <span>UID: {uid}</span>
+                                {copiedUid === uid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '3px' }}>
+                            {frag.totalWins || 0} wins
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '20px', color: '#7B4FE0', lineHeight: 1 }}>
+                            {frag.totalKills}
+                          </div>
+                          <div style={{ fontSize: '10px', fontWeight: 700, color: '#8A8078', marginTop: '2px', textTransform: 'uppercase' }}>
+                            Total Kills
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )
         )}
       </div>
     </>
+  );
+}
+
+function EmptyState({ icon, title, text }) {
+  return (
+    <div style={{
+      background: '#FFFFFF', borderRadius: '16px', textAlign: 'center',
+      padding: '50px 20px', border: '1px solid #F0ECE4',
+    }}>
+      <div style={{ color: '#C4BCB2', margin: '0 auto 12px' }}>{icon}</div>
+      <p style={{ fontWeight: 700, fontSize: '15px', color: '#2E2A26', margin: '0 0 6px' }}>{title}</p>
+      <p style={{ fontSize: '12px', color: '#8A8078', margin: 0 }}>{text}</p>
+    </div>
   );
 }

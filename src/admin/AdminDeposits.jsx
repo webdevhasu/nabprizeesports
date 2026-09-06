@@ -258,6 +258,64 @@ export default function AdminDeposits() {
     }
   };
 
+  // Helper to permanently delete screenshot from Firebase Storage using all possible identifiers
+  const removeScreenshotFile = async (dep) => {
+    let deleted = false;
+
+    // 1. Try with explicit storagePath (e.g. "deposits/uid/123_abc.jpg")
+    if (dep.storagePath) {
+      try {
+        await deleteObject(ref(storage, dep.storagePath));
+        console.log('✅ Screenshot deleted from storage via storagePath:', dep.storagePath);
+        deleted = true;
+      } catch (err) {
+        if (err.code === 'storage/object-not-found') {
+          deleted = true;
+        } else {
+          console.warn('Could not delete via storagePath:', err);
+        }
+      }
+    }
+
+    // 2. If not deleted yet, try using screenshotUrl
+    if (!deleted && dep.screenshotUrl && typeof dep.screenshotUrl === 'string') {
+      // Method A: Direct URL ref (supported natively by Firebase Storage SDK)
+      try {
+        const fileRef = ref(storage, dep.screenshotUrl);
+        await deleteObject(fileRef);
+        console.log('✅ Screenshot deleted from storage via URL ref');
+        deleted = true;
+      } catch (urlErr) {
+        if (urlErr.code === 'storage/object-not-found') {
+          deleted = true;
+        } else {
+          console.warn('Could not delete via URL ref:', urlErr);
+        }
+      }
+
+      // Method B: Parse and decode storage path between /o/ and ?
+      if (!deleted) {
+        try {
+          const match = dep.screenshotUrl.match(/\/o\/([^?]+)/);
+          if (match && match[1]) {
+            const decodedPath = decodeURIComponent(match[1]);
+            await deleteObject(ref(storage, decodedPath));
+            console.log('✅ Screenshot deleted from storage via decoded URL path:', decodedPath);
+            deleted = true;
+          }
+        } catch (pathErr) {
+          if (pathErr.code === 'storage/object-not-found') {
+            deleted = true;
+          } else {
+            console.error('Storage screenshot delete failed:', pathErr);
+          }
+        }
+      }
+    }
+
+    return deleted;
+  };
+
   // Delete Single Deposit & Remove Screenshot from Storage
   const handleDelete = async (dep) => {
     if (!window.confirm(`Delete deposit record of Rs ${dep.amount} (@${dep.username}) and permanently delete its screenshot from Firebase Storage?`)) {
@@ -266,15 +324,8 @@ export default function AdminDeposits() {
 
     setActionLoading(dep.id);
     try {
-      // 1. Delete image from Firebase Storage if storagePath exists
-      if (dep.storagePath) {
-        try {
-          const imageRef = ref(storage, dep.storagePath);
-          await deleteObject(imageRef);
-        } catch (storageErr) {
-          console.warn('Storage delete warning:', storageErr);
-        }
-      }
+      // 1. Delete image from Firebase Storage
+      await removeScreenshotFile(dep);
 
       // 2. Delete Firestore document
       await deleteDoc(doc(db, 'deposits', dep.id));
@@ -305,11 +356,7 @@ export default function AdminDeposits() {
     let deletedCount = 0;
     try {
       for (const dep of approvedList) {
-        if (dep.storagePath) {
-          try {
-            await deleteObject(ref(storage, dep.storagePath));
-          } catch (_) {}
-        }
+        await removeScreenshotFile(dep);
         await deleteDoc(doc(db, 'deposits', dep.id));
         deletedCount++;
       }
