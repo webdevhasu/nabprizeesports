@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, getDocs, limit } from 'firebase/firestore';
 import { db, functions } from '../firebase/config';
 import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../hooks/useAuth';
@@ -26,7 +26,7 @@ export default function Reviews() {
 
   // Load reviews
   useEffect(() => {
-    const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'), limit(100));
     const unsub = onSnapshot(q, (snap) => {
       setReviews(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
@@ -50,7 +50,8 @@ export default function Reviews() {
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const myReviews = query(
           collection(db, 'reviews'),
-          where('reviewerUid', '==', currentUser.uid)
+          where('reviewerUid', '==', currentUser.uid),
+          limit(100)
         );
         const myReviewsSnap = await getDocs(myReviews);
         const thisMonthCount = myReviewsSnap.docs.filter(d => {

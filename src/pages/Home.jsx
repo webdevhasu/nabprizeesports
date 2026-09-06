@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, query, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../hooks/useNotifications';
@@ -48,7 +48,7 @@ export default function Home() {
   const [registeredLoading, setRegisteredLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'tournaments'), (snapshot) => {
+    const unsubscribe = onSnapshot(query(collection(db, 'tournaments'), limit(100)), (snapshot) => {
       const data = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(t => t.status === 'upcoming' || t.status === 'live');

@@ -58,7 +58,8 @@ service cloud.firestore {
 
       // ─── NOTIFICATIONS (subcollection) ───
       match /notifications/{notifId} {
-        allow read: if isOwner(uid) || isAdmin();
+        allow get: if isOwner(uid) || isAdmin();
+        allow list: if isAdmin() || (isOwner(uid) && request.query.limit != null && request.query.limit <= 100);
         allow create: if isAdmin();
         // User can only mark as read; cannot modify content or inject fake alerts
         allow update: if (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])) || isAdmin();
@@ -74,7 +75,8 @@ service cloud.firestore {
 
     // ─── TOURNAMENTS ───
     match /tournaments/{tournamentId} {
-      allow read: if isAuthenticated();
+      allow get: if isAuthenticated();
+      allow list: if isAdmin() || (isAuthenticated() && request.query.limit != null && request.query.limit <= 100);
       allow create, delete: if isAdmin();
 
       // Admin can update all fields (room ID, pass, status, prizes)
@@ -92,7 +94,8 @@ service cloud.firestore {
 
       // Players subcollection
       match /players/{playerId} {
-        allow read: if isAuthenticated();
+        allow get: if isAuthenticated();
+        allow list: if isAdmin() || (isAuthenticated() && request.query.limit != null && request.query.limit <= 100);
         // Player can only join themselves and MUST atomically deduct wallet if paid
       allow create: if isAuthenticated()
           && request.auth.uid == playerId
@@ -117,20 +120,23 @@ service cloud.firestore {
 
     // ─── TOURNAMENT TEMPLATES ───
     match /tournamentTemplates/{templateId} {
-      allow read: if isAuthenticated();
+      allow get: if isAdmin();
+      allow list: if isAdmin() && request.query.limit != null && request.query.limit <= 1000;
       allow create, update, delete: if isAdmin();
     }
 
     // ─── MATCH RESULTS ───
     match /matchResults/{resultId} {
-      allow read: if isAuthenticated();
+      allow get: if isAuthenticated();
+      allow list: if isAdmin() || (isAuthenticated() && request.query.limit != null && request.query.limit <= 100);
       // CRITICAL: Only admin can declare winners, fraggers, or submit scores
       allow create, update, delete: if isAdmin();
     }
 
     // ─── TRANSACTIONS ───
     match /transactions/{userId}/{document=**} {
-      allow read: if isOwner(userId) || isAdmin();
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin() || (isOwner(userId) && request.query.limit != null && request.query.limit <= 100);
       // Ledger entries are server/admin-owned. A user must never be able to
       // create a fake credit/debit from DevTools.
       allow create: if isAdmin();
@@ -139,7 +145,8 @@ service cloud.firestore {
 
     // ─── WITHDRAWALS ───
     match /withdrawals/{withdrawalId} {
-      allow read: if isWithdrawalOwner() || isAdmin();
+      allow get: if isWithdrawalOwner() || isAdmin();
+      allow list: if isAdmin() || (isAuthenticated() && request.query.limit != null && request.query.limit <= 100);
       // On create: MUST be pending, valid limits, user cannot pre-approve
       allow create: if isAuthenticated()
         && request.auth.uid == request.resource.data.userId
@@ -159,7 +166,8 @@ service cloud.firestore {
 
     // ─── DEPOSITS ───
     match /deposits/{depositId} {
-      allow read: if (isAuthenticated() && request.auth.uid == resource.data.userId) || isAdmin();
+      allow get: if (isAuthenticated() && request.auth.uid == resource.data.userId) || isAdmin();
+      allow list: if isAdmin() || (isAuthenticated() && request.query.limit != null && request.query.limit <= 100);
       // On create: User can only create their own deposit in pending status with valid amount
       allow create: if isAuthenticated()
         && request.auth.uid == request.resource.data.userId
@@ -179,13 +187,12 @@ service cloud.firestore {
 
     // ─── REPORTS ───
     match /reports/{reportId} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.reporterUid == request.auth.uid);
+      allow get: if isAdmin() || (isAuthenticated() && resource.data.reporterUid == request.auth.uid);
+      allow list: if isAdmin() || (isAuthenticated() && request.query.limit != null && request.query.limit <= 100);
       // Rate-limiting / anti-abuse: prevent infinite payload spam
-      allow create: if request.resource.data.status == 'pending'
-        && (
-          (isAuthenticated() && (request.resource.data.reporterUid == request.auth.uid || request.resource.data.userId == request.auth.uid))
-          || (!isAuthenticated() && request.resource.data.type == 'support')
-        )
+      allow create: if isAuthenticated()
+        && (request.resource.data.reporterUid == request.auth.uid || request.resource.data.userId == request.auth.uid)
+        && request.resource.data.status == 'pending'
         && (!('details' in request.resource.data) || (request.resource.data.details is string && request.resource.data.details.size() <= 2000))
         && (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 2000))
         && request.resource.data.get('type', 'player') in ['player', 'support']
@@ -206,7 +213,8 @@ service cloud.firestore {
 
     // ─── REVIEWS ───
     match /reviews/{reviewId} {
-      allow read: if isAuthenticated();
+      allow get: if isAuthenticated();
+      allow list: if isAdmin() || (isAuthenticated() && request.query.limit != null && request.query.limit <= 100);
       // Reviews go through submitReview callable, which checks eligibility
       // and the monthly limit server-side. Direct client/console writes are blocked.
       allow create: if isAdmin();

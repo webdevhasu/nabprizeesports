@@ -28,6 +28,10 @@ export default function SupportModal({ isOpen, onClose }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    if (!auth.currentUser) {
+      setError('Please log in first so we can securely receive your report.');
+      return;
+    }
     if (website || Date.now() - startedAt.current < 1200) return;
     if (!email.trim() && !whatsapp.trim()) {
       setError('Please enter your email or WhatsApp number.');

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FaMedal, FaCrosshairs, FaStar } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import TopBar from '../components/TopBar';
@@ -22,7 +22,7 @@ export default function Rewards() {
 
     // Listen to all matchResults where current user is a winner
     const unsubscribe = onSnapshot(
-      query(collection(db, 'matchResults')),
+      query(collection(db, 'matchResults'), limit(100)),
       (snapshot) => {
         const userRewards = [];
         snapshot.forEach(doc => {

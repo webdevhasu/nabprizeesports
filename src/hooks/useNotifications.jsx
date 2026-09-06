@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, writeBatch, deleteDoc, getDocs, arrayUnion } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, writeBatch, deleteDoc, getDocs, arrayUnion, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase/config';
 import { requestNotificationPermission, onMessageListener } from '../firebase/messaging';
@@ -69,7 +69,8 @@ export function NotificationProvider({ children }) {
 
       const q = query(
         collection(db, 'users', user.uid, 'notifications'),
-        orderBy('createdAt', 'desc')
+        orderBy('createdAt', 'desc'),
+        limit(100)
       );
 
       unsub = onSnapshot(q, (snap) => {

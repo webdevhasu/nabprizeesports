@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaMedal } from 'react-icons/fa';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -18,7 +18,7 @@ export default function HallOfFame() {
 
     // Listen to matchResults for winners and recent fraggers
     const unsubResults = onSnapshot(
-      query(collection(db, 'matchResults')),
+      query(collection(db, 'matchResults'), limit(100)),
       (snapshot) => {
         const allResults = [];
         snapshot.forEach(doc => {

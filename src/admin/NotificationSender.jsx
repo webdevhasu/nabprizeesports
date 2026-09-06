@@ -37,6 +37,9 @@ export default function NotificationSender() {
     try {
       // Get all users
       const usersSnap = await getDocs(collection(db, 'users'));
+      if (usersSnap.size > 1000) {
+        throw new Error('Bulk notification is capped at 1,000 users for cost protection.');
+      }
       const batch = [];
 
       for (const userDoc of usersSnap.docs) {

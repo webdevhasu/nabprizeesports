@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc, collection, query, onSnapshot, runTransaction, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, collection, query, onSnapshot, runTransaction, serverTimestamp, increment, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { useServerTime } from '../hooks/useServerTime';
@@ -50,7 +50,7 @@ export default function TournamentDetail() {
   }, [id]);
 
   useEffect(() => {
-    const q = query(collection(db, 'tournaments', id, 'players'));
+    const q = query(collection(db, 'tournaments', id, 'players'), limit(100));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const players = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setRegisteredPlayers(players);

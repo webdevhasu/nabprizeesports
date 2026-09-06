@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, doc, setDoc, serverTimestamp, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, query, where, onSnapshot, limit } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
 import { compressImage } from '../utils/imageCompressor';
@@ -126,7 +126,8 @@ export default function AddFunds() {
 
     const q = query(
       collection(db, 'deposits'),
-      where('userId', '==', currentUser.uid)
+      where('userId', '==', currentUser.uid),
+      limit(100)
     );
 
     const unsub = onSnapshot(

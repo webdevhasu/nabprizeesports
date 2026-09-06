@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaClipboardList } from 'react-icons/fa';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -17,7 +17,8 @@ export default function TransactionHistory() {
     }
     const q = query(
       collection(db, 'transactions', auth.currentUser.uid, 'history'),
-      orderBy('timestamp', 'desc')
+      orderBy('timestamp', 'desc'),
+      limit(100)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, updateDoc, increment, collection, addDoc, serverTimestamp, onSnapshot, query, where, runTransaction } from 'firebase/firestore';
+import { doc, increment, collection, serverTimestamp, onSnapshot, query, where, runTransaction, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import TopBar from '../components/TopBar';
@@ -29,7 +29,8 @@ export default function Withdraw() {
     if (!auth.currentUser) return;
     const q = query(
       collection(db, 'withdrawals'),
-      where('userId', '==', auth.currentUser.uid)
+      where('userId', '==', auth.currentUser.uid),
+      limit(100)
     );
 
     const unsub = onSnapshot(

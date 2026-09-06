@@ -1,9 +1,14 @@
 import { collection, getDocs, addDoc, serverTimestamp, doc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
+const MAX_BULK_NOTIFICATION_USERS = 1000;
+
 export async function notifyAllUsers({ type, title, body, url = '/' }) {
   try {
     const usersSnap = await getDocs(collection(db, 'users'));
+    if (usersSnap.size > MAX_BULK_NOTIFICATION_USERS) {
+      throw new Error(`Bulk notification capped at ${MAX_BULK_NOTIFICATION_USERS} users.`);
+    }
     const promises = usersSnap.docs.map(userDoc =>
       addDoc(collection(db, 'users', userDoc.id, 'notifications'), {
         type,
