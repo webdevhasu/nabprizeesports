@@ -1,7 +1,8 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const { initializeApp } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
 
@@ -185,7 +186,9 @@ exports.sendNotificationPush = onDocumentCreated(
   }
 );
 
-exports.submitReview = onCall(async (request) => {
+exports.submitReview = onCall({
+  cors: true,
+}, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to submit a review.');
 
   const rating = Number(request.data?.rating);
@@ -226,7 +229,64 @@ exports.submitReview = onCall(async (request) => {
   return { ok: true };
 });
 
-exports.submitReport = onCall(async (request) => {
+// Browser-facing fallback for deployments where the callable preflight is
+// rejected by the hosting/network layer. It keeps the same server validation.
+exports.submitReviewHttp = onRequest({
+  cors: ['https://nabprizeesports.vercel.app', 'http://localhost:5173', 'http://localhost:4173'],
+}, async (request, response) => {
+  try {
+    if (request.method !== 'POST') {
+      response.status(405).json({ error: 'POST required' });
+      return;
+    }
+    const authorization = String(request.get('authorization') || '');
+    if (!authorization.startsWith('Bearer ')) {
+      response.status(401).json({ error: 'Sign in to submit a review.' });
+      return;
+    }
+    const token = await getAuth().verifyIdToken(authorization.slice(7));
+    const rating = Number(request.body?.rating);
+    const comment = typeof request.body?.comment === 'string' ? request.body.comment.trim() : '';
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || !comment || comment.length > 1000) {
+      response.status(400).json({ error: 'Valid rating and comment are required.' });
+      return;
+    }
+    const userRef = db.doc(`users/${token.uid}`);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists || Number(userSnap.data().tournamentsPlayed || 0) < 1) {
+      response.status(412).json({ error: 'Play at least one tournament before reviewing.' });
+      return;
+    }
+    const monthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1));
+    const existing = await db.collection('reviews').where('reviewerUid', '==', token.uid).get();
+    const monthlyCount = existing.docs.filter((review) => {
+      const createdAt = review.data().createdAt?.toDate?.();
+      return createdAt && createdAt >= monthStart;
+    }).length;
+    if (monthlyCount >= 5) {
+      response.status(429).json({ error: 'Monthly review limit reached.' });
+      return;
+    }
+    const profile = userSnap.data();
+    const reviewerName = String(profile.fullName || profile.username || token.name || token.email?.split('@')[0] || 'Player').trim();
+    await db.collection('reviews').add({
+      reviewerUid: token.uid,
+      reviewerName: reviewerName || 'Player',
+      targetName: 'NabPrize Esports',
+      rating,
+      comment,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    response.json({ ok: true });
+  } catch (error) {
+    console.error('HTTP review submission failed:', error);
+    response.status(500).json({ error: 'Unable to submit review right now.' });
+  }
+});
+
+exports.submitReport = onCall({
+  cors: true,
+}, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to submit a report.');
 
   const data = request.data || {};

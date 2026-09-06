@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, where, getDocs, limit } from 'firebase/firestore';
-import { db, functions } from '../firebase/config';
-import { httpsCallable } from 'firebase/functions';
+import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { Star, MessageSquare, Send, AlertTriangle, Shield } from 'lucide-react';
 import TopBar from './TopBar';
@@ -85,8 +84,14 @@ export default function Reviews() {
 
     setSubmitting(true);
     try {
-      const submitReview = httpsCallable(functions, 'submitReview');
-      await submitReview({ rating, comment: comment.trim() });
+      const idToken = await auth.currentUser.getIdToken();
+      const response = await fetch('https://asia-southeast1-nabprize-esports.cloudfunctions.net/submitReviewHttp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ rating, comment: comment.trim() }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Review submission failed.');
       setSubmitted(true);
       setRating(0);
       setComment('');
