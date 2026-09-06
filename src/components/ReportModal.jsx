@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
+import { db, auth, functions } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
 import { X, AlertTriangle, Shield, Send, Target, ChevronDown } from 'lucide-react';
 
 const reasons = [
@@ -81,41 +82,13 @@ export default function ReportModal({ isOpen, onClose }) {
       return;
     }
 
-    // Duplicate check - same reporter + same UID in last 24h
-    const oneDayAgo = new Date(Date.now() - 86400000);
-    const dupCheck = query(
-      collection(db, 'reports'),
-      where('reporterUid', '==', user.uid),
-      where('suspectUid', '==', suspectUid.trim())
-    );
-    const dupSnap = await getDocs(dupCheck);
-    const recentDuplicate = dupSnap.docs.find(d => {
-      const created = d.data().createdAt?.toDate?.();
-      return created && created > oneDayAgo;
-    });
-    if (recentDuplicate) {
-      setError('You already reported this player in the last 24 hours.');
-      return;
-    }
-
     setSubmitting(true);
     try {
       const tournament = recentTournaments.find(t => t.id === selectedTournament);
-      await addDoc(collection(db, 'reports'), {
-        type: 'player',
-        userId: user.uid,
-        reporterUid: user.uid,
-        reporterName: user.displayName || 'Anonymous',
-        reporterEmail: user.email || '',
-        tournamentId: selectedTournament,
+      await httpsCallable(functions, 'submitReport')({
+        type: 'player', tournamentId: selectedTournament,
         tournamentName: tournament?.name || 'Unknown',
-        suspectName: suspectName.trim(),
-        suspectUid: suspectUid.trim(),
-        reason,
-        details: details.trim(),
-        description: details.trim(),
-        status: 'pending',
-        createdAt: serverTimestamp(),
+        suspectName, suspectUid, reason, details,
       });
       setSubmitted(true);
     } catch (err) {

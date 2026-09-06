@@ -216,6 +216,76 @@ exports.submitReview = onCall(async (request) => {
   return { ok: true };
 });
 
+exports.submitReport = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to submit a report.');
+
+  const data = request.data || {};
+  const type = data.type === 'support' ? 'support' : data.type === 'player' ? 'player' : null;
+  if (!type) throw new HttpsError('invalid-argument', 'Report type is required.');
+
+  const text = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';
+  const details = text(data.details, 2000);
+  if (details.length < 3) throw new HttpsError('invalid-argument', 'Report details are required.');
+
+  const userSnap = await db.doc(`users/${request.auth.uid}`).get();
+  const profile = userSnap.data() || {};
+  const now = new Date();
+  const dayKey = now.toISOString().slice(0, 10);
+  const rateRef = db.doc(`reportRateLimits/${request.auth.uid}_${dayKey}`);
+  const reportRef = db.collection('reports').doc();
+
+  const report = {
+    type,
+    reporterUid: request.auth.uid,
+    userId: request.auth.uid,
+    reporterName: String(profile.fullName || profile.username || request.auth.token.name || 'Player'),
+    reporterEmail: String(profile.email || request.auth.token.email || ''),
+    status: 'pending',
+    details,
+    description: details,
+    createdAt: FieldValue.serverTimestamp(),
+  };
+
+  if (type === 'support') {
+    const subject = text(data.subject, 100);
+    const contactEmail = text(data.contactEmail, 100);
+    const contactWhatsapp = text(data.contactWhatsapp, 20);
+    if (subject.length < 3 || (!contactEmail && !contactWhatsapp)) {
+      throw new HttpsError('invalid-argument', 'Subject and email or WhatsApp are required.');
+    }
+    Object.assign(report, { subject, contactEmail, contactWhatsapp });
+  } else {
+    const tournamentId = text(data.tournamentId, 150);
+    const tournamentName = text(data.tournamentName, 200) || 'Unknown';
+    const suspectName = text(data.suspectName, 100);
+    const suspectUid = text(data.suspectUid, 100);
+    const reason = text(data.reason, 100);
+    if (!tournamentId || !suspectName || suspectUid.length < 4 || !reason) {
+      throw new HttpsError('invalid-argument', 'Tournament, player and reason are required.');
+    }
+    Object.assign(report, { tournamentId, tournamentName, suspectName, suspectUid, reason });
+  }
+
+  let remaining = 0;
+  await db.runTransaction(async (transaction) => {
+    const rateSnap = await transaction.get(rateRef);
+    const count = Number(rateSnap.data()?.count || 0);
+    if (count >= 5) {
+      throw new HttpsError('resource-exhausted', 'Daily report limit reached. Try again tomorrow.');
+    }
+    remaining = 4 - count;
+    transaction.set(rateRef, {
+      uid: request.auth.uid,
+      day: dayKey,
+      count: count + 1,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    transaction.create(reportRef, report);
+  });
+
+  return { ok: true, remaining };
+});
+
 // Server-owned transaction history. Clients can no longer create fake entries.
 exports.createRegistrationLedgerEntry = onDocumentCreated(
   { document: 'tournaments/{tournamentId}/players/{userId}' },

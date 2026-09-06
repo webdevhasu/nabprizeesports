@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Mail, MessageCircle, Send, X, LifeBuoy } from 'lucide-react';
-import { auth, db } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
+import { auth, functions } from '../firebase/config';
 
 export default function SupportModal({ isOpen, onClose }) {
   const [email, setEmail] = useState(auth.currentUser?.email || '');
@@ -43,19 +43,9 @@ export default function SupportModal({ isOpen, onClose }) {
     }
     setSaving(true);
     try {
-      await addDoc(collection(db, 'reports'), {
-        type: 'support',
-        subject: subject.trim(),
-        details: message.trim(),
-        description: message.trim(),
-        contactEmail: email.trim(),
-        contactWhatsapp: whatsapp.trim(),
-        reporterUid: auth.currentUser?.uid || null,
-        userId: auth.currentUser?.uid || null,
-        reporterName: auth.currentUser?.displayName || email.trim() || whatsapp.trim() || 'Guest User',
-        reporterEmail: email.trim(),
-        status: 'pending',
-        createdAt: serverTimestamp(),
+      await httpsCallable(functions, 'submitReport')({
+        type: 'support', subject, details: message,
+        contactEmail: email, contactWhatsapp: whatsapp,
       });
       setSubmitted(true);
     } catch (err) {

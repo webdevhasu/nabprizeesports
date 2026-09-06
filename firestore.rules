@@ -190,24 +190,9 @@ service cloud.firestore {
       allow get: if isAdmin() || (isAuthenticated() && resource.data.reporterUid == request.auth.uid);
       allow list: if isAdmin() || (isAuthenticated() && request.query.limit != null && request.query.limit <= 100);
       // Rate-limiting / anti-abuse: prevent infinite payload spam
-      allow create: if isAuthenticated()
-        && (request.resource.data.reporterUid == request.auth.uid || request.resource.data.userId == request.auth.uid)
-        && request.resource.data.status == 'pending'
-        && (!('details' in request.resource.data) || (request.resource.data.details is string && request.resource.data.details.size() <= 2000))
-        && (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 2000))
-        && request.resource.data.get('type', 'player') in ['player', 'support']
-        && (request.resource.data.get('type', 'player') != 'support' || (
-          request.resource.data.subject is string
-          && request.resource.data.subject.size() >= 3
-          && request.resource.data.subject.size() <= 100
-          && request.resource.data.contactEmail is string
-          && request.resource.data.contactEmail.size() <= 100
-          && request.resource.data.contactWhatsapp is string
-          && request.resource.data.contactWhatsapp.size() <= 20
-          && (request.resource.data.contactEmail.size() > 0 || request.resource.data.contactWhatsapp.size() > 0)
-          && request.resource.data.details is string
-          && request.resource.data.details.size() >= 3
-        ));
+      // All report creation goes through submitReport, which atomically
+      // enforces the five-per-user-per-day limit.
+      allow create: if isAdmin();
       allow update, delete: if isAdmin();
     }
 
