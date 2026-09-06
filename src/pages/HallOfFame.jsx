@@ -4,7 +4,7 @@ import { collection, query, onSnapshot, orderBy, limit as fsLimit } from 'fireba
 import { db } from '../firebase/config';
 import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { Trophy, Crown, Flame, Copy, Check, Users, Star } from 'lucide-react';
+import { Trophy, Crown, Medal, Flame, Copy, Check, Users, Star } from 'lucide-react';
 
 export default function HallOfFame() {
   const [activeTab, setActiveTab] = useState('winners');
