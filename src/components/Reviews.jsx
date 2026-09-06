@@ -16,7 +16,6 @@ export default function Reviews() {
   const [canReview, setCanReview] = useState(false);
 
   // Form state
-  const [targetName, setTargetName] = useState('');
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -69,10 +68,6 @@ export default function Reviews() {
     e.preventDefault();
     setError('');
 
-    if (!targetName.trim()) {
-      setError('Please enter the player name.');
-      return;
-    }
     if (rating === 0) {
       setError('Please select a rating.');
       return;
@@ -90,14 +85,13 @@ export default function Reviews() {
     try {
       await addDoc(collection(db, 'reviews'), {
         reviewerUid: currentUser.uid,
-        reviewerName: currentUser.displayName || 'Anonymous',
-        targetName: targetName.trim(),
+        reviewerName: userProfile?.fullName?.trim() || userProfile?.username || currentUser.displayName || currentUser.email?.split('@')[0] || 'Player',
+        targetName: 'NabPrize Esports',
         rating,
         comment: comment.trim(),
         createdAt: serverTimestamp(),
       });
       setSubmitted(true);
-      setTargetName('');
       setRating(0);
       setComment('');
     } catch (err) {
@@ -175,21 +169,8 @@ export default function Reviews() {
             )}
 
             <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>
-                  Player Name *
-                </label>
-                <input
-                  type="text"
-                  value={targetName}
-                  onChange={e => setTargetName(e.target.value)}
-                  placeholder="Enter player name"
-                  maxLength={30}
-                  style={{
-                    width: '100%', padding: '10px 14px', borderRadius: '8px',
-                    border: '1px solid #D9D3CC', fontSize: '13px', boxSizing: 'border-box', outline: 'none',
-                  }}
-                />
+              <div style={{ marginBottom: '14px', padding: '10px 12px', borderRadius: '8px', background: '#FFF8F0', color: '#5E5851', fontSize: '12px' }}>
+                Your review will be posted for <strong>NabPrize Esports</strong>.
               </div>
 
               <div style={{ marginBottom: '14px' }}>
@@ -246,13 +227,13 @@ export default function Reviews() {
 
               <button
                 type="submit"
-                disabled={submitting || !targetName.trim() || rating === 0 || !comment.trim()}
+                disabled={submitting || rating === 0 || !comment.trim()}
                 style={{
                   width: '100%', padding: '12px', borderRadius: '10px', border: 'none',
                   fontWeight: 700, fontSize: '13px',
-                  background: submitting || !targetName.trim() || rating === 0 || !comment.trim() ? '#C4BCB2' : '#FF6B4A',
+                  background: submitting || rating === 0 || !comment.trim() ? '#C4BCB2' : '#FF6B4A',
                   color: '#FFF',
-                  cursor: submitting || !targetName.trim() || rating === 0 || !comment.trim() ? 'not-allowed' : 'pointer',
+                  cursor: submitting || rating === 0 || !comment.trim() ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 }}
               >
