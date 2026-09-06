@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, doc, setDoc, updateDoc, increment, getDocs, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, setDoc, updateDoc, increment, getDocs, getDoc, serverTimestamp, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db, functions } from '../firebase/config';
 import { httpsCallable } from 'firebase/functions';
 import {
@@ -137,6 +137,27 @@ export default function MatchResults() {
     .sort((a, b) => (playerKills[b.id] || 0) - (playerKills[a.id] || 0));
 
   const existingResult = selectedTournament ? matchResultsList.find(d => d.id === selectedTournament.id) : null;
+  const isReadOnly = Boolean(selectedTournament && (selectedTournament.status === 'completed' || existingResult?.winnerDeclared));
+
+  const handleDeleteCompletedTournament = async (tournament) => {
+    if (tournament.status !== 'completed') return;
+    if (!window.confirm(`Delete completed tournament "${tournament.name}" and its stored results? This cannot be undone.`)) return;
+    try {
+      const playersSnap = await getDocs(collection(db, 'tournaments', tournament.id, 'players'));
+      const batch = writeBatch(db);
+      playersSnap.docs.forEach(playerDoc => batch.delete(playerDoc.ref));
+      batch.delete(doc(db, 'matchResults', tournament.id));
+      batch.delete(doc(db, 'tournaments', tournament.id));
+      await batch.commit();
+      if (selectedTournament?.id === tournament.id) {
+        setSelectedTournament(null);
+        setRegisteredPlayers([]);
+      }
+    } catch (error) {
+      console.error('Delete completed tournament error:', error);
+      alert('Could not delete this tournament. Please try again.');
+    }
+  };
 
   // Confirmation modal data
   const perKillReward = Number(selectedTournament?.perKillReward) || 0;
@@ -909,8 +930,16 @@ export default function MatchResults() {
                     boxShadow: '0 2px 6px rgba(123, 79, 224, 0.25)',
                   }}
                 >
-                  <Gamepad2 size={16} /> Enter / Edit Match Results
+                  <Gamepad2 size={16} /> {t.status === 'completed' ? 'View Results' : 'Enter / Edit Match Results'}
                 </button>
+                {t.status === 'completed' && (
+                  <button
+                    onClick={() => handleDeleteCompletedTournament(t)}
+                    style={{ width: '100%', marginTop: '8px', padding: '8px', background: '#FFF1F2', color: '#B42318', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Delete Tournament
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -922,7 +951,7 @@ export default function MatchResults() {
   // VIEW 2: RESULTS ENTRY DESKTOP SPLIT VIEW
   return (
     <AdminLayout
-      title={`Match Results: ${selectedTournament.name}`}
+      title={`${isReadOnly ? 'View Results' : 'Match Results'}: ${selectedTournament.name}`}
       subtitle={`${selectedTournament.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire'} • ${selectedTournament.matchType} • Prize Pool: Rs ${selectedTournament.fixedReward}`}
       actions={
         <button
@@ -1044,6 +1073,7 @@ export default function MatchResults() {
                               value={playerKills[player.id] !== undefined ? playerKills[player.id] : ''}
                               placeholder="0"
                               onChange={e => updateKills(player.id, e.target.value)}
+                              disabled={isReadOnly}
                               style={{
                                 ...inputStyle,
                                 width: '64px',
@@ -1061,6 +1091,7 @@ export default function MatchResults() {
                           <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                             <button
                               onClick={() => setWinnerId(isWinner ? null : player.id)}
+                              disabled={isReadOnly}
                               style={{
                                 padding: '6px 12px',
                                 borderRadius: '6px',
@@ -1096,7 +1127,7 @@ export default function MatchResults() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                 <Crown size={20} color="#F4B740" />
                 <h4 style={{ fontWeight: 700, fontSize: '16px', color: '#2E2A26', margin: 0 }}>
-                  Declare Match Winner
+                  {isReadOnly ? 'Winner & Results (Read-only)' : 'Declare Match Winner'}
                 </h4>
               </div>
               <p style={{ fontSize: '12px', color: '#8A8078', margin: '0 0 14px' }}>
@@ -1147,17 +1178,17 @@ export default function MatchResults() {
                   if (!winnerId || existingResult?.winnerDeclared) return;
                   setShowConfirmModal(true);
                 }}
-                disabled={!winnerId || submittingWinner || existingResult?.winnerDeclared}
+                disabled={isReadOnly || !winnerId || submittingWinner || existingResult?.winnerDeclared}
                 style={{
                   width: '100%',
                   padding: '12px',
-                  background: winnerId && !submittingWinner && !existingResult?.winnerDeclared ? '#3FA65C' : '#C4BCB2',
+                  background: !isReadOnly && winnerId && !submittingWinner && !existingResult?.winnerDeclared ? '#3FA65C' : '#C4BCB2',
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
                   fontWeight: 700,
                   fontSize: '13px',
-                  cursor: winnerId && !submittingWinner && !existingResult?.winnerDeclared ? 'pointer' : 'not-allowed',
+                  cursor: !isReadOnly && winnerId && !submittingWinner && !existingResult?.winnerDeclared ? 'pointer' : 'not-allowed',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1166,7 +1197,7 @@ export default function MatchResults() {
                 }}
               >
                 <Save size={16} />
-                {submittingWinner ? 'Crediting & Saving...' : `Submit Winner & Credit Rs ${selectedTournament.fixedReward}`}
+                {isReadOnly ? 'Results Locked' : submittingWinner ? 'Crediting & Saving...' : `Submit Winner & Credit Rs ${selectedTournament.fixedReward}`}
               </button>
             </div>
 
@@ -1230,11 +1261,11 @@ export default function MatchResults() {
 
               <button
                 onClick={submitFraggers}
-                disabled={topFraggers.length === 0 || submittingFraggers}
+                disabled={isReadOnly || topFraggers.length === 0 || submittingFraggers}
                 style={{
                   width: '100%',
                   padding: '11px',
-                  background: topFraggers.length > 0 && !submittingFraggers ? '#7B4FE0' : '#C4BCB2',
+                  background: !isReadOnly && topFraggers.length > 0 && !submittingFraggers ? '#7B4FE0' : '#C4BCB2',
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
