@@ -3,6 +3,19 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
+import { registerSW } from 'virtual:pwa-register'
+
+// Check immediately and periodically for a new deployed build. Once the new
+// worker is ready, autoUpdate activates it and reloads the installed PWA.
+registerSW({
+  immediate: true,
+  onRegisteredSW: (_swUrl, registration) => {
+    if (registration) {
+      registration.update().catch(() => {});
+      window.setInterval(() => registration.update().catch(() => {}), 15 * 60 * 1000);
+    }
+  },
+})
 
 // Capture PWA install prompt globally right on page load
 window.addEventListener('beforeinstallprompt', (e) => {

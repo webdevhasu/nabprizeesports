@@ -37,7 +37,11 @@ export const requestNotificationPermission = async () => {
     if (permission === 'granted') {
       let swReg = null;
       if ('serviceWorker' in navigator) {
-        swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(err => {
+        // Keep FCM's worker out of the root PWA scope. The Vite PWA worker
+        // owns '/', while this worker only handles background push delivery.
+        swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          scope: '/firebase-cloud-messaging-push-scope',
+        }).catch(err => {
           console.warn('Service worker registration error:', err);
           return null;
         });

@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // Register explicitly so the app can check for updates immediately.
+      injectRegister: null,
       registerType: 'autoUpdate',
       includeAssets: ['icon-192.png', 'icon-512.png'],
       workbox: {

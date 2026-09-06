@@ -29,7 +29,16 @@ export default function SupportModal({ isOpen, onClose }) {
     event.preventDefault();
     setError('');
     if (!auth.currentUser) {
-      setError('Please log in first so we can securely receive your report.');
+      if (!subject.trim() || !message.trim()) {
+        setError('Please enter a subject and explain your problem.');
+        return;
+      }
+      const body = [
+        `Problem: ${message.trim()}`,
+        email.trim() ? `Email: ${email.trim()}` : '',
+        whatsapp.trim() ? `WhatsApp: ${whatsapp.trim()}` : '',
+      ].filter(Boolean).join('\n\n');
+      window.location.href = `mailto:nabprize.official@gmail.com?subject=${encodeURIComponent(subject.trim())}&body=${encodeURIComponent(body)}`;
       return;
     }
     if (website || Date.now() - startedAt.current < 1200) return;
