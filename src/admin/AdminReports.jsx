@@ -16,6 +16,7 @@ export default function AdminReports() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
+  const [reportType, setReportType] = useState('player');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState(null);
 
@@ -29,6 +30,8 @@ export default function AdminReports() {
   }, []);
 
   const filteredReports = reports.filter(r => {
+    if (reportType === 'player' && r.type === 'support') return false;
+    if (reportType === 'support' && r.type !== 'support') return false;
     if (filter !== 'all' && r.status !== filter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -68,16 +71,34 @@ export default function AdminReports() {
     }
   };
 
+  const typeReports = reports.filter(r => reportType === 'support' ? r.type === 'support' : r.type !== 'support');
   const counts = {
-    pending: reports.filter(r => r.status === 'pending').length,
-    reviewed: reports.filter(r => r.status === 'reviewed').length,
-    actionTaken: reports.filter(r => r.status === 'actionTaken').length,
-    dismissed: reports.filter(r => r.status === 'dismissed').length,
+    pending: typeReports.filter(r => r.status === 'pending').length,
+    reviewed: typeReports.filter(r => r.status === 'reviewed').length,
+    actionTaken: typeReports.filter(r => r.status === 'actionTaken').length,
+    dismissed: typeReports.filter(r => r.status === 'dismissed').length,
   };
 
   return (
-    <AdminLayout title="Player Reports" subtitle="Review and manage player reports">
+    <AdminLayout title={reportType === 'support' ? 'App Issue Reports' : 'Player Reports'} subtitle={reportType === 'support' ? 'Review login, payment, app issues and user suggestions' : 'Review and manage player hack/cheating reports'}>
       <div style={{ padding: '24px', maxWidth: '1200px' }}>
+
+        {/* Separate player-cheating and app-support inboxes */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          {[
+            { key: 'player', label: 'Player Reports', count: reports.filter(r => r.type !== 'support').length },
+            { key: 'support', label: 'App Issue Reports', count: reports.filter(r => r.type === 'support').length },
+          ].map(tab => (
+            <button key={tab.key} onClick={() => { setReportType(tab.key); setFilter('pending'); setSelectedReport(null); }} style={{
+              padding: '10px 16px', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '12px',
+              border: `1px solid ${reportType === tab.key ? '#FF6B4A' : '#EBE4DA'}`,
+              background: reportType === tab.key ? '#FFF3EC' : '#FFFFFF',
+              color: reportType === tab.key ? '#FF6B4A' : '#5E5851',
+            }}>
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
 
         {/* Status Summary Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '20px' }}>

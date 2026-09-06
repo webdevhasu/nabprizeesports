@@ -184,8 +184,8 @@ service cloud.firestore {
         )
         && (!('details' in request.resource.data) || (request.resource.data.details is string && request.resource.data.details.size() <= 2000))
         && (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 2000))
-        && (!('type' in request.resource.data) || request.resource.data.type in ['player', 'support'])
-        && (request.resource.data.type != 'support' || (
+        && request.resource.data.get('type', 'player') in ['player', 'support']
+        && (request.resource.data.get('type', 'player') != 'support' || (
           request.resource.data.subject is string
           && request.resource.data.subject.size() >= 3
           && request.resource.data.subject.size() <= 100

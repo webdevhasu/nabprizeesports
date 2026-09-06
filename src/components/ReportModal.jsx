@@ -102,6 +102,7 @@ export default function ReportModal({ isOpen, onClose }) {
     try {
       const tournament = recentTournaments.find(t => t.id === selectedTournament);
       await addDoc(collection(db, 'reports'), {
+        type: 'player',
         userId: user.uid,
         reporterUid: user.uid,
         reporterName: user.displayName || 'Anonymous',
