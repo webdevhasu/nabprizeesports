@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, collection, query, where, getDocs, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
@@ -19,6 +20,26 @@ export default function AccountSetup() {
   const [ffIgn, setFfIgn] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [verificationMessage, setVerificationMessage] = useState('');
+  const [sendingVerification, setSendingVerification] = useState(false);
+
+  const handleResendVerification = async () => {
+    if (!user || user.emailVerified || sendingVerification) return;
+    setSendingVerification(true);
+    setError('');
+    setVerificationMessage('');
+    try {
+      await sendEmailVerification(user);
+      setVerificationMessage(`Verification link sent to ${user.email}. Check Inbox and Spam/Junk.`);
+    } catch (err) {
+      console.error('Verification email error:', err);
+      setError(err?.code === 'auth/too-many-requests'
+        ? 'Too many requests. Please wait a few minutes before trying again.'
+        : 'Could not send the verification email. Please try again shortly.');
+    } finally {
+      setSendingVerification(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -117,6 +138,17 @@ export default function AccountSetup() {
           borderRadius: '10px', fontSize: '13px', marginBottom: '16px', textAlign: 'center',
         }}>
           {error}
+        </div>
+      )}
+
+      {!user?.emailVerified && (
+        <div style={{ background: '#FFF4DE', border: '1px solid #F0E6D8', borderRadius: '10px', padding: '12px', marginBottom: '18px', fontSize: '12px', color: '#5E5851' }}>
+          <strong style={{ color: '#111C35' }}>Verify your email</strong>
+          <div style={{ margin: '5px 0 10px', lineHeight: 1.5 }}>Open the verification link sent to {user?.email}. Check Spam/Junk if you cannot see it.</div>
+          <button type="button" onClick={handleResendVerification} disabled={sendingVerification} style={{ border: 0, borderRadius: '7px', padding: '8px 12px', background: '#E30613', color: '#FFF', fontWeight: 700, cursor: sendingVerification ? 'not-allowed' : 'pointer' }}>
+            {sendingVerification ? 'Sending...' : 'Resend verification link'}
+          </button>
+          {verificationMessage && <div style={{ marginTop: '8px', color: '#2E7D32' }}>{verificationMessage}</div>}
         </div>
       )}
 
