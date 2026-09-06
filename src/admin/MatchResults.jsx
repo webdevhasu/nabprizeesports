@@ -56,6 +56,7 @@ export default function MatchResults() {
   const [submittingWinner, setSubmittingWinner] = useState(false);
   const [submittingFraggers, setSubmittingFraggers] = useState(false);
   const [filterGame, setFilterGame] = useState('all');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // All-time champions search & sort state
   const [championSearch, setChampionSearch] = useState('');
@@ -136,6 +137,25 @@ export default function MatchResults() {
 
   const existingResult = selectedTournament ? matchResultsList.find(d => d.id === selectedTournament.id) : null;
 
+  // Confirmation modal data
+  const perKillReward = Number(selectedTournament?.perKillReward) || 0;
+  const winnerPlayer = winnerId ? registeredPlayers.find(p => p.id === winnerId) : null;
+  const winnerKills = winnerId ? Number(playerKills[winnerId]) || 0 : 0;
+  const winnerPrize = Number(selectedTournament?.fixedReward) || 0;
+  const winnerKillReward = winnerKills * perKillReward;
+  const winnerTotal = winnerPrize + winnerKillReward;
+
+  const playerRewards = registeredPlayers
+    .filter(p => p.id !== winnerId && (playerKills[p.id] || 0) > 0)
+    .map(p => {
+      const kills = Number(playerKills[p.id]) || 0;
+      const killReward = kills * perKillReward;
+      return { ...p, kills, killReward };
+    })
+    .sort((a, b) => b.kills - a.kills);
+
+  const totalPayout = winnerTotal + playerRewards.reduce((sum, p) => sum + p.killReward, 0);
+
   const submitWinner = async () => {
     if (!selectedTournament || !winnerId) return;
     setSubmittingWinner(true);
@@ -148,13 +168,13 @@ export default function MatchResults() {
         return;
       }
 
-      const winnerPlayer = registeredPlayers.find(p => p.id === winnerId);
-      if (!winnerPlayer) {
+      const winnerPlayerData = registeredPlayers.find(p => p.id === winnerId);
+      if (!winnerPlayerData) {
         setSubmittingWinner(false);
         return;
       }
 
-      const winnerTargetUid = winnerPlayer.userId || winnerPlayer.id;
+      const winnerTargetUid = winnerPlayerData.userId || winnerPlayerData.id;
       const prizeAmount = Number(selectedTournament.fixedReward) || 0;
       const perKillReward = Number(selectedTournament.perKillReward) || 0;
       const winnerKillsCount = Number(playerKills[winnerId]) || 0;
@@ -183,7 +203,7 @@ export default function MatchResults() {
         players,
         winnerDeclared: true,
         winnerId: winnerTargetUid,
-        winnerUsername: winnerPlayer.username || 'Winner',
+        winnerUsername: winnerPlayerData.username || 'Winner',
         perKillReward,
         submittedAt: serverTimestamp(),
       }, { merge: true });
@@ -263,12 +283,12 @@ export default function MatchResults() {
         notifyMultipleUsers(otherPlayerUids, {
           type: 'tournament',
           title: 'Match Results Declared',
-          body: `Results for "${selectedTournament.name}" are out. Winner: @${winnerPlayer.username}. Check Hall of Fame!`,
+          body: `Results for "${selectedTournament.name}" are out. Winner: @${winnerPlayerData.username}. Check Hall of Fame!`,
           url: '/hall-of-fame',
         }).catch(() => {});
       }
 
-      alert(`Winner assigned! @${winnerPlayer.username} won Rs ${prizeAmount}. All-Time Champions list has been updated.`);
+      alert(`Winner assigned! @${winnerPlayerData.username} won Rs ${prizeAmount}. All-Time Champions list has been updated.`);
     } catch (error) {
       console.error('Error submitting winner:', error);
       alert('Error declaring winner: ' + (error.message || 'Unknown error'));
@@ -344,8 +364,6 @@ export default function MatchResults() {
       p.uid?.toString().includes(q)
     );
   });
-
-  const winnerPlayer = registeredPlayers.find(p => p.id === winnerId);
 
   // ALL-TIME WINNERS AGGREGATION LOGIC
   // Groups multiple wins by same player so "Ali" who won 2 times appears ONCE as "2x Champion"!
@@ -1118,7 +1136,10 @@ export default function MatchResults() {
               )}
 
               <button
-                onClick={submitWinner}
+                onClick={() => {
+                  if (!winnerId || existingResult?.winnerDeclared) return;
+                  setShowConfirmModal(true);
+                }}
                 disabled={!winnerId || submittingWinner || existingResult?.winnerDeclared}
                 style={{
                   width: '100%',
@@ -1225,6 +1246,145 @@ export default function MatchResults() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: '16px',
+        }} onClick={() => !submittingWinner && setShowConfirmModal(false)}>
+          <div style={{
+            background: '#FFFFFF', borderRadius: '18px', padding: '24px',
+            maxWidth: '440px', width: '100%', maxHeight: '85vh', overflow: 'auto',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }} onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div style={{
+                width: '52px', height: '52px', borderRadius: '50%',
+                background: '#FFF3E0', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', margin: '0 auto 12px',
+              }}>
+                <Crown size={26} color="#F4B740" />
+              </div>
+              <h3 style={{ fontWeight: 800, fontSize: '18px', color: '#2E2A26', margin: 0 }}>
+                Confirm Winner Submission
+              </h3>
+              <p style={{ fontSize: '12px', color: '#8A8078', margin: '6px 0 0' }}>
+                {selectedTournament.name}
+              </p>
+            </div>
+
+            {/* Winner Card */}
+            {winnerPlayer && (
+              <div style={{
+                background: '#E8F5E9', borderRadius: '12px', padding: '14px',
+                border: '1px solid #C8E6C9', marginBottom: '16px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '14px', color: '#2E7D32' }}>
+                    @{winnerPlayer.username}
+                  </span>
+                  <span style={{ fontSize: '10px', fontWeight: 700, color: '#FFF', background: '#3FA65C', padding: '2px 8px', borderRadius: '10px' }}>
+                    CHAMPION
+                  </span>
+                </div>
+                <div style={{ fontSize: '12px', color: '#388E3C', marginBottom: '6px' }}>
+                  IGN: <strong>{winnerPlayer.ign || 'N/A'}</strong> • UID: {winnerPlayer.uid || 'N/A'}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div style={{ background: '#FFF', borderRadius: '8px', padding: '8px 10px', border: '1px solid #C8E6C9' }}>
+                    <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600 }}>Prize Reward</div>
+                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#FF6B4A' }}>Rs {winnerPrize}</div>
+                  </div>
+                  <div style={{ background: '#FFF', borderRadius: '8px', padding: '8px 10px', border: '1px solid #C8E6C9' }}>
+                    <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600 }}>Kill Reward ({winnerKills} × Rs {perKillReward})</div>
+                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#7B4FE0' }}>Rs {winnerKillReward}</div>
+                  </div>
+                </div>
+                <div style={{ marginTop: '8px', padding: '8px 10px', background: '#FFF', borderRadius: '8px', border: '1px solid #C8E6C9', textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600 }}>Winner Total Credit</div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#2E7D32' }}>Rs {winnerTotal}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Other Players */}
+            {playerRewards.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#2E2A26', marginBottom: '8px' }}>
+                  Kill Rewards — Other Players
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {playerRewards.map(p => (
+                    <div key={p.id} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '8px 10px', background: '#F9F7F4', borderRadius: '8px',
+                      border: '1px solid #F0ECE4',
+                    }}>
+                      <div style={{ minWidth: 0 }}>
+                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>@{p.username}</span>
+                        <span style={{ fontSize: '11px', color: '#8A8078', marginLeft: '6px' }}>
+                          {p.kills} kill{p.kills !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#7B4FE0', flexShrink: 0 }}>
+                        Rs {p.killReward}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Total Payout */}
+            <div style={{
+              background: '#FFF8E1', borderRadius: '10px', padding: '12px',
+              border: '1px solid #FFE082', marginBottom: '18px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>Total Payout from Platform</span>
+                <span style={{ fontWeight: 800, fontSize: '18px', color: '#FF6B4A' }}>Rs {totalPayout}</span>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                disabled={submittingWinner}
+                style={{
+                  flex: 1, padding: '12px', background: '#F0ECE4', color: '#5E5851',
+                  border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '13px',
+                  cursor: submittingWinner ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  await submitWinner();
+                  setShowConfirmModal(false);
+                }}
+                disabled={submittingWinner}
+                style={{
+                  flex: 2, padding: '12px', background: submittingWinner ? '#C4BCB2' : '#3FA65C',
+                  color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '13px',
+                  cursor: submittingWinner ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                }}
+              >
+                {submittingWinner ? (
+                  <>Crediting...</>
+                ) : (
+                  <><CheckCircle2 size={16} /> Confirm & Submit</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
