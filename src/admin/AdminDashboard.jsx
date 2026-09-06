@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, runTransaction, serverTimestamp, increment } from 'firebase/firestore';
 import {
   Users,
   Trophy,
@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [deposits, setDeposits] = useState([]);
+  const [platformLedger, setPlatformLedger] = useState([]);
 
   useEffect(() => {
     const unsubTournaments = onSnapshot(
@@ -61,7 +62,12 @@ export default function AdminDashboard() {
       },
       () => {}
     );
-    return () => { unsubTournaments(); unsubUsers(); unsubWithdrawals(); unsubDeposits(); };
+    const unsubLedger = onSnapshot(
+      collection(db, 'platformLedger'),
+      (snap) => setPlatformLedger(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      () => {}
+    );
+    return () => { unsubTournaments(); unsubUsers(); unsubWithdrawals(); unsubDeposits(); unsubLedger(); };
   }, []);
 
   const handleWithdrawalAction = async (w, status) => {
@@ -97,7 +103,9 @@ export default function AdminDashboard() {
   const upcomingTournaments = tournaments.filter(t => t.status === 'upcoming').length;
   const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending').length;
   const pendingDeposits = deposits.filter(d => d.status === 'pending').length;
-  const totalRevenue = tournaments.reduce((sum, t) => sum + ((t.registrationCharge || 0) * (t.slotsFilled || 0)), 0);
+  const totalRevenue = platformLedger.reduce((sum, entry) => sum + (Number(entry.grossRevenue) || 0), 0);
+  const totalPayouts = platformLedger.reduce((sum, entry) => sum + (Number(entry.payoutTotal) || 0), 0);
+  const estimatedProfit = totalRevenue - totalPayouts;
 
   const stats = [
     { label: 'Total Players', value: totalPlayers, sub: 'Registered users', color: '#FF6B4A', bg: '#FFF0EC', icon: Users },
@@ -105,7 +113,8 @@ export default function AdminDashboard() {
     { label: 'Pending Deposits', value: pendingDeposits, sub: 'Needs verification', color: '#E88B00', bg: '#FFF6E5', icon: ArrowDownLeft, link: '/admin/deposits' },
     { label: 'Pending Payouts', value: pendingWithdrawals, sub: 'Needs approval', color: '#D9503F', bg: '#FFEBEE', icon: AlertCircle, link: '/admin/withdrawals' },
     { label: 'Live Matches', value: liveTournaments, sub: 'Currently active', color: '#3FA65C', bg: '#E8F5E9', icon: Gamepad2 },
-    { label: 'Gross Revenue', value: `Rs ${totalRevenue.toLocaleString()}`, sub: 'From registrations', color: '#2B8A3E', bg: '#EBFBEE', icon: TrendingUp },
+    { label: 'Gross Revenue', value: `Rs ${totalRevenue.toLocaleString()}`, sub: 'Confirmed registrations', color: '#2B8A3E', bg: '#EBFBEE', icon: TrendingUp },
+    { label: 'Estimated Profit', value: `Rs ${estimatedProfit.toLocaleString()}`, sub: 'Revenue minus payouts', color: '#0F766E', bg: '#E6FFFB', icon: TrendingUp },
   ];
 
   return (

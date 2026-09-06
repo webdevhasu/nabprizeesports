@@ -143,6 +143,14 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Server-maintained financial summary. Players never receive this data.
+    match /platformLedger/{ledgerId} {
+      allow read, write: if isAdmin();
+    }
+    match /platformLedger/{ledgerId}/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
     // ─── WITHDRAWALS ───
     match /withdrawals/{withdrawalId} {
       allow get: if isWithdrawalOwner() || isAdmin();

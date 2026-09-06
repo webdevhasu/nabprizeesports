@@ -35,6 +35,9 @@ exports.declareMatchWinner = onCall(async (request) => {
   const tournamentSnap = await tournamentRef.get();
   if (!tournamentSnap.exists) throw new HttpsError('not-found', 'Tournament not found.');
   const tournament = tournamentSnap.data();
+  if (!['live', 'completed'].includes(tournament.status)) {
+    throw new HttpsError('failed-precondition', 'Start the tournament before declaring results.');
+  }
 
   const playersSnap = await tournamentRef.collection('players').get();
   const registeredPlayers = playersSnap.docs.map((snapshot) => ({ id: snapshot.id, ...snapshot.data() }));
@@ -121,6 +124,13 @@ exports.declareMatchWinner = onCall(async (request) => {
       fixedReward,
       submittedAt: FieldValue.serverTimestamp(),
       processedBy: request.auth.uid,
+    }, { merge: true });
+    transaction.set(db.doc(`platformLedger/${tournamentId}`), {
+      tournamentId,
+      tournamentName: tournament.name || 'Tournament',
+      payoutTotal: FieldValue.increment(players.reduce((sum, player) => sum + player.reward + player.killReward, 0)),
+      payoutRecorded: true,
+      updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
     transaction.update(tournamentRef, { status: 'completed' });
   });
@@ -296,12 +306,29 @@ exports.createRegistrationLedgerEntry = onDocumentCreated(
     const tournament = tournamentSnap.data();
     const amount = Number(tournament?.registrationCharge || 0);
     if (amount <= 0) return;
-    await db.doc(`transactions/${event.params.userId}/history/registration_${event.params.tournamentId}`).create({
-      type: 'debit', amount, tournamentId: event.params.tournamentId,
-      description: `Tournament: ${tournament.name || 'Tournament'}`,
-      timestamp: FieldValue.serverTimestamp(), status: 'completed',
-    }).catch((error) => {
-      if (error.code !== 6 && error.code !== 'already-exists') throw error;
+    const ledgerRef = db.doc(`platformLedger/${event.params.tournamentId}`);
+    const registrationRef = ledgerRef.collection('registrations').doc(event.params.userId);
+    await db.runTransaction(async (transaction) => {
+      const registrationSnap = await transaction.get(registrationRef);
+      if (registrationSnap.exists) return;
+      transaction.create(registrationRef, {
+        userId: event.params.userId,
+        amount,
+        tournamentId: event.params.tournamentId,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      transaction.set(ledgerRef, {
+        tournamentId: event.params.tournamentId,
+        tournamentName: tournament.name || 'Tournament',
+        grossRevenue: FieldValue.increment(amount),
+        registrationCount: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      transaction.set(db.doc(`transactions/${event.params.userId}/history/registration_${event.params.tournamentId}`), {
+        type: 'debit', amount, tournamentId: event.params.tournamentId,
+        description: `Tournament: ${tournament.name || 'Tournament'}`,
+        timestamp: FieldValue.serverTimestamp(), status: 'completed',
+      });
     });
   }
 );

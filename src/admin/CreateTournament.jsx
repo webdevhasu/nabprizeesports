@@ -236,6 +236,10 @@ export default function CreateTournament() {
   };
 
   const handleStartEdit = (t) => {
+    if (t.status !== 'upcoming' || Number(t.slotsFilled || 0) > 0) {
+      alert('Only an upcoming tournament with no registered players can be edited.');
+      return;
+    }
     setEditingTournament(t);
     setFormData({
       name: t.name || '',
@@ -490,6 +494,12 @@ export default function CreateTournament() {
   };
 
   const handleDelete = async (id, name) => {
+    const tournament = tournaments.find(t => t.id === id);
+    if (!tournament) return;
+    if (tournament.status !== 'upcoming' || Number(tournament.slotsFilled || 0) > 0) {
+      alert('A live/completed tournament or a tournament with registered players cannot be deleted. Keep it for payout and revenue history.');
+      return;
+    }
     if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
       try {
         await deleteDoc(doc(db, 'tournaments', id));
@@ -1460,6 +1470,7 @@ export default function CreateTournament() {
                               {/* EDIT TOURNAMENT BUTTON */}
                               <button
                                 onClick={() => handleStartEdit(t)}
+                                disabled={t.status !== 'upcoming' || Number(t.slotsFilled || 0) > 0}
                                 title="Edit Tournament Details & Dates"
                                 style={{
                                   padding: '6px 10px',
@@ -1469,7 +1480,8 @@ export default function CreateTournament() {
                                   borderRadius: '6px',
                                   fontSize: '11px',
                                   fontWeight: 700,
-                                  cursor: 'pointer',
+                                  cursor: t.status === 'upcoming' && Number(t.slotsFilled || 0) === 0 ? 'pointer' : 'not-allowed',
+                                  opacity: t.status === 'upcoming' && Number(t.slotsFilled || 0) === 0 ? 1 : 0.5,
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '4px',
@@ -1545,6 +1557,7 @@ export default function CreateTournament() {
 
                               <button
                                 onClick={() => handleDelete(t.id, t.name)}
+                                disabled={t.status !== 'upcoming' || Number(t.slotsFilled || 0) > 0}
                                 title="Delete Tournament"
                                 style={{
                                   padding: '6px 8px',
@@ -1554,7 +1567,8 @@ export default function CreateTournament() {
                                   borderRadius: '6px',
                                   fontSize: '11px',
                                   fontWeight: 600,
-                                  cursor: 'pointer',
+                                  cursor: t.status === 'upcoming' && Number(t.slotsFilled || 0) === 0 ? 'pointer' : 'not-allowed',
+                                  opacity: t.status === 'upcoming' && Number(t.slotsFilled || 0) === 0 ? 1 : 0.5,
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '4px',
