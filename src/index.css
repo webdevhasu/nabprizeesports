@@ -48,6 +48,20 @@ body {
   --border-divider: #F0E6D8;
 }
 
+/* Keep legacy inline component styles aligned with the NabPrize logo palette. */
+[style*="#FF6B4A"], [style*="#E8552F"], [style*="rgba(255,107,74"] {
+  color: #E30613 !important;
+  background: #E30613 !important;
+  border-color: #E30613 !important;
+  box-shadow: 0 2px 10px rgba(227, 6, 19, 0.25) !important;
+}
+
+[style*="#7B4FE0"] {
+  color: #111C35 !important;
+  background-color: #111C35 !important;
+  border-color: #111C35 !important;
+}
+
 /* Allow text typing and selection only in form inputs */
 input, textarea, select, [contenteditable="true"] {
   font-family: 'Poppins', sans-serif;
