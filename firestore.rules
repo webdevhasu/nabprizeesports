@@ -22,7 +22,7 @@ service cloud.firestore {
 
     // ─── USERS ───
     match /users/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
+      allow read: if isAuthenticated();
 
       // On signup / account setup: wallet balance, wins, kills must start at 0
       allow create: if isOwner(uid)
