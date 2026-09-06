@@ -7,7 +7,7 @@ import TopBar from './TopBar';
 import LoadingSpinner from './LoadingSpinner';
 
 export default function Reviews() {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -39,12 +39,11 @@ export default function Reviews() {
     if (!currentUser) return;
     const checkEligibility = async () => {
       try {
-        // Count tournaments played
-        const tournamentsSnap = await getDocs(
-          collection(db, 'users', currentUser.uid, 'tournamentsPlayed')
-        );
-        setUserTournamentCount(tournamentsSnap.size);
-        setCanReview(tournamentsSnap.size >= 1);
+        // The app maintains the authoritative count on the private user profile.
+        // The tournamentsPlayed subcollection is not populated by the join flow.
+        const playedCount = Number(userProfile?.tournamentsPlayed) || 0;
+        setUserTournamentCount(playedCount);
+        setCanReview(playedCount >= 1);
 
         // Count reviews this month
         const now = new Date();
@@ -64,7 +63,7 @@ export default function Reviews() {
       }
     };
     checkEligibility();
-  }, [currentUser, submitted]);
+  }, [currentUser, userProfile?.tournamentsPlayed, submitted]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

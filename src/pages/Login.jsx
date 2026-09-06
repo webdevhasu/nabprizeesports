@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { sounds } from '../utils/sounds';
 import InstallAppBanner from '../components/InstallAppBanner';
+import SupportModal from '../components/SupportModal';
 import { Trophy, ShieldCheck, Zap, Gamepad2 } from 'lucide-react';
 
 export default function Login() {
@@ -16,6 +17,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
 
   // Check if user has completed account setup, navigate accordingly
   const navigateAfterLogin = async (user) => {
@@ -268,6 +270,13 @@ export default function Login() {
               {loading ? 'Logging in...' : 'Log In'}
             </button>
           </form>
+          <button type="button" onClick={() => setShowSupport(true)} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
+            marginTop: '14px', padding: '9px', border: 'none', background: 'none',
+            color: '#8A8078', fontSize: '12px', cursor: 'pointer', fontWeight: 600,
+          }}>
+            Having trouble? Report a Problem
+          </button>
 
           <p style={{ textAlign: 'center', marginTop: '18px', fontSize: '13px', color: '#8A8078' }}>
             Don't have an account?{' '}
@@ -279,6 +288,7 @@ export default function Login() {
           </p>
         </div>
       </div>
+      <SupportModal isOpen={showSupport} onClose={() => setShowSupport(false)} />
     </div>
   );
 }

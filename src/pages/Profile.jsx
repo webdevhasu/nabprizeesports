@@ -573,6 +573,7 @@ export default function Profile() {
               background: '#FFF9F5', padding: '14px', borderRadius: '10px', border: '1px solid #FFE4D3', marginBottom: '16px', fontSize: '12px', color: '#5E5851',
             }}>
               <div><><FaPhone size={14} style={{display:'inline'}} /> <strong>WhatsApp Support</strong></>: Available 24/7</div>
+              <div style={{ marginTop: '6px' }}><strong>Email:</strong> nabprize.official@gmail.com</div>
               <div style={{ marginTop: '4px' }}><><FaClock size={14} style={{display:'inline'}} /> <strong>Payout Processing</strong></>: Within 1-2 Hours</div>
             </div>
             <button onClick={() => setShowSupportModal(false)} style={{

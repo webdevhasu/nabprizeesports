@@ -33,6 +33,7 @@ export default function AdminReports() {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
+        r.subject?.toLowerCase().includes(q) ||
         r.suspectName?.toLowerCase().includes(q) ||
         r.suspectUid?.includes(q) ||
         r.reporterName?.toLowerCase().includes(q) ||
@@ -46,7 +47,7 @@ export default function AdminReports() {
     try {
       await updateDoc(doc(db, 'reports', reportId), { status: newStatus });
 
-      if (newStatus === 'actionTaken' && selectedReport) {
+      if (newStatus === 'actionTaken' && selectedReport && selectedReport.type !== 'support') {
         // Find the suspect user by game UID and increment their reports count
         const usersSnap = await getDocs(collection(db, 'users'));
         for (const userDoc of usersSnap.docs) {
@@ -169,7 +170,7 @@ export default function AdminReports() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                       <span style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>
-                        {r.suspectName}
+                        {r.type === 'support' ? `Support: ${r.subject}` : r.suspectName}
                       </span>
                       <span style={{
                         fontSize: '11px', padding: '2px 8px', borderRadius: '6px',
@@ -180,7 +181,7 @@ export default function AdminReports() {
                       </span>
                     </div>
                     <div style={{ fontSize: '12px', color: '#8A8078', marginBottom: '2px' }}>
-                      UID: {r.suspectUid} · Reason: {r.reason}
+                      {r.type === 'support' ? `Contact: ${r.contactEmail || r.contactWhatsapp || 'Not provided'}` : `UID: ${r.suspectUid} · Reason: ${r.reason}`}
                     </div>
                     <div style={{ fontSize: '11px', color: '#C4BCB2' }}>
                       Reported by {r.reporterName} · {r.createdAt?.toDate ? timeAgo(r.createdAt.toDate()) : 'Just now'}
@@ -219,13 +220,13 @@ export default function AdminReports() {
               </div>
               <div style={{ padding: '20px' }}>
                 <div style={{ marginBottom: '14px' }}>
-                  <div style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600 }}>SUSPECT</div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#2E2A26' }}>{selectedReport.suspectName}</div>
-                  <div style={{ fontSize: '13px', color: '#5E5851' }}>UID: {selectedReport.suspectUid}</div>
+                  <div style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600 }}>{selectedReport.type === 'support' ? 'SUPPORT REQUEST' : 'SUSPECT'}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#2E2A26' }}>{selectedReport.type === 'support' ? selectedReport.subject : selectedReport.suspectName}</div>
+                  {selectedReport.type !== 'support' && <div style={{ fontSize: '13px', color: '#5E5851' }}>UID: {selectedReport.suspectUid}</div>}
                 </div>
                 <div style={{ marginBottom: '14px' }}>
-                  <div style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600 }}>REASON</div>
-                  <div style={{ fontSize: '13px', color: '#2E2A26', fontWeight: 600 }}>{selectedReport.reason}</div>
+                  <div style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600 }}>{selectedReport.type === 'support' ? 'PROBLEM' : 'REASON'}</div>
+                  <div style={{ fontSize: '13px', color: '#2E2A26', fontWeight: 600 }}>{selectedReport.type === 'support' ? selectedReport.details : selectedReport.reason}</div>
                 </div>
                 {selectedReport.details && (
                   <div style={{ marginBottom: '14px' }}>
@@ -237,6 +238,13 @@ export default function AdminReports() {
                   <div style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600 }}>TOURNAMENT</div>
                   <div style={{ fontSize: '13px', color: '#2E2A26', fontWeight: 600 }}>{selectedReport.tournamentName || 'N/A'}</div>
                 </div>
+                {selectedReport.type === 'support' && (
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600 }}>CONTACT</div>
+                    <div style={{ fontSize: '13px', color: '#2E2A26' }}>{selectedReport.contactEmail || '—'}</div>
+                    <div style={{ fontSize: '13px', color: '#2E2A26' }}>{selectedReport.contactWhatsapp || '—'}</div>
+                  </div>
+                )}
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ fontSize: '11px', color: '#8A8078', fontWeight: 600 }}>REPORTED BY</div>
                   <div style={{ fontSize: '13px', color: '#2E2A26', fontWeight: 600 }}>{selectedReport.reporterName}</div>

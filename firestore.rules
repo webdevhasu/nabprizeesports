@@ -175,13 +175,28 @@ service cloud.firestore {
 
     // ─── REPORTS ───
     match /reports/{reportId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.reporterUid == request.auth.uid);
       // Rate-limiting / anti-abuse: prevent infinite payload spam
-      allow create: if isAuthenticated()
-        && (request.resource.data.reporterUid == request.auth.uid || request.resource.data.userId == request.auth.uid)
-        && request.resource.data.status == 'pending'
+      allow create: if request.resource.data.status == 'pending'
+        && (
+          (isAuthenticated() && (request.resource.data.reporterUid == request.auth.uid || request.resource.data.userId == request.auth.uid))
+          || (!isAuthenticated() && request.resource.data.type == 'support')
+        )
         && (!('details' in request.resource.data) || (request.resource.data.details is string && request.resource.data.details.size() <= 2000))
-        && (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 2000));
+        && (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 2000))
+        && (!('type' in request.resource.data) || request.resource.data.type in ['player', 'support'])
+        && (request.resource.data.type != 'support' || (
+          request.resource.data.subject is string
+          && request.resource.data.subject.size() >= 3
+          && request.resource.data.subject.size() <= 100
+          && request.resource.data.contactEmail is string
+          && request.resource.data.contactEmail.size() <= 100
+          && request.resource.data.contactWhatsapp is string
+          && request.resource.data.contactWhatsapp.size() <= 20
+          && (request.resource.data.contactEmail.size() > 0 || request.resource.data.contactWhatsapp.size() > 0)
+          && request.resource.data.details is string
+          && request.resource.data.details.size() >= 3
+        ));
       allow update, delete: if isAdmin();
     }
 
