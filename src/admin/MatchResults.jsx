@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, orderBy, doc, setDoc, updateDoc, increment, getDocs, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, functions } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
 import {
   ArrowLeft,
   Crown,
@@ -156,7 +157,9 @@ export default function MatchResults() {
 
   const totalPayout = winnerTotal + playerRewards.reduce((sum, p) => sum + p.killReward, 0);
 
-  const submitWinner = async () => {
+  // Legacy client payout implementation retained temporarily for rollback reference.
+  // The active handler below uses the atomic server-side callable function.
+  const submitWinnerLegacy = async () => {
     if (!selectedTournament || !winnerId) return;
     setSubmittingWinner(true);
     try {
@@ -294,6 +297,26 @@ export default function MatchResults() {
       alert('Error declaring winner: ' + (error.message || 'Unknown error'));
     }
     setSubmittingWinner(false);
+  };
+
+  const submitWinner = async () => {
+    if (!selectedTournament || !winnerId) return;
+    setSubmittingWinner(true);
+    try {
+      const declareWinner = httpsCallable(functions, 'declareMatchWinner');
+      const result = await declareWinner({
+        tournamentId: selectedTournament.id,
+        winnerId,
+        killsByPlayer: playerKills,
+      });
+      if (!result.data?.ok) throw new Error('Winner payout was not confirmed.');
+      alert(`Winner assigned! @${winnerPlayer?.username || 'Player'} won Rs ${winnerPrize}.`);
+    } catch (error) {
+      console.error('Error submitting winner:', error);
+      alert('Error declaring winner: ' + (error.message || 'Unknown error'));
+    } finally {
+      setSubmittingWinner(false);
+    }
   };
 
   const submitFraggers = async () => {

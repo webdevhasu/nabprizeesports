@@ -3,6 +3,8 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 import { getStorage } from 'firebase/storage';
+import { getFunctions } from 'firebase/functions';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 
 export const firebaseConfig = {
   apiKey: "AIzaSyCNNSvpbVCRzxTU0vCPMvyUrBKwAqyQ2WU",
@@ -16,6 +18,18 @@ export const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+// App Check is enabled automatically in production when the Vercel environment
+// variable is configured. Keeping this conditional preserves local development
+// and prevents a missing site key from breaking authentication during rollout.
+const appCheckSiteKey = import.meta.env.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY;
+export const appCheck = appCheckSiteKey
+  ? initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    })
+  : null;
+
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 // Force account selection so redirect works in PWA/standalone mode
@@ -23,5 +37,5 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
 export const db = getFirestore(app);
 export const rtdb = getDatabase(app, firebaseConfig.databaseURL);
 export const storage = getStorage(app);
+export const functions = getFunctions(app, 'asia-southeast1');
 export default app;
-

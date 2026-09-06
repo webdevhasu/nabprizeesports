@@ -22,7 +22,9 @@ service cloud.firestore {
 
     // ─── USERS ───
     match /users/{uid} {
-      allow read: if isAuthenticated();
+      // Profiles contain private data (email, wallet, notification tokens and game IDs).
+      // Public leaderboard data is exposed through matchResults instead.
+      allow read: if isAdmin() || isOwner(uid);
 
       // On signup / account setup: wallet balance, wins, kills must start at 0
       allow create: if isOwner(uid)
@@ -38,13 +40,17 @@ service cloud.firestore {
       // - Normal user CANNOT change isBanned, email, totalWins, totalKills, createdAt
       allow update: if isAdmin() || (
         isOwner(uid)
-        // Wallet balance can NEVER be increased by client console
-        && request.resource.data.walletBalance <= resource.data.walletBalance
-        && request.resource.data.walletBalance >= 0
-        // Administrative fields are immutable by user
+        // A player may edit only their profile/notification fields.
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['fullName', 'username', 'games', 'fcmTokens'])
+        // Wallet balance can NEVER be changed by a player console
+        && request.resource.data.walletBalance == resource.data.walletBalance
+        // Administrative/ledger fields are immutable by users
         && request.resource.data.get('isBanned', false) == resource.data.get('isBanned', false)
         && request.resource.data.get('totalWins', 0) == resource.data.get('totalWins', 0)
         && request.resource.data.get('totalKills', 0) == resource.data.get('totalKills', 0)
+        && request.resource.data.get('tournamentsPlayed', 0) == resource.data.get('tournamentsPlayed', 0)
+        && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.email == resource.data.email
       );
 
@@ -84,10 +90,11 @@ service cloud.firestore {
       match /players/{playerId} {
         allow read: if isAuthenticated();
         // Player can only join themselves and MUST atomically deduct wallet if paid
-        allow create: if isAuthenticated()
+      allow create: if isAuthenticated()
           && request.auth.uid == playerId
           && request.resource.data.userId == request.auth.uid
           && request.resource.data.status == 'registered'
+          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.status == 'upcoming'
           && (
              get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.get('registrationCharge', 0) == 0
              || 
@@ -154,7 +161,14 @@ service cloud.firestore {
         && request.auth.uid == request.resource.data.userId
         && request.resource.data.status == 'pending'
         && request.resource.data.amount is number
-        && request.resource.data.amount >= 30;
+        && request.resource.data.amount >= 30
+        && request.resource.data.amount <= 20000
+        && request.resource.data.transactionId is string
+        && request.resource.data.transactionId.size() >= 4
+        && request.resource.data.transactionId.size() <= 100
+        && request.resource.data.senderNumber is string
+        && request.resource.data.senderNumber.matches('03[0-9]{9}')
+        && request.resource.data.paymentMethod in ['jazzcash', 'easypaisa'];
       // CRITICAL: Only admin can approve or reject deposits
       allow update, delete: if isAdmin();
     }

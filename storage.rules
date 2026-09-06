@@ -13,8 +13,8 @@ service firebase.storage {
 
     // ─── DEPOSIT SCREENSHOTS ───
     match /deposits/{userId}/{fileName} {
-      // Authenticated users and admin can view proof
-      allow read: if isAuthenticated();
+      // Payment proofs are private: only their owner or the admin may view them.
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
 
       // STRICT UPLOAD RESTRICTIONS (Anti-Abuse & Blaze Bill Protection):
       // 1. User must be authenticated and uploading to their own user folder

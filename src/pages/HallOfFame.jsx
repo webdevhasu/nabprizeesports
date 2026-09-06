@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaMedal } from 'react-icons/fa';
-import { collection, query, onSnapshot, orderBy, limit as fsLimit } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -36,6 +36,32 @@ export default function HallOfFame() {
             });
           }
         });
+        // Build the public all-time fraggers list from public match results.
+        // Do not read the private users collection from every player's browser.
+        const fraggerMap = new Map();
+        for (const player of allResults) {
+          const kills = Number(player.kills) || 0;
+          if (!player.userId || kills <= 0) continue;
+          const existing = fraggerMap.get(player.userId) || {
+            userId: player.userId,
+            username: player.username || 'Player',
+            totalKills: 0,
+            totalChampionships: 0,
+            games: [],
+          };
+          existing.totalKills += kills;
+          if (player.isWinner) existing.totalChampionships += 1;
+          const game = player.game || 'pubg';
+          if (!existing.games.some(g => g.game === game)) {
+            existing.games.push({ game, uid: player.gameUid || '', ign: player.ign || 'Player' });
+          }
+          fraggerMap.set(player.userId, existing);
+        }
+        setAllTimeFraggers(
+          [...fraggerMap.values()]
+            .sort((a, b) => b.totalKills - a.totalKills)
+            .slice(0, 20)
+        );
         setResults(allResults);
         setLoading(false);
       },
@@ -45,32 +71,8 @@ export default function HallOfFame() {
       }
     );
 
-    // Listen to all users sorted by totalKills for all-time fraggers
-    const qUsers = query(
-      collection(db, 'users'),
-      orderBy('totalKills', 'desc'),
-      fsLimit(20)
-    );
-    const unsubUsers = onSnapshot(qUsers, (snap) => {
-      const users = [];
-      snap.forEach(doc => {
-        const data = doc.data();
-        if ((data.totalKills || 0) > 0) {
-          users.push({
-            userId: doc.id,
-            username: data.username || 'Player',
-            totalKills: data.totalKills || 0,
-            totalChampionships: data.totalChampionships || 0,
-            games: data.games || [],
-          });
-        }
-      });
-      setAllTimeFraggers(users);
-    });
-
     return () => {
       unsubResults();
-      unsubUsers();
     };
   }, []);
 

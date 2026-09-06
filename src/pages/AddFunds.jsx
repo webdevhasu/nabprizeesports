@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, serverTimestamp, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, query, where, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
 import { compressImage } from '../utils/imageCompressor';
@@ -172,6 +172,12 @@ export default function AddFunds() {
       return;
     }
 
+    const cleanTransactionId = transactionId.trim();
+    if (cleanTransactionId.length < 4 || cleanTransactionId.length > 100) {
+      setErrorMsg('Please enter a valid payment transaction ID (4-100 characters).');
+      return;
+    }
+
     if (!currentUser?.uid) {
       setErrorMsg('Please log in to submit a deposit request.');
       return;
@@ -225,7 +231,7 @@ export default function AddFunds() {
               targetNumber: PAYMENT_ACCOUNTS[selectedMethod]?.cleanNumber || '',
               senderNumber: cleanSender,
               senderName: senderName.trim() || '',
-              transactionId: transactionId.trim() || '',
+              transactionId: cleanTransactionId,
               screenshotUrl: downloadUrl,
               screenshotSizeKb: Math.round(fileToUpload.size / 1024),
               storagePath: storagePath,
@@ -233,7 +239,10 @@ export default function AddFunds() {
               createdAt: serverTimestamp(),
             };
 
-            await addDoc(collection(db, 'deposits'), payload);
+            const depositKey = `${currentUser.uid}_${cleanTransactionId
+              .replace(/[^a-zA-Z0-9_-]/g, '_')
+              .slice(0, 80)}`;
+            await setDoc(doc(db, 'deposits', depositKey), payload);
 
             setUploadProgress(100);
             setSuccessMsg(`Deposit request of Rs ${parsedAmount} submitted successfully! Admin will verify and credit your wallet shortly.`);
@@ -715,14 +724,14 @@ export default function AddFunds() {
               />
             </div>
 
-            {/* Transaction ID / TID (Optional) */}
+            {/* Transaction ID / TID (Required for duplicate-payment protection) */}
             <div style={{ marginBottom: '16px' }}>
               <label style={{ fontSize: '12px', color: '#5E5851', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
-                Transaction ID / TID (Optional)
+                Transaction ID / TID *
               </label>
               <input
                 type="text"
-                maxLength={25}
+                maxLength={100}
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value.trim().slice(0, 25))}
                 placeholder="e.g. 01234567890"
