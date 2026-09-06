@@ -124,7 +124,7 @@ export default function HallOfFame() {
     .sort((a, b) => b.wins - a.wins || b.totalKills - a.totalKills)
     .slice(0, 10);
 
-  // 3. RECENT TOP 3 FRAGGERS — From last 5 matches, best kill per player (WINNERS INCLUDED)
+  // 3. RECENT TOP 3 FRAGGERS — From the single most recent match
   const recentMatches = results
     .filter(r => (Number(r.kills) || 0) > 0)
     .sort((a, b) => {
@@ -133,21 +133,13 @@ export default function HallOfFame() {
       return timeB - timeA;
     });
 
-  // Get unique recent matches by tournamentId, take top 5
-  const seenMatchIds = new Set();
-  const recentMatchIds = [];
-  for (const r of recentMatches) {
-    if (!seenMatchIds.has(r.tournamentId)) {
-      seenMatchIds.add(r.tournamentId);
-      recentMatchIds.push(r.tournamentId);
-    }
-    if (recentMatchIds.length >= 5) break;
-  }
+  // Get the single most recent match ID
+  const latestMatchId = recentMatches.length > 0 ? recentMatches[0].tournamentId : null;
 
-  // Get fraggers from recent matches, best kill per player
+  // Get fraggers from the latest match only
   const recentFraggerMap = new Map();
   for (const r of recentMatches) {
-    if (!recentMatchIds.includes(r.tournamentId)) continue;
+    if (r.tournamentId !== latestMatchId) break;
     const kills = Number(r.kills) || 0;
     if (kills > 0 && r.userId) {
       const existing = recentFraggerMap.get(r.userId);
