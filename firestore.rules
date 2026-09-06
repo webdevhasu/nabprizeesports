@@ -207,14 +207,9 @@ service cloud.firestore {
     // ─── REVIEWS ───
     match /reviews/{reviewId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated()
-        && request.resource.data.reviewerUid == request.auth.uid
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('tournamentsPlayed', 0) >= 1
-        && request.resource.data.rating is number
-        && request.resource.data.rating >= 1
-        && request.resource.data.rating <= 5
-        && request.resource.data.comment is string
-        && request.resource.data.comment.size() <= 1000;
+      // Reviews go through submitReview callable, which checks eligibility
+      // and the monthly limit server-side. Direct client/console writes are blocked.
+      allow create: if isAdmin();
       // Reviews are immutable
       allow update, delete: if isAdmin();
     }
