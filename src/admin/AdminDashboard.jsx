@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, increment, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import {
   Users,
   Trophy,
@@ -66,33 +66,28 @@ export default function AdminDashboard() {
 
   const handleWithdrawalAction = async (w, status) => {
     try {
-      // Fresh Firestore read to prevent double processing
-      const freshDoc = await getDoc(doc(db, 'withdrawals', w.id));
-      if (!freshDoc.exists() || freshDoc.data().status !== 'pending') {
-        alert('This withdrawal has already been processed.');
-        return;
-      }
-
-      await updateDoc(doc(db, 'withdrawals', w.id), {
-        status,
-        processedAt: new Date(),
+      await runTransaction(db, async (transaction) => {
+        const withdrawalRef = doc(db, 'withdrawals', w.id);
+        const freshSnap = await transaction.get(withdrawalRef);
+        if (!freshSnap.exists() || freshSnap.data().status !== 'pending') {
+          throw new Error('This withdrawal has already been processed.');
+        }
+        const fresh = freshSnap.data();
+        transaction.update(withdrawalRef, { status, processedAt: serverTimestamp() });
+        if (status === 'rejected' && fresh.userId && Number(fresh.amount) > 0) {
+          transaction.update(doc(db, 'users', fresh.userId), {
+            walletBalance: increment(Number(fresh.amount)),
+          });
+          transaction.set(doc(db, 'transactions', fresh.userId, 'history', `refund_${w.id}`), {
+            type: 'credit', amount: Number(fresh.amount), withdrawalId: w.id,
+            description: `Refund: Rejected Withdrawal (${fresh.method?.toUpperCase() || 'PAYOUT'})`,
+            timestamp: serverTimestamp(), status: 'completed',
+          });
+        }
       });
-
-      if (status === 'rejected' && w.userId && w.amount) {
-        await updateDoc(doc(db, 'users', w.userId), {
-          walletBalance: increment(Number(w.amount)),
-        });
-        await addDoc(collection(db, 'transactions', w.userId, 'history'), {
-          type: 'credit',
-          amount: Number(w.amount),
-          description: `Refund: Rejected Withdrawal (${w.method?.toUpperCase() || 'PAYOUT'})`,
-          timestamp: serverTimestamp(),
-          status: 'completed',
-        });
-      }
     } catch (e) {
       console.error('Error updating withdrawal:', e);
-      alert('Failed to process withdrawal');
+      alert(e.message || 'Failed to process withdrawal');
     }
   };
 

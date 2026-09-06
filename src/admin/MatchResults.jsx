@@ -337,23 +337,7 @@ export default function MatchResults() {
         kills: Number(playerKills[p.id]) || 0,
       }));
 
-      // Also ensure players array with kills is stored so Hall of Fame aggregates properly
-      const players = registeredPlayers.map(p => ({
-        userId: p.userId || p.id,
-        username: p.username || 'Player',
-        ign: p.ign || '',
-        gameUid: p.uid || p.gameUid || '',
-        uid: p.uid || p.gameUid || '',
-        kills: Number(playerKills[p.id]) || 0,
-        reward: p.id === winnerId ? (Number(selectedTournament.fixedReward) || 0) : 0,
-        isWinner: p.id === winnerId,
-        placement: p.id === winnerId ? 1 : 0,
-      }));
-
       await setDoc(doc(db, 'matchResults', selectedTournament.id), {
-        tournamentName: selectedTournament.name,
-        game: selectedTournament.game,
-        players,
         topFraggers: fraggerData,
         fraggersSubmitted: true,
         submittedAt: serverTimestamp(),

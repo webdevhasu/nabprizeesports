@@ -84,6 +84,10 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slotsFilled'])
         && request.resource.data.slotsFilled == resource.data.slotsFilled + 1
         && resource.data.slotsFilled < resource.data.maxSlots
+        // The slot increment must be in the same atomic write as this user's
+        // registration document; a console-only increment is rejected.
+        && getAfter(/databases/$(database)/documents/tournaments/$(tournamentId)/players/$(request.auth.uid)).data.userId == request.auth.uid
+        && getAfter(/databases/$(database)/documents/tournaments/$(tournamentId)/players/$(request.auth.uid)).data.status == 'registered'
       );
 
       // Players subcollection
@@ -127,9 +131,9 @@ service cloud.firestore {
     // ─── TRANSACTIONS ───
     match /transactions/{userId}/{document=**} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if (isOwner(userId)
-        && request.resource.data.amount is number
-        && request.resource.data.amount > 0) || isAdmin();
+      // Ledger entries are server/admin-owned. A user must never be able to
+      // create a fake credit/debit from DevTools.
+      allow create: if isAdmin();
       allow update, delete: if isAdmin();
     }
 
@@ -204,7 +208,8 @@ service cloud.firestore {
     match /reviews/{reviewId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated()
-        && (request.resource.data.reviewerUid == request.auth.uid || request.resource.data.userId == request.auth.uid)
+        && request.resource.data.reviewerUid == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('tournamentsPlayed', 0) >= 1
         && request.resource.data.rating is number
         && request.resource.data.rating >= 1
         && request.resource.data.rating <= 5

@@ -85,15 +85,6 @@ export default function Withdraw() {
           createdAt: serverTimestamp(),
         });
 
-        const txnRef = doc(collection(db, 'transactions', auth.currentUser.uid, 'history'));
-        transaction.set(txnRef, {
-          type: 'debit',
-          amount: numAmount,
-          method: method,
-          description: `Withdrawal to ${method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}`,
-          timestamp: serverTimestamp(),
-          status: 'pending',
-        });
       });
 
       await refreshProfile();

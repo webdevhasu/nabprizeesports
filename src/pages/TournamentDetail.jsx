@@ -209,17 +209,6 @@ export default function TournamentDetail() {
           status: 'registered',
         });
 
-        // Log transaction only for paid tournaments
-        if (!tIsFree) {
-          const txnRef = doc(collection(db, 'transactions', auth.currentUser.uid, 'history'));
-          transaction.set(txnRef, {
-            type: 'debit',
-            amount: tData.registrationCharge,
-            description: `Tournament: ${tData.name}`,
-            timestamp: serverTimestamp(),
-            status: 'completed',
-          });
-        }
       });
 
       setJoinStep(3);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
+import { db, functions } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../hooks/useAuth';
 import { Star, MessageSquare, Send, AlertTriangle, Shield } from 'lucide-react';
 import TopBar from './TopBar';
@@ -83,14 +84,8 @@ export default function Reviews() {
 
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'reviews'), {
-        reviewerUid: currentUser.uid,
-        reviewerName: userProfile?.fullName?.trim() || userProfile?.username || currentUser.displayName || currentUser.email?.split('@')[0] || 'Player',
-        targetName: 'NabPrize Esports',
-        rating,
-        comment: comment.trim(),
-        createdAt: serverTimestamp(),
-      });
+      const submitReview = httpsCallable(functions, 'submitReview');
+      await submitReview({ rating, comment: comment.trim() });
       setSubmitted(true);
       setRating(0);
       setComment('');
