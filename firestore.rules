@@ -184,7 +184,7 @@ service cloud.firestore {
         && request.resource.data.amount >= 30
         && request.resource.data.amount <= 20000
         && request.resource.data.transactionId is string
-        && request.resource.data.transactionId.size() >= 4
+        && request.resource.data.transactionId.size() >= 0
         && request.resource.data.transactionId.size() <= 100
         && request.resource.data.senderNumber is string
         && request.resource.data.senderNumber.matches('03[0-9]{9}')
