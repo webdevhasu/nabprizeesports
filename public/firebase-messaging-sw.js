@@ -16,7 +16,7 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   const title = payload.notification?.title || payload.data?.title || 'NabPrize Esports';
   const body = payload.notification?.body || payload.data?.body || 'You have a new tournament notification!';
-  const icon = payload.notification?.icon || payload.data?.icon || '/icon-192.png';
+  const icon = '/logo.png';
   const url = payload.data?.url || payload.fcmOptions?.link || '/';
 
   return self.registration.showNotification(title, {
@@ -27,44 +27,6 @@ messaging.onBackgroundMessage((payload) => {
     vibrate: [200, 100, 200],
     data: { url },
   });
-});
-
-// Fallback native push listener for guaranteed wakeup even if app is completely closed
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
-
-  try {
-    const data = event.data.json();
-    const title = data.notification?.title || data.data?.title || 'NabPrize Esports';
-    const body = data.notification?.body || data.data?.body || 'New tournament update!';
-    const icon = data.notification?.icon || data.data?.icon || '/icon-192.png';
-    const url = data.data?.url || data.fcmOptions?.link || '/';
-
-    event.waitUntil(
-      self.registration.showNotification(title, {
-        body,
-        icon,
-        badge: '/icon-192.png',
-        tag: url || 'nabprize-notification',
-        vibrate: [200, 100, 200],
-        data: { url },
-      })
-    );
-  } catch (_) {
-    // If not JSON, show text
-    const text = event.data.text();
-    if (text) {
-      event.waitUntil(
-        self.registration.showNotification('NabPrize Esports', {
-          body: text,
-          icon: '/icon-192.png',
-          badge: '/icon-192.png',
-          vibrate: [200, 100, 200],
-          data: { url: '/' },
-        })
-      );
-    }
-  }
 });
 
 // Focus or open PWA when notification is tapped
