@@ -46,15 +46,16 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
     const now = new Date().getTime();
     const diffToRegClose = regClose.getTime() - now;
     const diffToMatchStart = matchStart.getTime() - now;
+    const dateStr = regClose.toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
     const regCloseStr = regClose.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true }) + ' PKT';
     const matchStartStr = matchStart.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true }) + ' PKT';
 
     if (diffToMatchStart <= 0 || isLive) {
-      return { label: '● LIVE NOW', isRoomWindow: false, isLiveMatch: true, regCloseStr, matchStartStr };
+      return { label: '● LIVE NOW', isRoomWindow: false, isLiveMatch: true, dateStr, regCloseStr, matchStartStr };
     }
     if (diffToRegClose <= 0 && diffToMatchStart > 0) {
       const minsLeft = Math.ceil(diffToMatchStart / 60000);
-      return { label: (<><FaFire size={12} style={{display:'inline'}} /> Room Open ({minsLeft}m to start)</>), isRoomWindow: true, isLiveMatch: false, regCloseStr, matchStartStr };
+      return { label: (<><FaFire size={12} style={{display:'inline'}} /> Room Open ({minsLeft}m to start)</>), isRoomWindow: true, isLiveMatch: false, dateStr, regCloseStr, matchStartStr };
     }
 
     const hours = Math.floor(diffToRegClose / 3600000);
@@ -67,7 +68,7 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
       countdownStr = `${hours}h ${mins}m`;
     }
 
-    return { label: `Reg ends in ${countdownStr}`, isRoomWindow: false, isLiveMatch: false, regCloseStr, matchStartStr };
+    return { label: `Reg ends in ${countdownStr}`, isRoomWindow: false, isLiveMatch: false, dateStr, regCloseStr, matchStartStr };
   };
 
   const timing = getTimingDetails(tournament.startTime);
@@ -278,6 +279,8 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
               marginBottom: '10px',
               border: '1px solid rgba(255,255,255,0.07)',
             }}>
+              <span style={{ color: '#E0D8CC', fontWeight: 700 }}>Date: {timing.dateStr || 'TBD'}</span>
+              <span style={{ color: 'rgba(255,255,255,0.2)' }}>•</span>
               <span>Reg Closes: <strong style={{ color: '#E0D8CC' }}>{timing.regCloseStr}</strong></span>
               <span style={{ color: 'rgba(255,255,255,0.2)' }}>•</span>
               <span style={{ color: '#5BC47A', fontWeight: 600 }}>Match: {timing.matchStartStr}</span>
