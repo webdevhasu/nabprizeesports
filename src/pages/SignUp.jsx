@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { sounds } from '../utils/sounds';
 import { Gamepad2, Trophy, Zap, ShieldCheck } from 'lucide-react';
@@ -50,12 +50,8 @@ export default function SignUp() {
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: fullName });
-      await sendEmailVerification(cred.user);
       sounds.success();
-      navigate('/account-setup', {
-        replace: true,
-        state: { verificationSent: true },
-      });
+      navigate('/account-setup', { replace: true });
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') setError('An account with this email already exists.');
       else if (err.code === 'auth/invalid-email') setError('Invalid email address.');
