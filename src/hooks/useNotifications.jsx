@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, writeBatch, deleteDoc, getDocs, arrayUnion, limit } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, writeBatch, deleteDoc, getDocs, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase/config';
 import { requestNotificationPermission, onMessageListener } from '../firebase/messaging';
@@ -23,8 +23,10 @@ export function NotificationProvider({ children }) {
       setPermission('granted');
       const user = auth.currentUser;
       if (user) {
+        // Keep one active endpoint per account so Chrome + installed PWA do not
+        // produce duplicate push notifications for the same user.
         await updateDoc(doc(db, 'users', user.uid), {
-          fcmTokens: arrayUnion(token),
+          fcmTokens: [token],
         }).catch(() => { });
       }
     }
