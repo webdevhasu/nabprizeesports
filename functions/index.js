@@ -206,6 +206,49 @@ exports.registerForTournament = onCall({ invoker: 'public' }, async (request) =>
   return { ok: true, tournamentId };
 });
 
+// Browser fallback for registration when callable preflight is blocked by the
+// network layer. Authentication is still verified server-side with the ID token.
+exports.registerForTournamentHttp = onRequest({
+  cors: ['https://nabprizeesports.vercel.app', 'http://localhost:5173', 'http://localhost:4173'],
+}, async (request, response) => {
+  try {
+    if (request.method !== 'POST') return response.status(405).json({ error: 'POST required' });
+    const authorization = String(request.get('authorization') || '');
+    if (!authorization.startsWith('Bearer ')) return response.status(401).json({ error: 'Please sign in first.' });
+    const token = await getAuth().verifyIdToken(authorization.slice(7));
+    const tournamentId = request.body?.tournamentId;
+    if (typeof tournamentId !== 'string' || !tournamentId) return response.status(400).json({ error: 'Tournament is required.' });
+
+    const tournamentRef = db.doc(`tournaments/${tournamentId}`);
+    const userRef = db.doc(`users/${token.uid}`);
+    const playerRef = tournamentRef.collection('players').doc(token.uid);
+    await db.runTransaction(async (transaction) => {
+      const [tournamentSnap, userSnap, playerSnap] = await Promise.all([
+        transaction.get(tournamentRef), transaction.get(userRef), transaction.get(playerRef),
+      ]);
+      if (!tournamentSnap.exists) throw new Error('Tournament not found.');
+      if (!userSnap.exists) throw new Error('Complete your profile first.');
+      if (playerSnap.exists) throw new Error('You are already registered for this tournament.');
+      const tournament = tournamentSnap.data();
+      const user = userSnap.data();
+      const fee = Number(tournament.registrationCharge) || 0;
+      if (tournament.status !== 'upcoming') throw new Error('Registration is closed.');
+      if (!tournament.maxSlots || Number(tournament.slotsFilled || 0) >= Number(tournament.maxSlots)) throw new Error('Tournament is full.');
+      if (fee > 0 && Number(user.walletBalance || 0) < fee) throw new Error('Insufficient wallet balance.');
+      const games = Array.isArray(user.games) ? user.games : [];
+      const primaryGame = games.find((game) => game.game === tournament.game) || games[0] || {};
+      transaction.update(userRef, { ...(fee > 0 ? { walletBalance: FieldValue.increment(-fee) } : {}), tournamentsPlayed: FieldValue.increment(1) });
+      transaction.update(tournamentRef, { slotsFilled: FieldValue.increment(1) });
+      transaction.set(playerRef, { userId: token.uid, username: user.username || 'Player', ign: primaryGame.ign || 'Unknown', uid: primaryGame.uid || '', registeredAt: FieldValue.serverTimestamp(), status: 'registered' });
+    });
+    return response.status(200).json({ ok: true, tournamentId });
+  } catch (error) {
+    const message = error.message || 'Registration failed.';
+    const status = message.includes('already registered') ? 409 : message.includes('full') ? 409 : message.includes('Insufficient') ? 412 : 400;
+    return response.status(status).json({ error: message });
+  }
+});
+
 exports.getInstallClickStats = onCall(async (request) => {
   assertAdmin(request);
   const day = new Date().toISOString().slice(0, 10);

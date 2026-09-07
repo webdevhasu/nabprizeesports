@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, onSnapshot, limit } from 'firebase/firestore';
-import { db, functions } from '../firebase/config';
-import { httpsCallable } from 'firebase/functions';
+import { db } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { useServerTime } from '../hooks/useServerTime';
 import TopBar from '../components/TopBar';
@@ -161,7 +160,14 @@ export default function TournamentDetail() {
     setJoining(true);
     setJoinError('');
     try {
-      await httpsCallable(functions, 'registerForTournament')({ tournamentId: id });
+      const idToken = await currentUser.getIdToken();
+      const response = await fetch('https://asia-southeast1-nabprize-esports.cloudfunctions.net/registerForTournamentHttp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ tournamentId: id }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Registration failed.');
 
       setJoinStep(3);
       await refreshProfile();
