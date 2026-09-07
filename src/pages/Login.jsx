@@ -22,6 +22,12 @@ export default function Login() {
   const [resetCooldown, setResetCooldown] = useState(0);
   const [showSupport, setShowSupport] = useState(false);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+      window.fbq('trackCustom', 'LoginPageView');
+    }
+  }, []);
+
   // Check if user has completed account setup, navigate accordingly
   const navigateAfterLogin = async (user) => {
     try {
@@ -41,8 +47,14 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+      window.fbq('trackCustom', 'LoginAttempt', { method: 'email' });
+    }
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
+      if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+        window.fbq('track', 'Login', { method: 'email' });
+      }
       sounds.success();
       await navigateAfterLogin(result.user);
     } catch (err) {
@@ -57,9 +69,15 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
+    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+      window.fbq('trackCustom', 'LoginAttempt', { method: 'google' });
+    }
     try {
       const result = await signInWithPopup(auth, googleProvider);
       if (result?.user) {
+        if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+          window.fbq('track', 'Login', { method: 'google' });
+        }
         sounds.success();
         await navigateAfterLogin(result.user);
       }
