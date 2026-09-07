@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, onSnapshot, runTransaction, serverTimestamp, increment, limit } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import { db } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { useServerTime } from '../hooks/useServerTime';
 import TopBar from '../components/TopBar';
@@ -11,7 +11,7 @@ import { Clock, Users, Shield, X, Key, Copy, Check, Lock, Sparkles, Play, AlertC
 
 export default function TournamentDetail() {
   const { id } = useParams();
-  const { userProfile, refreshProfile } = useAuth();
+  const { currentUser, userProfile, refreshProfile } = useAuth();
   const { getNow } = useServerTime();
 
   const [tournament, setTournament] = useState(null);
@@ -143,7 +143,10 @@ export default function TournamentDetail() {
   const timeline = getTimelineInfo();
 
   const handleJoin = async () => {
-    if (!userProfile || !tournament) return;
+    if (!currentUser || !userProfile || !tournament) {
+      setJoinError('failed');
+      return;
+    }
     const isFree = !tournament.registrationCharge || tournament.registrationCharge === 0;
     if (!isFree && userProfile.walletBalance < tournament.registrationCharge) {
       setJoinError('insufficient');
@@ -159,8 +162,8 @@ export default function TournamentDetail() {
     try {
       await runTransaction(db, async (transaction) => {
         const tournamentRef = doc(db, 'tournaments', id);
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        const playerRef = doc(db, 'tournaments', id, 'players', auth.currentUser.uid);
+        const userRef = doc(db, 'users', currentUser.uid);
+        const playerRef = doc(db, 'tournaments', id, 'players', currentUser.uid);
 
         const tournamentSnap = await transaction.get(tournamentRef);
         const userSnap = await transaction.get(userRef);
@@ -201,7 +204,7 @@ export default function TournamentDetail() {
         const primaryGame = games.find(g => g.game === tData.game) || games[0];
 
         transaction.set(playerRef, {
-          userId: auth.currentUser.uid,
+          userId: currentUser.uid,
           username: uData.username,
           ign: primaryGame?.ign || 'Unknown',
           uid: primaryGame?.uid || '',
