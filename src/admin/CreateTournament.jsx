@@ -237,7 +237,7 @@ export default function CreateTournament() {
 
   const canEditTournament = (t) => {
     const status = String(t.status || '').trim().toLowerCase();
-    return !['live', 'completed'].includes(status) && Number(t.slotsFilled || 0) <= 0;
+    return !['live', 'completed'].includes(status);
   };
 
   const handleStartEdit = (t) => {
