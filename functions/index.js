@@ -153,7 +153,7 @@ exports.trackInstallClick = onCall(async (request) => {
   return { ok: true };
 });
 
-exports.registerForTournament = onCall(async (request) => {
+exports.registerForTournament = onCall({ invoker: 'public' }, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Please sign in first.');
   const tournamentId = request.data?.tournamentId;
   if (typeof tournamentId !== 'string' || tournamentId.length < 1 || tournamentId.length > 150) {
