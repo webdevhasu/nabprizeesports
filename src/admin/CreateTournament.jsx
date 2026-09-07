@@ -235,8 +235,13 @@ export default function CreateTournament() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const canEditTournament = (t) => {
+    const status = String(t.status || '').trim().toLowerCase();
+    return !['live', 'completed'].includes(status) && Number(t.slotsFilled || 0) <= 0;
+  };
+
   const handleStartEdit = (t) => {
-    if (t.status !== 'upcoming' || Number(t.slotsFilled || 0) > 0) {
+    if (!canEditTournament(t)) {
       alert('Only an upcoming tournament with no registered players can be edited.');
       return;
     }
@@ -1470,7 +1475,7 @@ export default function CreateTournament() {
                               {/* EDIT TOURNAMENT BUTTON */}
                               <button
                                 onClick={() => handleStartEdit(t)}
-                                disabled={t.status !== 'upcoming' || Number(t.slotsFilled || 0) > 0}
+                                disabled={!canEditTournament(t)}
                                 title="Edit Tournament Details & Dates"
                                 style={{
                                   padding: '6px 10px',
@@ -1480,8 +1485,8 @@ export default function CreateTournament() {
                                   borderRadius: '6px',
                                   fontSize: '11px',
                                   fontWeight: 700,
-                                  cursor: t.status === 'upcoming' && Number(t.slotsFilled || 0) === 0 ? 'pointer' : 'not-allowed',
-                                  opacity: t.status === 'upcoming' && Number(t.slotsFilled || 0) === 0 ? 1 : 0.5,
+                                  cursor: canEditTournament(t) ? 'pointer' : 'not-allowed',
+                                  opacity: canEditTournament(t) ? 1 : 0.5,
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '4px',
