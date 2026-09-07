@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc, collection, query, onSnapshot, runTransaction, serverTimestamp, increment, limit } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { doc, getDoc, collection, query, onSnapshot, limit } from 'firebase/firestore';
+import { db, functions } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../hooks/useAuth';
 import { useServerTime } from '../hooks/useServerTime';
 import TopBar from '../components/TopBar';
@@ -54,7 +55,7 @@ export default function TournamentDetail() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const players = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setRegisteredPlayers(players);
-      setIsRegistered(players.some(p => p.userId === auth.currentUser?.uid));
+      setIsRegistered(players.some(p => p.userId === currentUser?.uid));
     });
     return unsubscribe;
   }, [id]);
@@ -160,68 +161,18 @@ export default function TournamentDetail() {
     setJoining(true);
     setJoinError('');
     try {
-      await runTransaction(db, async (transaction) => {
-        const tournamentRef = doc(db, 'tournaments', id);
-        const userRef = doc(db, 'users', currentUser.uid);
-        const playerRef = doc(db, 'tournaments', id, 'players', currentUser.uid);
-
-        const tournamentSnap = await transaction.get(tournamentRef);
-        const userSnap = await transaction.get(userRef);
-        const playerSnap = await transaction.get(playerRef);
-
-        if (!tournamentSnap.exists()) throw new Error('Tournament not found');
-        if (!userSnap.exists()) throw new Error('User not found');
-        if (playerSnap.exists()) throw new Error('already_registered');
-
-        const tData = tournamentSnap.data();
-        const uData = userSnap.data();
-
-        if (!tData.maxSlots) throw new Error('Tournament misconfigured');
-        if ((tData.slotsFilled || 0) >= tData.maxSlots) throw new Error('full');
-        const tIsFree = !tData.registrationCharge || tData.registrationCharge === 0;
-        if (!tIsFree && uData.walletBalance < tData.registrationCharge) throw new Error('insufficient');
-        if (tData.status !== 'upcoming') throw new Error('registration_closed');
-
-        // Deduct wallet only for paid tournaments
-        if (!tIsFree) {
-          transaction.update(userRef, {
-            walletBalance: uData.walletBalance - tData.registrationCharge,
-            tournamentsPlayed: increment(1),
-          });
-        } else {
-          transaction.update(userRef, {
-            tournamentsPlayed: increment(1),
-          });
-        }
-
-        // Increment slots
-        transaction.update(tournamentRef, {
-          slotsFilled: increment(1)
-        });
-
-        // Create registration
-        const games = uData.games || [];
-        const primaryGame = games.find(g => g.game === tData.game) || games[0];
-
-        transaction.set(playerRef, {
-          userId: currentUser.uid,
-          username: uData.username,
-          ign: primaryGame?.ign || 'Unknown',
-          uid: primaryGame?.uid || '',
-          registeredAt: serverTimestamp(),
-          status: 'registered',
-        });
-
-      });
+      await httpsCallable(functions, 'registerForTournament')({ tournamentId: id });
 
       setJoinStep(3);
       await refreshProfile();
       sounds.join();
     } catch (err) {
-      if (err.message === 'full') setJoinError('full');
-      else if (err.message === 'insufficient') setJoinError('insufficient');
-      else if (err.message === 'already_registered') setJoinError('already_registered');
-      else if (err.message === 'registration_closed') setJoinError('closed');
+      const code = err.code || '';
+      const message = String(err.message || '').toLowerCase();
+      if (code.includes('resource-exhausted') || message.includes('tournament is full') || err.message === 'full') setJoinError('full');
+      else if (message.includes('insufficient') || err.message === 'insufficient') setJoinError('insufficient');
+      else if (code.includes('already-exists') || message.includes('already registered') || err.message === 'already_registered') setJoinError('already_registered');
+      else if (message.includes('registration is closed') || err.message === 'registration_closed') setJoinError('closed');
       else setJoinError('failed');
     }
     setJoining(false);
