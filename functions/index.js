@@ -38,7 +38,9 @@ exports.getRegisteredUserCount = onCall(async (request) => {
   return { count };
 });
 
-exports.declareMatchWinner = onCall(async (request) => {
+exports.declareMatchWinner = onCall({
+  cors: true,
+}, async (request) => {
   assertAdmin(request);
 
   const { tournamentId, winnerId, killsByPlayer } = request.data || {};
@@ -157,7 +159,9 @@ exports.declareMatchWinner = onCall(async (request) => {
 
 // Lightweight aggregate for public PWA install CTA clicks. The client applies
 // a 24-hour cooldown; this function stores counters only, not individual users.
-exports.trackInstallClick = onCall(async (request) => {
+exports.trackInstallClick = onCall({
+  cors: true,
+}, async (request) => {
   const source = typeof request.data?.source === 'string' ? request.data.source.slice(0, 40) : 'unknown';
   const day = new Date().toISOString().slice(0, 10);
   const summaryRef = db.doc('analytics/installClicks');
