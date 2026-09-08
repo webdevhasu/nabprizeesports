@@ -30,6 +30,7 @@ import AdminDeposits from './admin/AdminDeposits';
 import UserManagement from './admin/UserManagement';
 import AdminReports from './admin/AdminReports';
 import Reviews from './components/Reviews';
+import WhatsAppFloat from './components/WhatsAppFloat';
 
 function UserShell({ children }) {
   return (
@@ -44,6 +45,7 @@ function NavLayout({ children, title }) {
     <UserLayout title={title}>
       {children}
       <BottomNav />
+      <WhatsAppFloat />
     </UserLayout>
   );
 }
