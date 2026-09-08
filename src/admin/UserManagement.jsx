@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, updateDoc, limit } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, limit } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import {
   Users,
@@ -62,6 +62,18 @@ export default function UserManagement() {
         console.error('Error updating ban status:', e);
         alert('Failed to update ban status');
       }
+    }
+  };
+
+  const handleDeleteProfile = async (user) => {
+    const username = user.username || user.email || user.id;
+    if (!window.confirm(`Delete the Firestore profile for "${username}"? This removes the /users document only.`)) return;
+
+    try {
+      await deleteDoc(doc(db, 'users', user.id));
+    } catch (e) {
+      console.error('Error deleting user profile:', e);
+      alert('Failed to delete user profile: ' + (e.message || 'Permission denied'));
     }
   };
 
@@ -315,32 +327,40 @@ export default function UserManagement() {
 
                     {/* Actions */}
                     <td style={{ padding: '14px', textAlign: 'center' }}>
-                      <button
-                        onClick={() => handleBanUser(user.id, user.isBanned)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontWeight: 600,
-                          fontSize: '12px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: user.isBanned ? '#E8F5E9' : '#FFEBEE',
-                          color: user.isBanned ? '#3FA65C' : '#D9503F',
-                        }}
-                      >
-                        {user.isBanned ? (
-                          <>
-                            <CheckCircle size={13} /> Unban
-                          </>
-                        ) : (
-                          <>
-                            <Ban size={13} /> Ban User
-                          </>
-                        )}
-                      </button>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => handleBanUser(user.id, user.isBanned)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '12px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: user.isBanned ? '#E8F5E9' : '#FFEBEE',
+                            color: user.isBanned ? '#3FA65C' : '#D9503F',
+                          }}
+                        >
+                          {user.isBanned ? (
+                            <>
+                              <CheckCircle size={13} /> Unban
+                            </>
+                          ) : (
+                            <>
+                              <Ban size={13} /> Ban User
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProfile(user)}
+                          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #F3B5B5', background: '#FFF5F5', color: '#B42318', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}
+                        >
+                          Delete Profile
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
