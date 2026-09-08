@@ -120,7 +120,7 @@ export default function AdminDashboard() {
 
   const stats = [
     { label: 'Total Players', value: totalPlayers, sub: 'Registered users', color: '#FF6B4A', bg: '#FFF0EC', icon: Users },
-    { label: 'Profiled Users', value: profileUserCount, sub: '/users documents', color: '#5B63D3', bg: '#EEF0FF', icon: Users },
+    { label: 'Profiled Users', value: profileUserCount, sub: '', color: '#5B63D3', bg: '#EEF0FF', icon: Users },
     { label: 'Tournaments', value: totalTournaments, sub: 'All time', color: '#7B4FE0', bg: '#F3EEFF', icon: Trophy },
     { label: 'Pending Deposits', value: pendingDeposits, sub: 'Needs verification', color: '#E88B00', bg: '#FFF6E5', icon: ArrowDownLeft, link: '/admin/deposits' },
     { label: 'Pending Payouts', value: pendingWithdrawals, sub: 'Needs approval', color: '#D9503F', bg: '#FFEBEE', icon: AlertCircle, link: '/admin/withdrawals' },
@@ -186,7 +186,7 @@ export default function AdminDashboard() {
                 <div style={{ fontWeight: 800, fontSize: '24px', color: s.color, lineHeight: 1.1, marginBottom: '4px' }}>
                   {s.value}
                 </div>
-                <div style={{ fontSize: '11px', color: '#A69E94' }}>{s.sub}</div>
+                {s.sub && <div style={{ fontSize: '11px', color: '#A69E94' }}>{s.sub}</div>}
               </div>
               <div style={{
                 width: '42px',
