@@ -702,7 +702,7 @@ export default function CreateTournament() {
         const user = userSnap.data();
         const games = Array.isArray(user.games) ? user.games : [];
         const game = games.find(g => g.game === tournamentSnap.data().game) || games[0] || {};
-        transaction.set(playerRef, { userId: uid, username: user.username || 'Player', ign: game.ign || 'Unknown', uid: game.uid || '', registeredAt: serverTimestamp(), status: 'registered' });
+        transaction.set(playerRef, { userId: uid, username: user.username || 'Player', photoURL: user.photoURL || '', ign: game.ign || 'Unknown', uid: game.uid || '', registeredAt: serverTimestamp(), status: 'registered' });
         transaction.update(tournamentRef, { slotsFilled: increment(1) });
       });
       setRestoreUid('');

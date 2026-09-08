@@ -68,6 +68,7 @@ exports.declareMatchWinner = onCall(async (request) => {
     return {
       userId: player.userId,
       username: player.username || 'Player',
+      photoURL: player.photoURL || '',
       ign: player.ign || '',
       gameUid: player.uid || player.gameUid || '',
       uid: player.uid || player.gameUid || '',
@@ -211,6 +212,7 @@ exports.registerForTournament = onCall({ invoker: 'public' }, async (request) =>
     transaction.set(playerRef, {
       userId: uid,
       username: user.username || 'Player',
+      photoURL: user.photoURL || '',
       ign: primaryGame.ign || 'Unknown',
       uid: primaryGame.uid || '',
       registeredAt: FieldValue.serverTimestamp(),
@@ -254,7 +256,7 @@ exports.registerForTournamentHttp = onRequest({
       const primaryGame = games.find((game) => game.game === tournament.game) || games[0] || {};
       transaction.update(userRef, { ...(fee > 0 ? { walletBalance: FieldValue.increment(-fee) } : {}), tournamentsPlayed: FieldValue.increment(1) });
       transaction.update(tournamentRef, { slotsFilled: FieldValue.increment(1) });
-      transaction.set(playerRef, { userId: token.uid, username: user.username || 'Player', ign: primaryGame.ign || 'Unknown', uid: primaryGame.uid || '', registeredAt: FieldValue.serverTimestamp(), status: 'registered' });
+      transaction.set(playerRef, { userId: token.uid, username: user.username || 'Player', photoURL: user.photoURL || '', ign: primaryGame.ign || 'Unknown', uid: primaryGame.uid || '', registeredAt: FieldValue.serverTimestamp(), status: 'registered' });
     });
     return response.status(200).json({ ok: true, tournamentId });
   } catch (error) {

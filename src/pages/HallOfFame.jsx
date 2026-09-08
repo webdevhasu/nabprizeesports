@@ -6,6 +6,16 @@ import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Trophy, Crown, Medal, Flame, Copy, Check, Users, Star } from 'lucide-react';
 
+function PlayerAvatar({ photoURL, name, size = 36 }) {
+  return photoURL ? (
+    <img src={photoURL} alt={`${name || 'Player'} avatar`} referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #FFFFFF', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }} />
+  ) : (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: Math.max(12, Math.round(size * 0.38)), flexShrink: 0 }}>
+      {(name || 'P').charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
 export default function HallOfFame() {
   const [activeTab, setActiveTab] = useState('winners');
   const [results, setResults] = useState([]);
@@ -45,6 +55,7 @@ export default function HallOfFame() {
           const existing = fraggerMap.get(player.userId) || {
             userId: player.userId,
             username: player.username || 'Player',
+            photoURL: player.photoURL || '',
             totalKills: 0,
             totalChampionships: 0,
             games: [],
@@ -111,6 +122,7 @@ export default function HallOfFame() {
       winnerStatsMap.set(r.userId, {
         userId: r.userId,
         username: r.username,
+        photoURL: r.photoURL || '',
         ign: r.ign || '',
         gameUid: r.gameUid || r.uid || '',
         wins: 1,
@@ -149,6 +161,7 @@ export default function HallOfFame() {
         recentFraggerMap.set(r.userId, {
           userId: r.userId,
           username: r.username,
+          photoURL: r.photoURL || '',
           ign: r.ign || '',
           gameUid: r.gameUid || r.uid || '',
           kills,
@@ -287,6 +300,7 @@ export default function HallOfFame() {
                       }}>
                         <Trophy size={24} color="#FFFFFF" />
                       </div>
+                      <PlayerAvatar photoURL={mostRecentWinner.photoURL} name={mostRecentWinner.username} size={48} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 800, fontSize: '16px', color: '#2E2A26' }}>@{mostRecentWinner.username}</div>
                         <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px', fontWeight: 600 }}>
@@ -338,6 +352,8 @@ export default function HallOfFame() {
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontWeight: 800, fontSize: i < 3 ? '18px' : '12px', color: rank.color, flexShrink: 0,
                           }}>{rank.icon}</div>
+
+                          <PlayerAvatar photoURL={player.photoURL} name={player.username} />
 
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{player.username}</div>
@@ -411,6 +427,8 @@ export default function HallOfFame() {
                           <span style={{ fontSize: '8px', fontWeight: 800, color: rank.color, marginTop: '-2px' }}>{rank.label}</span>
                         </div>
 
+                        <PlayerAvatar photoURL={frag.photoURL} name={frag.username} size={42} />
+
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{frag.username}</div>
                           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
@@ -477,6 +495,8 @@ export default function HallOfFame() {
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontWeight: 800, fontSize: i < 3 ? '18px' : '12px', color: rank.color, flexShrink: 0,
                         }}>{rank.icon}</div>
+
+                        <PlayerAvatar photoURL={frag.photoURL} name={frag.username} />
 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{frag.username}</div>

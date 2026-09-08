@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
 const AuthCtx = createContext(null);
@@ -34,6 +34,9 @@ export function AuthProvider({ children }) {
           (docSnap) => {
             if (docSnap.exists()) {
               setUserProfile(docSnap.data());
+              if (user.photoURL && docSnap.data().photoURL !== user.photoURL) {
+                updateDoc(docRef, { photoURL: user.photoURL }).catch(() => {});
+              }
               setProfileError(false);
             } else {
               setUserProfile(null);

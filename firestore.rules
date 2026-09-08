@@ -42,7 +42,7 @@ service cloud.firestore {
         isOwner(uid)
         // A player may edit only their profile/notification fields.
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['fullName', 'username', 'games', 'fcmTokens'])
+             .hasOnly(['fullName', 'username', 'games', 'fcmTokens', 'photoURL'])
         // Wallet balance can NEVER be changed by a player console
         && request.resource.data.walletBalance == resource.data.walletBalance
         // Administrative/ledger fields are immutable by users

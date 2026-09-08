@@ -88,6 +88,7 @@ export default function AccountSetup() {
         fullName: fullName.trim(),
         username: username.toLowerCase(),
         email: user.email,
+        photoURL: user.photoURL || '',
         games,
         walletBalance: 0,
         totalWins: 0,
