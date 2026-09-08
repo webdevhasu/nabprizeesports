@@ -97,7 +97,8 @@ service cloud.firestore {
         allow get: if isAuthenticated();
         allow list: if isAdmin() || (isAuthenticated() && request.query.limit != null && request.query.limit <= 100);
         // Player can only join themselves and MUST atomically deduct wallet if paid
-      allow create: if isAuthenticated()
+      allow create: if isAdmin() || (
+          isAuthenticated()
           && request.auth.uid == playerId
           && request.resource.data.userId == request.auth.uid
           && request.resource.data.status == 'registered'
@@ -107,7 +108,8 @@ service cloud.firestore {
              || 
              getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.walletBalance == 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.walletBalance - get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.get('registrationCharge', 0)
-          );
+          )
+        );
         allow update, delete: if isAdmin();
       }
 
