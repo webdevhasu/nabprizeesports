@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, limit, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDocs, setDoc, getDoc, runTransaction, increment } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, where, limit, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDocs, setDoc, getDoc, runTransaction, increment } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { notifyAllUsers, notifyMultipleUsers } from '../utils/notify';
 import {
@@ -673,8 +673,8 @@ export default function CreateTournament() {
 
   const handleRestorePlayer = async () => {
     const tournament = playersModalTournament;
-    const uid = restoreUid.trim();
-    if (!tournament || !uid || restoringPlayer) return;
+    const username = restoreUid.trim().replace(/^@/, '');
+    if (!tournament || !username || restoringPlayer) return;
     if (tournament.status !== 'upcoming' || Number(tournament.registrationCharge || 0) !== 0) {
       alert('Restore is available only for upcoming free tournaments.');
       return;
@@ -683,15 +683,16 @@ export default function CreateTournament() {
     try {
       await runTransaction(db, async (transaction) => {
         const tournamentRef = doc(db, 'tournaments', tournament.id);
-        const playerRef = doc(db, 'tournaments', tournament.id, 'players', uid);
-        const userRef = doc(db, 'users', uid);
-        const [tournamentSnap, playerSnap, userSnap] = await Promise.all([
-          transaction.get(tournamentRef), transaction.get(playerRef), transaction.get(userRef),
-        ]);
+        const usersQuery = query(collection(db, 'users'), where('username', '==', username), limit(1));
+        const [tournamentSnap, usersSnap] = await Promise.all([transaction.get(tournamentRef), transaction.get(usersQuery)]);
         if (!tournamentSnap.exists() || tournamentSnap.data().status !== 'upcoming') throw new Error('Tournament is not upcoming.');
         if (Number(tournamentSnap.data().registrationCharge || 0) !== 0) throw new Error('Only free tournaments can be restored.');
+        if (usersSnap.empty) throw new Error(`No user found with username "${username}".`);
+        const userSnap = usersSnap.docs[0];
+        const uid = userSnap.id;
+        const playerRef = doc(db, 'tournaments', tournament.id, 'players', uid);
+        const playerSnap = await transaction.get(playerRef);
         if (playerSnap.exists()) throw new Error('This player is already registered.');
-        if (!userSnap.exists()) throw new Error('No user account found for this Firebase UID.');
         if (Number(tournamentSnap.data().slotsFilled || 0) >= Number(tournamentSnap.data().maxSlots || 0)) throw new Error('Tournament is full.');
         const user = userSnap.data();
         const games = Array.isArray(user.games) ? user.games : [];
@@ -2319,7 +2320,7 @@ export default function CreateTournament() {
             {/* Modal Footer */}
             {playersModalTournament.status === 'upcoming' && Number(playersModalTournament.registrationCharge || 0) === 0 && (
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #F0ECE4' }}>
-                <input value={restoreUid} onChange={e => setRestoreUid(e.target.value)} placeholder="Firebase User UID to restore" style={{ ...inputStyle, flex: 1 }} />
+                <input value={restoreUid} onChange={e => setRestoreUid(e.target.value)} placeholder="Username to restore (e.g. ismaili)" style={{ ...inputStyle, flex: 1 }} />
                 <button type="button" onClick={handleRestorePlayer} disabled={!restoreUid.trim() || restoringPlayer} style={{ padding: '9px 12px', border: 0, borderRadius: '8px', background: restoreUid.trim() && !restoringPlayer ? '#111C35' : '#C4BCB2', color: '#FFF', fontWeight: 700, cursor: 'pointer' }}>
                   {restoringPlayer ? 'Restoring...' : 'Restore Player'}
                 </button>
