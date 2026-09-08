@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, orderBy, doc, setDoc, updateDoc, increment, getDocs, getDoc, serverTimestamp, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
-import { db, functions } from '../firebase/config';
-import { httpsCallable } from 'firebase/functions';
+import { db, auth } from '../firebase/config';
 import {
   ArrowLeft,
   Crown,
@@ -324,13 +323,18 @@ export default function MatchResults() {
     if (!selectedTournament || !winnerId) return;
     setSubmittingWinner(true);
     try {
-      const declareWinner = httpsCallable(functions, 'declareMatchWinner');
-      const result = await declareWinner({
-        tournamentId: selectedTournament.id,
-        winnerId,
-        killsByPlayer: playerKills,
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch('https://asia-southeast1-nabprize-esports.cloudfunctions.net/declareMatchWinnerHttp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({
+          tournamentId: selectedTournament.id,
+          winnerId,
+          killsByPlayer: playerKills,
+        }),
       });
-      if (!result.data?.ok) throw new Error('Winner payout was not confirmed.');
+      const result = await res.json();
+      if (!result.ok) throw new Error(result.error || 'Winner payout was not confirmed.');
       alert(`Winner assigned! @${winnerPlayer?.username || 'Player'} won Rs ${winnerPrize}.`);
     } catch (error) {
       console.error('Error submitting winner:', error);

@@ -38,9 +38,24 @@ exports.getRegisteredUserCount = onCall(async (request) => {
   return { count };
 });
 
-exports.declareMatchWinner = onCall({
-  cors: true,
-}, async (request) => {
+const ALLOWED_ORIGINS = ['https://nabprizeesports.vercel.app', 'http://localhost:5173', 'http://localhost:4173'];
+
+function handleCors(request, response) {
+  const origin = request.get('origin') || '';
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    response.set('Access-Control-Allow-Origin', origin);
+  }
+  response.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.set('Access-Control-Max-Age', '3600');
+  if (request.method === 'OPTIONS') {
+    response.status(204).send('');
+    return true;
+  }
+  return false;
+}
+
+async function declareMatchWinnerLogic(request) {
   assertAdmin(request);
 
   const { tournamentId, winnerId, killsByPlayer } = request.data || {};
@@ -95,8 +110,6 @@ exports.declareMatchWinner = onCall({
     userRefs.set(player.userId, userRef);
   }
 
-  // All reads happen before the transaction writes. The result document is the
-  // idempotency lock, and deterministic ledger IDs make retries safe.
   await db.runTransaction(async (transaction) => {
     const freshResult = await transaction.get(resultRef);
     if (freshResult.exists && freshResult.data().winnerDeclared === true) {
@@ -155,6 +168,29 @@ exports.declareMatchWinner = onCall({
   });
 
   return { ok: true, tournamentId, winnerId: winner.userId };
+}
+
+exports.declareMatchWinner = onCall({ cors: true }, async (request) => {
+  return declareMatchWinnerLogic(request);
+});
+
+exports.declareMatchWinnerHttp = onRequest(async (request, response) => {
+  if (handleCors(request, response)) return;
+  try {
+    if (request.method !== 'POST') return response.status(405).json({ error: 'POST required' });
+    const authorization = String(request.get('authorization') || '');
+    if (!authorization.startsWith('Bearer ')) return response.status(401).json({ error: 'Admin access required.' });
+    const token = await getAuth().verifyIdToken(authorization.slice(7));
+    if (token.email !== ADMIN_EMAIL) return response.status(403).json({ error: 'Admin access required.' });
+
+    request.auth = { uid: token.uid, token };
+    const result = await declareMatchWinnerLogic(request);
+    return response.status(200).json(result);
+  } catch (error) {
+    const message = error.message || 'Failed to declare winner.';
+    const status = message.includes('already') ? 409 : message.includes('not found') ? 404 : message.includes('permission') || message.includes('Admin') ? 403 : 400;
+    return response.status(status).json({ error: message });
+  }
 });
 
 // Lightweight aggregate for public PWA install CTA clicks. The client applies
