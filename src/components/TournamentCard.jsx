@@ -296,12 +296,12 @@ export default function TournamentCard({ tournament, isRegistered = false }) {
           }}>
             {[
               {
-                label: 'Entry Fee',
+                label: 'Service Fee',
                 value: tournament.registrationCharge > 0 ? `Rs ${tournament.registrationCharge}` : 'FREE',
                 color: isFree ? '#5BC47A' : '#E0D8CC',
               },
               {
-                label: 'Prize Pool',
+                label: 'Fixed Reward',
                 value: `Rs ${tournament.fixedReward || 0}`,
                 color: '#FF6B4A',
               },

@@ -115,7 +115,7 @@ export default function SignUp() {
                 <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Trophy size={16} color="#F4B740" />
                 </div>
-                <span>Guaranteed Prize Pools & Fair Rankings</span>
+                <span>Guaranteed Rewards & Fair Rankings</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#FAF8F5' }}>
                 <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -133,7 +133,7 @@ export default function SignUp() {
           </div>
 
           <div style={{ position: 'relative', zIndex: 2, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', fontSize: '11px', color: '#A69E94' }}>
-            Instant Registration • Safe & Secure • Real Cash
+            Instant Registration • Safe & Secure • Real Rewards
           </div>
         </div>
 

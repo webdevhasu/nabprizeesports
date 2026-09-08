@@ -1820,14 +1820,14 @@ export default function CreateTournament() {
                     marginBottom: '14px',
                   }}>
                     <div>
-                      <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Entry Fee</div>
+                      <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Service Fee</div>
                       <div style={{ fontWeight: 800, fontSize: '14px', color: '#2E2A26', marginTop: '2px' }}>
                         {Number(tpl.registrationCharge) > 0 ? `Rs ${tpl.registrationCharge}` : 'FREE'}
                       </div>
                     </div>
 
                     <div>
-                      <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Prize Pool</div>
+                      <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600, textTransform: 'uppercase' }}>Fixed Reward</div>
                       <div style={{ fontWeight: 800, fontSize: '14px', color: '#FF6B4A', marginTop: '2px' }}>
                         Rs {tpl.fixedReward || 0}
                       </div>
@@ -1987,7 +1987,7 @@ export default function CreateTournament() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                   <div>
-                    <label style={labelStyle}>Entry Fee (PKR)</label>
+                    <label style={labelStyle}>Service Fee (PKR)</label>
                     <input
                       type="number"
                       min="0"
