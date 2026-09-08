@@ -165,6 +165,8 @@ export default function CreateTournament() {
   const [playersSearchQuery, setPlayersSearchQuery] = useState('');
   const [copiedPlayerUid, setCopiedPlayerUid] = useState(null);
   const [copiedAllRoster, setCopiedAllRoster] = useState(false);
+  const [restoreUid, setRestoreUid] = useState('');
+  const [restoringPlayer, setRestoringPlayer] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -666,6 +668,44 @@ export default function CreateTournament() {
     } catch (error) {
       console.error('Dismiss player error:', error);
       alert(error.message || 'Could not dismiss this player.');
+    }
+  };
+
+  const handleRestorePlayer = async () => {
+    const tournament = playersModalTournament;
+    const uid = restoreUid.trim();
+    if (!tournament || !uid || restoringPlayer) return;
+    if (tournament.status !== 'upcoming' || Number(tournament.registrationCharge || 0) !== 0) {
+      alert('Restore is available only for upcoming free tournaments.');
+      return;
+    }
+    setRestoringPlayer(true);
+    try {
+      await runTransaction(db, async (transaction) => {
+        const tournamentRef = doc(db, 'tournaments', tournament.id);
+        const playerRef = doc(db, 'tournaments', tournament.id, 'players', uid);
+        const userRef = doc(db, 'users', uid);
+        const [tournamentSnap, playerSnap, userSnap] = await Promise.all([
+          transaction.get(tournamentRef), transaction.get(playerRef), transaction.get(userRef),
+        ]);
+        if (!tournamentSnap.exists() || tournamentSnap.data().status !== 'upcoming') throw new Error('Tournament is not upcoming.');
+        if (Number(tournamentSnap.data().registrationCharge || 0) !== 0) throw new Error('Only free tournaments can be restored.');
+        if (playerSnap.exists()) throw new Error('This player is already registered.');
+        if (!userSnap.exists()) throw new Error('No user account found for this Firebase UID.');
+        if (Number(tournamentSnap.data().slotsFilled || 0) >= Number(tournamentSnap.data().maxSlots || 0)) throw new Error('Tournament is full.');
+        const user = userSnap.data();
+        const games = Array.isArray(user.games) ? user.games : [];
+        const game = games.find(g => g.game === tournamentSnap.data().game) || games[0] || {};
+        transaction.set(playerRef, { userId: uid, username: user.username || 'Player', ign: game.ign || 'Unknown', uid: game.uid || '', registeredAt: serverTimestamp(), status: 'registered' });
+        transaction.update(tournamentRef, { slotsFilled: increment(1) });
+      });
+      setRestoreUid('');
+      await openPlayersModal(tournament);
+      alert('Player restored successfully.');
+    } catch (error) {
+      alert(error.message || 'Could not restore player.');
+    } finally {
+      setRestoringPlayer(false);
     }
   };
 
@@ -2277,6 +2317,14 @@ export default function CreateTournament() {
             </div>
 
             {/* Modal Footer */}
+            {playersModalTournament.status === 'upcoming' && Number(playersModalTournament.registrationCharge || 0) === 0 && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #F0ECE4' }}>
+                <input value={restoreUid} onChange={e => setRestoreUid(e.target.value)} placeholder="Firebase User UID to restore" style={{ ...inputStyle, flex: 1 }} />
+                <button type="button" onClick={handleRestorePlayer} disabled={!restoreUid.trim() || restoringPlayer} style={{ padding: '9px 12px', border: 0, borderRadius: '8px', background: restoreUid.trim() && !restoringPlayer ? '#111C35' : '#C4BCB2', color: '#FFF', fontWeight: 700, cursor: 'pointer' }}>
+                  {restoringPlayer ? 'Restoring...' : 'Restore Player'}
+                </button>
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid #F0ECE4' }}>
               <div style={{ fontSize: '12px', color: '#8A8078' }}>
                 Showing {filteredModalPlayers.length} of {tournamentPlayers.length} participants
