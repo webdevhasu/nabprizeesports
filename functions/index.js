@@ -23,6 +23,21 @@ function asNonNegativeInteger(value) {
   return Number.isInteger(number) && number >= 0 ? number : null;
 }
 
+// Count actual Firebase Authentication accounts, not stale Firestore profiles.
+exports.getRegisteredUserCount = onCall(async (request) => {
+  assertAdmin(request);
+
+  let count = 0;
+  let pageToken;
+  do {
+    const page = await getAuth().listUsers(1000, pageToken);
+    count += page.users.filter(user => user.email !== ADMIN_EMAIL).length;
+    pageToken = page.pageToken;
+  } while (pageToken);
+
+  return { count };
+});
+
 exports.declareMatchWinner = onCall(async (request) => {
   assertAdmin(request);
 

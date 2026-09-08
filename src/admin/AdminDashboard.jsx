@@ -22,7 +22,7 @@ import NotificationSender from './NotificationSender';
 
 export default function AdminDashboard() {
   const [tournaments, setTournaments] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [registeredUserCount, setRegisteredUserCount] = useState(0);
   const [withdrawals, setWithdrawals] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [platformLedger, setPlatformLedger] = useState([]);
@@ -32,15 +32,13 @@ export default function AdminDashboard() {
     httpsCallable(functions, 'getInstallClickStats')().then(result => {
       setInstallStats(result.data || { total: 0, today: 0 });
     }).catch(() => {});
+    httpsCallable(functions, 'getRegisteredUserCount')().then(result => {
+      setRegisteredUserCount(Number(result.data?.count) || 0);
+    }).catch(() => {});
 
     const unsubTournaments = onSnapshot(
       query(collection(db, 'tournaments'), orderBy('createdAt', 'desc')),
       (snap) => setTournaments(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      () => {}
-    );
-    const unsubUsers = onSnapshot(
-      query(collection(db, 'users')),
-      (snap) => setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
       () => {}
     );
     const unsubWithdrawals = onSnapshot(
@@ -74,7 +72,7 @@ export default function AdminDashboard() {
       (snap) => setPlatformLedger(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
       () => {}
     );
-    return () => { unsubTournaments(); unsubUsers(); unsubWithdrawals(); unsubDeposits(); unsubLedger(); };
+    return () => { unsubTournaments(); unsubWithdrawals(); unsubDeposits(); unsubLedger(); };
   }, []);
 
   const handleWithdrawalAction = async (w, status) => {
@@ -104,7 +102,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const totalPlayers = users.length;
+  const totalPlayers = registeredUserCount;
   const totalTournaments = tournaments.length;
   const liveTournaments = tournaments.filter(t => t.status === 'live').length;
   const upcomingTournaments = tournaments.filter(t => t.status === 'upcoming').length;
