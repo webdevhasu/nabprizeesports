@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 export default function Profile() {
-  const { userProfile, refreshProfile } = useAuth();
+  const { userProfile, currentUser, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -165,7 +165,9 @@ export default function Profile() {
             color: '#FFFFFF',
             boxShadow: '0 4px 14px rgba(255,107,74,0.3)',
           }}>
-            {initials}
+            {currentUser?.photoURL ? (
+              <img src={currentUser.photoURL} alt="Profile" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            ) : initials}
           </div>
           <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '20px', color: '#2E2A26', margin: '0 0 2px' }}>
             @{userProfile?.username || 'player'}
