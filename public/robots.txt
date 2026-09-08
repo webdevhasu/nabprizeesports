@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /add-funds
+Disallow: /withdraw
+Disallow: /transactions
+Disallow: /reviews
+
+Sitemap: https://nabprizeesports.vercel.app/sitemap.xml
