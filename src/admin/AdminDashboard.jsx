@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db, functions } from '../firebase/config';
 import { httpsCallable } from 'firebase/functions';
-import { collection, query, onSnapshot, orderBy, doc, runTransaction, serverTimestamp, increment } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, limit, doc, runTransaction, serverTimestamp, increment } from 'firebase/firestore';
 import {
   Users,
   Trophy,
@@ -23,6 +23,7 @@ import NotificationSender from './NotificationSender';
 export default function AdminDashboard() {
   const [tournaments, setTournaments] = useState([]);
   const [registeredUserCount, setRegisteredUserCount] = useState(0);
+  const [profileUserCount, setProfileUserCount] = useState(0);
   const [withdrawals, setWithdrawals] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [platformLedger, setPlatformLedger] = useState([]);
@@ -39,6 +40,11 @@ export default function AdminDashboard() {
     const unsubTournaments = onSnapshot(
       query(collection(db, 'tournaments'), orderBy('createdAt', 'desc')),
       (snap) => setTournaments(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      () => {}
+    );
+    const unsubProfiles = onSnapshot(
+      query(collection(db, 'users'), limit(1000)),
+      (snap) => setProfileUserCount(snap.size),
       () => {}
     );
     const unsubWithdrawals = onSnapshot(
@@ -72,7 +78,7 @@ export default function AdminDashboard() {
       (snap) => setPlatformLedger(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
       () => {}
     );
-    return () => { unsubTournaments(); unsubWithdrawals(); unsubDeposits(); unsubLedger(); };
+    return () => { unsubTournaments(); unsubProfiles(); unsubWithdrawals(); unsubDeposits(); unsubLedger(); };
   }, []);
 
   const handleWithdrawalAction = async (w, status) => {
@@ -114,6 +120,7 @@ export default function AdminDashboard() {
 
   const stats = [
     { label: 'Total Players', value: totalPlayers, sub: 'Registered users', color: '#FF6B4A', bg: '#FFF0EC', icon: Users },
+    { label: 'Profiled Users', value: profileUserCount, sub: '/users documents', color: '#5B63D3', bg: '#EEF0FF', icon: Users },
     { label: 'Tournaments', value: totalTournaments, sub: 'All time', color: '#7B4FE0', bg: '#F3EEFF', icon: Trophy },
     { label: 'Pending Deposits', value: pendingDeposits, sub: 'Needs verification', color: '#E88B00', bg: '#FFF6E5', icon: ArrowDownLeft, link: '/admin/deposits' },
     { label: 'Pending Payouts', value: pendingWithdrawals, sub: 'Needs approval', color: '#D9503F', bg: '#FFEBEE', icon: AlertCircle, link: '/admin/withdrawals' },
