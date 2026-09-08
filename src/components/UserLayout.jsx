@@ -68,6 +68,7 @@ export default function UserLayout({ children, title, showBack = false }) {
   };
 
   const isAdmin = currentUser?.email === 'nabprize.official@gmail.com';
+  const profilePhotoURL = currentUser?.photoURL || currentUser?.providerData?.find(provider => provider.photoURL)?.photoURL || '';
 
   return (
     <div className="user-layout-root" style={{ minHeight: '100vh', background: '#F8F6F1', display: 'flex', color: '#2E2A26' }}>
@@ -168,8 +169,8 @@ export default function UserLayout({ children, title, showBack = false }) {
               flexShrink: 0,
               boxShadow: '0 2px 6px rgba(255, 107, 74, 0.25)',
             }}>
-              {currentUser?.photoURL ? (
-                <img src={currentUser.photoURL} alt="Profile" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              {profilePhotoURL ? (
+                <img src={profilePhotoURL} alt="Profile" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
               ) : (
                 userProfile?.username?.charAt(0)?.toUpperCase() || 'P'
               )}
@@ -572,8 +573,8 @@ export default function UserLayout({ children, title, showBack = false }) {
                 fontWeight: 700,
                 fontSize: '12px',
               }}>
-                {currentUser?.photoURL ? (
-                  <img src={currentUser.photoURL} alt="Profile" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                {profilePhotoURL ? (
+                  <img src={profilePhotoURL} alt="Profile" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
                   userProfile?.username?.charAt(0)?.toUpperCase() || 'P'
                 )}

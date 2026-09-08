@@ -28,14 +28,15 @@ export function AuthProvider({ children }) {
       }
 
       if (user) {
+        const profilePhotoURL = user.photoURL || user.providerData?.find(provider => provider.photoURL)?.photoURL || '';
         const docRef = doc(db, 'users', user.uid);
         profileUnsub = onSnapshot(
           docRef,
           (docSnap) => {
             if (docSnap.exists()) {
               setUserProfile(docSnap.data());
-              if (user.photoURL && docSnap.data().photoURL !== user.photoURL) {
-                updateDoc(docRef, { photoURL: user.photoURL }).catch(() => {});
+              if (profilePhotoURL && docSnap.data().photoURL !== profilePhotoURL) {
+                updateDoc(docRef, { photoURL: profilePhotoURL }).catch(() => {});
               }
               setProfileError(false);
             } else {
