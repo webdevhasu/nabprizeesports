@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDocs, setDoc, getDoc, runTransaction, increment } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, limit, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDocs, setDoc, getDoc, runTransaction, increment } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { notifyAllUsers, notifyMultipleUsers } from '../utils/notify';
 import {
@@ -195,7 +195,7 @@ export default function CreateTournament() {
 
     // Realtime Templates / Presets Listener
     const unsubTemplates = onSnapshot(
-      collection(db, 'tournamentTemplates'),
+      query(collection(db, 'tournamentTemplates'), limit(1000)),
       (snap) => {
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         setTemplates(list);
