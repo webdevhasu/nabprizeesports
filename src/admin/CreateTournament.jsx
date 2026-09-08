@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDocs, setDoc, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDocs, setDoc, getDoc, runTransaction, increment } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { notifyAllUsers, notifyMultipleUsers } from '../utils/notify';
 import {
@@ -620,6 +620,53 @@ export default function CreateTournament() {
     navigator.clipboard.writeText(`Roster for ${playersModalTournament.name} (${tournamentPlayers.length} Players):\n\n${text}`);
     setCopiedAllRoster(true);
     setTimeout(() => setCopiedAllRoster(false), 2000);
+  };
+
+  const handleDismissPlayer = async (player) => {
+    const tournament = playersModalTournament;
+    if (!tournament || tournament.status === 'completed') return;
+    const fee = Number(tournament.registrationCharge) || 0;
+    const refundNote = tournament.status === 'upcoming' && fee > 0
+      ? ` Rs ${fee} will be refunded to the player's wallet.`
+      : '';
+    if (!window.confirm(`Dismiss @${player.username || 'this player'} from "${tournament.name}"?${refundNote}`)) return;
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const tournamentRef = doc(db, 'tournaments', tournament.id);
+        const playerRef = doc(db, 'tournaments', tournament.id, 'players', player.id);
+        const tournamentSnap = await transaction.get(tournamentRef);
+        const playerSnap = await transaction.get(playerRef);
+        if (!tournamentSnap.exists() || !playerSnap.exists()) throw new Error('Player is no longer registered.');
+
+        const freshTournament = tournamentSnap.data();
+        const freshPlayer = playerSnap.data();
+        const refund = freshTournament.status === 'upcoming' ? Number(freshTournament.registrationCharge) || 0 : 0;
+        const userId = freshPlayer.userId || player.id;
+        const userRef = doc(db, 'users', userId);
+        let userSnap = null;
+        if (refund > 0) {
+          userSnap = await transaction.get(userRef);
+          if (!userSnap.exists()) throw new Error('Player wallet profile not found.');
+        }
+
+        transaction.delete(playerRef);
+        transaction.update(tournamentRef, { slotsFilled: Math.max(0, Number(freshTournament.slotsFilled || 0) - 1) });
+        if (refund > 0) {
+          transaction.update(userRef, { walletBalance: increment(refund) });
+          transaction.set(doc(db, 'transactions', userId, 'history', `dismiss_refund_${tournament.id}_${userId}`), {
+            type: 'credit', amount: refund, tournamentId: tournament.id,
+            description: `Refund: Dismissed from ${freshTournament.name || 'Tournament'}`,
+            timestamp: serverTimestamp(), status: 'completed',
+          });
+        }
+      });
+      setTournamentPlayers(prev => prev.filter(p => p.id !== player.id));
+      alert(`@${player.username || 'Player'} dismissed successfully.`);
+    } catch (error) {
+      console.error('Dismiss player error:', error);
+      alert(error.message || 'Could not dismiss this player.');
+    }
   };
 
   const formatSchedulePKT = (startTimeStr) => {
@@ -2132,6 +2179,7 @@ export default function CreateTournament() {
                       <th style={{ textAlign: 'left', padding: '10px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>IN-GAME NAME (IGN)</th>
                       <th style={{ textAlign: 'left', padding: '10px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>GAME UID</th>
                       <th style={{ textAlign: 'center', padding: '10px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>STATUS</th>
+                      <th style={{ textAlign: 'center', padding: '10px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>ACTION</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2208,6 +2256,18 @@ export default function CreateTournament() {
                           }}>
                             REGISTERED ✓
                           </span>
+                        </td>
+
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                          {playersModalTournament.status !== 'completed' && (
+                            <button
+                              type="button"
+                              onClick={() => handleDismissPlayer(player)}
+                              style={{ padding: '5px 9px', borderRadius: '6px', border: '1px solid #FECACA', background: '#FFF1F2', color: '#B42318', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                              Dismiss
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
