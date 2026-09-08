@@ -184,6 +184,7 @@ exports.declareMatchWinnerHttp = onRequest(async (request, response) => {
     if (token.email !== ADMIN_EMAIL) return response.status(403).json({ error: 'Admin access required.' });
 
     request.auth = { uid: token.uid, token };
+    request.data = request.body;
     const result = await declareMatchWinnerLogic(request);
     return response.status(200).json(result);
   } catch (error) {
