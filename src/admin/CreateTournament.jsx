@@ -681,17 +681,22 @@ export default function CreateTournament() {
     }
     setRestoringPlayer(true);
     try {
+      const usersSnap = await getDocs(query(collection(db, 'users'), where('username', '==', username), limit(1)));
+      if (usersSnap.empty) throw new Error(`No user found with username "${username}".`);
+      const uid = usersSnap.docs[0].id;
+
       await runTransaction(db, async (transaction) => {
         const tournamentRef = doc(db, 'tournaments', tournament.id);
-        const usersQuery = query(collection(db, 'users'), where('username', '==', username), limit(1));
-        const [tournamentSnap, usersSnap] = await Promise.all([transaction.get(tournamentRef), transaction.get(usersQuery)]);
+        const userRef = doc(db, 'users', uid);
+        const playerRef = doc(db, 'tournaments', tournament.id, 'players', uid);
+        const [tournamentSnap, userSnap, playerSnap] = await Promise.all([
+          transaction.get(tournamentRef),
+          transaction.get(userRef),
+          transaction.get(playerRef),
+        ]);
         if (!tournamentSnap.exists() || tournamentSnap.data().status !== 'upcoming') throw new Error('Tournament is not upcoming.');
         if (Number(tournamentSnap.data().registrationCharge || 0) !== 0) throw new Error('Only free tournaments can be restored.');
-        if (usersSnap.empty) throw new Error(`No user found with username "${username}".`);
-        const userSnap = usersSnap.docs[0];
-        const uid = userSnap.id;
-        const playerRef = doc(db, 'tournaments', tournament.id, 'players', uid);
-        const playerSnap = await transaction.get(playerRef);
+        if (!userSnap.exists()) throw new Error('The selected user profile no longer exists.');
         if (playerSnap.exists()) throw new Error('This player is already registered.');
         if (Number(tournamentSnap.data().slotsFilled || 0) >= Number(tournamentSnap.data().maxSlots || 0)) throw new Error('Tournament is full.');
         const user = userSnap.data();
