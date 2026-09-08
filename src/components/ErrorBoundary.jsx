@@ -16,8 +16,13 @@ export default class ErrorBoundary extends React.Component {
   }
 
   handleReset = () => {
-    // Clear potentially corrupted local storage caches if needed
+    // Clear all caches and unregister service workers
     try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          for (const reg of registrations) reg.unregister();
+        });
+      }
       if (window.caches) {
         caches.keys().then(names => {
           for (let name of names) caches.delete(name);
@@ -25,8 +30,12 @@ export default class ErrorBoundary extends React.Component {
       }
     } catch (e) {}
 
-    // Reload the page hard
-    window.location.reload(true);
+    // Reset SW reload counters
+    try { sessionStorage.removeItem('np_sw_reloaded_at'); } catch (e) {}
+    try { sessionStorage.removeItem('np_sw_reload_count'); } catch (e) {}
+
+    // Hard reload after a short delay so SW unregistration takes effect
+    setTimeout(() => { window.location.href = window.location.href; }, 200);
   };
 
   render() {

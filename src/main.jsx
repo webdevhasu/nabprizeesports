@@ -25,9 +25,13 @@ const updateSW = registerSW({
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     const reloadKey = 'np_sw_reloaded_at';
+    const countKey = 'np_sw_reload_count';
     const lastReload = Number(sessionStorage.getItem(reloadKey) || 0);
-    if (Date.now() - lastReload > 10_000) {
+    const reloadCount = Number(sessionStorage.getItem(countKey) || 0);
+
+    if (Date.now() - lastReload > 5_000 && reloadCount < 3) {
       sessionStorage.setItem(reloadKey, String(Date.now()));
+      sessionStorage.setItem(countKey, String(reloadCount + 1));
       window.location.reload();
     }
   });
