@@ -138,7 +138,10 @@ export function NotificationProvider({ children }) {
   const clearAll = useCallback(async () => {
     const user = auth.currentUser;
     if (!user) return;
-    const snap = await getDocs(collection(db, 'users', user.uid, 'notifications'));
+    const snap = await getDocs(query(
+      collection(db, 'users', user.uid, 'notifications'),
+      limit(100)
+    ));
     const batch = writeBatch(db);
     snap.docs.forEach(d => batch.delete(d.ref));
     await batch.commit();
