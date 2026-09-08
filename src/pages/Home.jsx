@@ -333,7 +333,6 @@ export default function Home() {
             {[
               { key: 'all', label: 'All Matches' },
               { key: 'pubg', label: 'PUBG Mobile' },
-              { key: 'freefire', label: 'Free Fire' },
             ].map(f => (
               <button
                 key={f.key}
