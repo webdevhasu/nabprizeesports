@@ -25,6 +25,7 @@ export default function Withdraw() {
 
   const isAccountValid = () => {
     const num = accountNumber.replace(/\D/g, '');
+    if (!accountTitle.trim()) return false;
     if (method === 'jazzcash' || method === 'easypaisa') {
       return /^03\d{9}$/.test(num);
     }
@@ -32,7 +33,7 @@ export default function Withdraw() {
       return num.length >= 10 && num.length <= 14;
     }
     if (method === 'bank') {
-      return accountNumber.trim().length >= 10 && accountTitle.trim().length >= 2;
+      return accountNumber.trim().length >= 10;
     }
     return false;
   };
@@ -96,7 +97,7 @@ export default function Withdraw() {
           amount: numAmount,
           method: method,
           accountNumber: accountNumber,
-          accountTitle: method === 'bank' ? accountTitle.trim() : '',
+          accountTitle: accountTitle.trim(),
           status: 'pending',
           requestedAt: serverTimestamp(),
           createdAt: serverTimestamp(),
@@ -340,13 +341,13 @@ export default function Withdraw() {
 
         {/* Account Number */}
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>
-            {method === 'jazzcash' || method === 'easypaisa'
-              ? `Your ${method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'} Mobile Account Number (11 digits)`
-              : method === 'sadapay'
-              ? 'Your SadaPay Account Number (10-14 digits)'
-              : 'Bank Account Number / IBAN'}
-          </label>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>
+              {method === 'jazzcash' || method === 'easypaisa'
+                ? `Your ${method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'} Mobile Account Number (11 digits)`
+                : method === 'sadapay'
+                ? 'Your SadaPay Account Number (10-14 digits)'
+                : 'Bank Account Number / IBAN'}
+            </label>
           <input
             type="text"
             inputMode={method === 'bank' ? 'text' : 'numeric'}
@@ -374,32 +375,30 @@ export default function Withdraw() {
             }}
           />
 
-          {/* Bank Account Title - only for Bank Transfer */}
-          {method === 'bank' && (
-            <div style={{ marginTop: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>
-                Account Holder Name / Title
-              </label>
-              <input
-                type="text"
-                value={accountTitle}
-                onChange={(e) => setAccountTitle(e.target.value.slice(0, 40))}
-                placeholder="Name on your bank account"
-                maxLength={40}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  background: '#FFFFFF',
-                  border: '1px solid #D9D3CC',
-                  borderRadius: '12px',
-                  fontSize: '15px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  fontWeight: 600,
-                }}
-              />
-            </div>
-          )}
+          {/* Account Title - all methods */}
+          <div style={{ marginTop: '12px' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>
+              Account Holder Name / Title
+            </label>
+            <input
+              type="text"
+              value={accountTitle}
+              onChange={(e) => setAccountTitle(e.target.value.slice(0, 40))}
+              placeholder="Name on your account"
+              maxLength={40}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: '#FFFFFF',
+                border: '1px solid #D9D3CC',
+                borderRadius: '12px',
+                fontSize: '15px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                fontWeight: 600,
+              }}
+            />
+          </div>
 
           {accountNumber.length > 0 && (method === 'jazzcash' || method === 'easypaisa') && (
             <div style={{ fontSize: '11px', marginTop: '6px', fontWeight: 500 }}>
