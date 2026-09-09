@@ -14,6 +14,7 @@ export default function Withdraw() {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('jazzcash');
   const [accountNumber, setAccountNumber] = useState('');
+  const [accountTitle, setAccountTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [userWithdrawals, setUserWithdrawals] = useState([]);
@@ -21,8 +22,22 @@ export default function Withdraw() {
 
   const balance = userProfile?.walletBalance || 0;
   const numAmount = parseInt(amount) || 0;
-  const isPhoneValid = /^03\d{9}$/.test(accountNumber);
-  const isValid = numAmount >= 200 && numAmount <= 50000 && numAmount <= balance && isPhoneValid;
+
+  const isAccountValid = () => {
+    const num = accountNumber.replace(/\D/g, '');
+    if (method === 'jazzcash' || method === 'easypaisa') {
+      return /^03\d{9}$/.test(num);
+    }
+    if (method === 'sadapay') {
+      return num.length >= 10 && num.length <= 14;
+    }
+    if (method === 'bank') {
+      return accountNumber.trim().length >= 10 && accountTitle.trim().length >= 2;
+    }
+    return false;
+  };
+
+  const isValid = numAmount >= 200 && numAmount <= 50000 && numAmount <= balance && isAccountValid();
 
   // Listen to user's real-time withdrawal requests
   useEffect(() => {
@@ -81,6 +96,7 @@ export default function Withdraw() {
           amount: numAmount,
           method: method,
           accountNumber: accountNumber,
+          accountTitle: method === 'bank' ? accountTitle.trim() : '',
           status: 'pending',
           requestedAt: serverTimestamp(),
           createdAt: serverTimestamp(),
@@ -138,7 +154,7 @@ export default function Withdraw() {
             Withdrawal Submitted!
           </h2>
           <p style={{ fontSize: '14px', color: '#5E5851', marginBottom: '6px' }}>
-            Rs <strong>{numAmount}</strong> requested to your <strong>{method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}</strong> ({accountNumber}).
+            Rs <strong>{numAmount}</strong> requested to your <strong>{method === 'jazzcash' ? 'JazzCash' : method === 'easypaisa' ? 'EasyPaisa' : method === 'sadapay' ? 'SadaPay' : 'Bank Account'}</strong> ({accountNumber}).
           </p>
           <p style={{ fontSize: '12px', color: '#8A8078', marginBottom: '28px', lineHeight: 1.5 }}>
             Status is currently <strong>Pending Review</strong>. You can track this request below.
@@ -285,6 +301,8 @@ export default function Withdraw() {
           {[
             { key: 'jazzcash', label: 'JazzCash', color: '#D42027', badge: 'JC' },
             { key: 'easypaisa', label: 'EasyPaisa', color: '#32A852', badge: 'EP' },
+            { key: 'sadapay', label: 'SadaPay', color: '#1A1A2E', badge: 'SP' },
+            { key: 'bank', label: 'Bank Transfer', color: '#1565C0', badge: 'BT' },
           ].map(m => (
             <div
               key={m.key}
@@ -323,31 +341,67 @@ export default function Withdraw() {
         {/* Account Number */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>
-            Your {method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'} Mobile Account Number (11 digits)
+            {method === 'jazzcash' || method === 'easypaisa'
+              ? `Your ${method === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'} Mobile Account Number (11 digits)`
+              : method === 'sadapay'
+              ? 'Your SadaPay Account Number (10-14 digits)'
+              : 'Bank Account Number / IBAN'}
           </label>
           <input
-            type="tel"
-            inputMode="numeric"
+            type="text"
+            inputMode={method === 'bank' ? 'text' : 'numeric'}
             value={accountNumber}
-            onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 11))}
-            placeholder="03XXXXXXXXX"
-            maxLength={11}
+            onChange={(e) => {
+              if (method === 'bank') {
+                setAccountNumber(e.target.value.slice(0, 24));
+              } else {
+                setAccountNumber(e.target.value.replace(/\D/g, '').slice(0, method === 'sadapay' ? 14 : 11));
+              }
+            }}
+            placeholder={method === 'jazzcash' || method === 'easypaisa' ? '03XXXXXXXXX' : method === 'sadapay' ? 'Account Number' : 'IBAN or Account Number'}
+            maxLength={method === 'bank' ? 24 : method === 'sadapay' ? 14 : 11}
             style={{
               width: '100%',
               padding: '14px',
               background: '#FFFFFF',
-              border: accountNumber.length === 11
-                ? (isPhoneValid ? '1px solid #3FA65C' : '1px solid #D9503F')
-                : '1px solid #D9D3CC',
+              border: '1px solid #D9D3CC',
               borderRadius: '12px',
               fontSize: '15px',
               outline: 'none',
               boxSizing: 'border-box',
               fontWeight: 600,
-              letterSpacing: '0.5px',
+              letterSpacing: method === 'bank' ? '0' : '0.5px',
             }}
           />
-          {accountNumber.length > 0 && (
+
+          {/* Bank Account Title - only for Bank Transfer */}
+          {method === 'bank' && (
+            <div style={{ marginTop: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>
+                Account Holder Name / Title
+              </label>
+              <input
+                type="text"
+                value={accountTitle}
+                onChange={(e) => setAccountTitle(e.target.value.slice(0, 40))}
+                placeholder="Name on your bank account"
+                maxLength={40}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: '#FFFFFF',
+                  border: '1px solid #D9D3CC',
+                  borderRadius: '12px',
+                  fontSize: '15px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  fontWeight: 600,
+                }}
+              />
+            </div>
+          )}
+
+          {accountNumber.length > 0 && (method === 'jazzcash' || method === 'easypaisa') && (
             <div style={{ fontSize: '11px', marginTop: '6px', fontWeight: 500 }}>
               {!accountNumber.startsWith('03') ? (
                 <span style={{ color: '#D9503F' }}>✕ Must start with 03 (e.g. 03001234567)</span>

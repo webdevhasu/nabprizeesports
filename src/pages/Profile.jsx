@@ -489,15 +489,23 @@ export default function Profile() {
                 <input
                   type="text"
                   inputMode="numeric"
-                  placeholder="PUBG Character UID (Numbers only, max 14 digits)"
+                  placeholder="PUBG Character UID (7-14 digits)"
                   maxLength={14}
                   value={pubgUid}
                   onChange={e => setPubgUid(e.target.value.replace(/\D/g, '').slice(0, 14))}
                   style={{
-                    width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D9D3CC',
+                    width: '100%', padding: '10px', borderRadius: '8px',
+                    border: pubgUid.length > 0
+                      ? (pubgUid.length >= 7 ? '1px solid #3FA65C' : '1px solid #D9503F')
+                      : '1px solid #D9D3CC',
                     fontSize: '13px', boxSizing: 'border-box', outline: 'none',
                   }}
                 />
+                {pubgUid.length > 0 && pubgUid.length < 7 && (
+                  <div style={{ fontSize: '11px', color: '#D9503F', marginTop: '4px' }}>
+                    UID must be at least 7 digits ({7 - pubgUid.length} more needed)
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>

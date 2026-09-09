@@ -65,7 +65,11 @@ export default function AccountSetup() {
   const isFormValid = () => {
     if (!fullName.trim() || !username.trim() || usernameStatus !== 'available') return false;
     if (selectedGames.length === 0) return false;
-    if (selectedGames.includes('pubg') && (!pubgUid || !pubgIgn.trim())) return false;
+    if (selectedGames.includes('pubg')) {
+      if (!pubgUid || !pubgIgn.trim()) return false;
+      if (pubgUid.length < 7) return false;
+      if (pubgIgn.trim().length < 2) return false;
+    }
     return true;
   };
 
@@ -175,31 +179,52 @@ export default function AccountSetup() {
 
       {selectedGames.includes('pubg') && (
         <div style={{ marginBottom: '16px', padding: '16px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid #F0E6D8' }}>
-          <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>PUBG Mobile UID (Numbers only)</label>
+          <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>PUBG Mobile UID (7-14 digits)</label>
           <input
             type="text"
             inputMode="numeric"
             maxLength={14}
             value={pubgUid}
             onChange={(e) => setPubgUid(e.target.value.replace(/\D/g, '').slice(0, 14))}
-            placeholder="Numeric UID (e.g. 5123456789)"
+            placeholder="e.g. 5123456789"
             style={{
-              width: '100%', padding: '12px', background: '#FFF8F0', border: '1px solid #F0E6D8',
-              borderRadius: '10px', fontSize: '14px', outline: 'none', marginBottom: '12px',
+              width: '100%', padding: '12px', background: '#FFF8F0',
+              border: pubgUid.length > 0
+                ? (pubgUid.length >= 7 ? '1px solid #3FA65C' : '1px solid #D9503F')
+                : '1px solid #F0E6D8',
+              borderRadius: '10px', fontSize: '14px', outline: 'none', marginBottom: '4px',
             }}
           />
+          {pubgUid.length > 0 && pubgUid.length < 7 && (
+            <div style={{ fontSize: '11px', color: '#D9503F', marginBottom: '8px' }}>
+              UID must be at least 7 digits ({7 - pubgUid.length} more needed)
+            </div>
+          )}
+          {pubgUid.length >= 7 && (
+            <div style={{ fontSize: '11px', color: '#3FA65C', marginBottom: '8px' }}>
+              ✓ Valid UID length
+            </div>
+          )}
           <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>In-Game Name (IGN)</label>
           <input
             type="text"
             maxLength={20}
             value={pubgIgn}
             onChange={(e) => setPubgIgn(e.target.value.slice(0, 20))}
-            placeholder="Your PUBG IGN (max 20 chars)"
+            placeholder="Your PUBG IGN (min 2 chars)"
             style={{
-              width: '100%', padding: '12px', background: '#FFF8F0', border: '1px solid #F0E6D8',
+              width: '100%', padding: '12px', background: '#FFF8F0',
+              border: pubgIgn.trim().length > 0
+                ? (pubgIgn.trim().length >= 2 ? '1px solid #3FA65C' : '1px solid #D9503F')
+                : '1px solid #F0E6D8',
               borderRadius: '10px', fontSize: '14px', outline: 'none',
             }}
           />
+          {pubgIgn.trim().length > 0 && pubgIgn.trim().length < 2 && (
+            <div style={{ fontSize: '11px', color: '#D9503F', marginTop: '4px' }}>
+              IGN must be at least 2 characters
+            </div>
+          )}
         </div>
       )}
 

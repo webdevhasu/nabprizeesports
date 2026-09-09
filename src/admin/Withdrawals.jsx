@@ -307,8 +307,8 @@ export default function Withdrawals() {
                         borderRadius: '6px',
                         fontSize: '11px',
                         fontWeight: 700,
-                        background: w.method?.toLowerCase().includes('jazz') ? '#FFF0EC' : '#E8F5E9',
-                        color: w.method?.toLowerCase().includes('jazz') ? '#FF6B4A' : '#3FA65C',
+                        background: w.method === 'jazzcash' ? '#FFF0EC' : w.method === 'easypaisa' ? '#E8F5E9' : w.method === 'sadapay' ? '#F0F0FF' : '#E3F2FD',
+                        color: w.method === 'jazzcash' ? '#FF6B4A' : w.method === 'easypaisa' ? '#3FA65C' : w.method === 'sadapay' ? '#5C6BC0' : '#1565C0',
                       }}>
                         {w.method}
                       </span>
@@ -316,6 +316,11 @@ export default function Withdrawals() {
 
                     <td style={{ padding: '14px', fontFamily: 'monospace', fontWeight: 600, color: '#2E2A26' }}>
                       {w.accountNumber}
+                      {w.accountTitle && (
+                        <div style={{ fontSize: '11px', color: '#8A8078', fontWeight: 500, marginTop: '2px' }}>
+                          {w.accountTitle}
+                        </div>
+                      )}
                     </td>
 
                     <td style={{ padding: '14px', textAlign: 'center', fontWeight: 800, color: '#FF6B4A', fontSize: '15px' }}>
