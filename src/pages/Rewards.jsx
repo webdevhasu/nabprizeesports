@@ -108,7 +108,7 @@ export default function Rewards() {
           {[
             { key: 'all', label: 'All' },
             { key: 'pubg', label: 'PUBG Mobile' },
-            { key: 'freefire', label: 'Free Fire' },
+            { key: 'pubg', label: 'PUBG Mobile' },
           ].map(f => (
             <button key={f.key} onClick={() => setGameFilter(f.key)} style={{
               padding: '6px 12px', borderRadius: '16px', fontSize: '11px', fontWeight: 500,
@@ -174,7 +174,7 @@ export default function Rewards() {
 
               {/* Game + Date */}
               <div style={{ fontSize: '12px', color: '#8A8078', marginBottom: '12px' }}>
-                {reward.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire'} • {formatDate(reward.timestamp)}
+              PUBG Mobile • {formatDate(reward.timestamp)}
               </div>
 
               {/* Bottom Row */}

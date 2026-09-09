@@ -4,7 +4,7 @@ export default function Terms() {
   const sections = [
     {
       title: '1. About NabPrize Esports',
-      content: `NabPrize Esports is a skill-based mobile gaming platform serving players in Pakistan. We organize custom-room tournaments for PUBG Mobile and Free Fire. These terms explain how paid participation, fixed platform rewards, refunds and fair play work.`,
+      content: `NabPrize Esports is a skill-based mobile gaming platform serving players in Pakistan. We organize custom-room tournaments for PUBG Mobile. These terms explain how paid participation, fixed platform rewards, refunds and fair play work.`,
     },
     {
       title: '2. Eligibility',

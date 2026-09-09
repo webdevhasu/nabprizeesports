@@ -372,7 +372,7 @@ export default function AdminDashboard() {
                         {t.name}
                       </div>
                       <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
-                        {t.game === 'pubg' ? 'PUBG' : 'Free Fire'} • {t.matchType} • Slots: {t.slotsFilled || 0}/{t.maxSlots}
+                        PUBG Mobile • {t.matchType} • Slots: {t.slotsFilled || 0}/{t.maxSlots}
                       </div>
                     </div>
 

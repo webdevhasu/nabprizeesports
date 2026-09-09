@@ -35,7 +35,6 @@ import {
   Check,
   Gamepad2,
   Trophy,
-  Flame,
   Mail,
   ShieldAlert,
   Trash2
@@ -129,7 +128,6 @@ export default function AdminDeposits() {
     const u = usersMap[dep.userId] || {};
     const games = u.games || dep.games || [];
     const pubg = games.find((g) => g.game === 'pubg') || (u.pubgId ? { ign: u.pubgIgn, uid: u.pubgId } : null);
-    const ff = games.find((g) => g.game === 'freefire') || (u.ffId ? { ign: u.ffIgn, uid: u.ffId } : null);
 
     return {
       fullName: u.fullName || dep.fullName || '',
@@ -140,7 +138,6 @@ export default function AdminDeposits() {
       totalKills: u.totalKills ?? 0,
       tournamentsPlayed: u.tournamentsPlayed ?? 0,
       pubg,
-      ff,
       isBanned: !!u.isBanned,
     };
   };
@@ -390,9 +387,8 @@ export default function AdminDeposits() {
       const aMatch = String(d.amount || '').includes(q);
       const idMatch = (d.userId || '').toLowerCase().includes(q);
       const pubgMatch = (u.pubg?.ign || '').toLowerCase().includes(q) || (u.pubg?.uid || '').toLowerCase().includes(q);
-      const ffMatch = (u.ff?.ign || '').toLowerCase().includes(q) || (u.ff?.uid || '').toLowerCase().includes(q);
 
-      return uMatch || nameMatch || eMatch || sMatch || sNameMatch || tMatch || aMatch || idMatch || pubgMatch || ffMatch;
+      return uMatch || nameMatch || eMatch || sMatch || sNameMatch || tMatch || aMatch || idMatch || pubgMatch;
     }
     return true;
   });
@@ -744,48 +740,6 @@ export default function AdminDeposits() {
                             </div>
                           ) : (
                             <span style={{ fontSize: '11px', color: '#A69E94' }}>PUBG: Not set</span>
-                          )}
-
-                          {/* Free Fire */}
-                          {u.ff ? (
-                            <div
-                              style={{
-                                background: '#F0FFF4',
-                                border: '1px solid #C6F6D5',
-                                borderRadius: '6px',
-                                padding: '4px 8px',
-                                fontSize: '11px',
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                                <span style={{ fontWeight: 700, color: '#00A651', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <Flame size={12} /> FF: {u.ff.ign || 'No IGN'}
-                                </span>
-                                {u.ff.uid && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCopy(u.ff.uid, `ff-${dep.id}`)}
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      color: '#8A8078',
-                                      padding: '2px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                    }}
-                                    title="Copy Free Fire UID"
-                                  >
-                                    {copiedId === `ff-${dep.id}` ? <Check size={11} color="#10B981" /> : <Copy size={11} />}
-                                  </button>
-                                )}
-                              </div>
-                              <div style={{ color: '#5E5851', fontFamily: 'monospace', fontSize: '10px' }}>
-                                UID: {u.ff.uid || '—'}
-                              </div>
-                            </div>
-                          ) : (
-                            <span style={{ fontSize: '11px', color: '#A69E94' }}>FF: Not set</span>
                           )}
                         </div>
                       </td>
@@ -1315,50 +1269,6 @@ export default function AdminDeposits() {
                         </div>
                         <div style={{ fontSize: '12px', color: '#5E5851', fontFamily: 'monospace' }}>
                           <strong>UID:</strong> {u.pubg?.uid || 'Not registered'}
-                        </div>
-                      </div>
-
-                      {/* Free Fire */}
-                      <div
-                        style={{
-                          background: '#F0FFF4',
-                          border: '1px solid #C6F6D5',
-                          borderRadius: '10px',
-                          padding: '10px 12px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                          <span style={{ fontWeight: 800, color: '#00A651', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Flame size={14} /> Free Fire
-                          </span>
-                          {u.ff?.uid && (
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(u.ff.uid, 'modal-ff-uid')}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                                background: '#FFFFFF',
-                                border: '1px solid #C6F6D5',
-                                borderRadius: '4px',
-                                padding: '2px 6px',
-                                fontSize: '10px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                color: '#00A651',
-                              }}
-                            >
-                              {copiedId === 'modal-ff-uid' ? <Check size={10} color="#10B981" /> : <Copy size={10} />}
-                              {copiedId === 'modal-ff-uid' ? 'Copied' : 'Copy UID'}
-                            </button>
-                          )}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#2E2A26' }}>
-                          <strong>IGN:</strong> {u.ff?.ign || 'Not registered'}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#5E5851', fontFamily: 'monospace' }}>
-                          <strong>UID:</strong> {u.ff?.uid || 'Not registered'}
                         </div>
                       </div>
                     </div>

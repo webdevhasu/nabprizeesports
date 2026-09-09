@@ -538,7 +538,7 @@ export default function TournamentDetail() {
                   border: '1px solid #FFE4D3',
                   lineHeight: 1.4,
                 }}>
-                  👉 Open <strong>{tournament.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire'}</strong>, go to Custom Room, enter Room ID & Password to join before match starts at <strong>{timeline?.matchStartStr}</strong>!
+                  👉 Open <strong>PUBG Mobile</strong>, go to Custom Room, enter Room ID & Password to join before match starts at <strong>{timeline?.matchStartStr}</strong>!
                 </div>
               </div>
             ) : (

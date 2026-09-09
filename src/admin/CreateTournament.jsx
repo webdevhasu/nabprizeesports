@@ -95,9 +95,9 @@ const DEFAULT_STARTER_PRESETS = [
   },
   {
     id: 'starter-ff-solo',
-    presetName: 'Free Fire Solo Daily',
-    name: 'Free Fire Solo Rush',
-    game: 'freefire',
+    presetName: 'PUBG Solo Daily',
+    name: 'PUBG Solo Rush',
+    game: 'pubg',
     matchType: 'Solo',
     tournamentType: 'Daily',
     maxSlots: '25',
@@ -335,7 +335,7 @@ export default function CreateTournament() {
         }
 
         // Auto-notify all users about new tournament
-        const gameLabel = formData.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire';
+        const gameLabel = 'PUBG Mobile';
         notifyAllUsers({
           type: 'tournament',
           title: 'New Tournament Available!',
@@ -1079,7 +1079,6 @@ export default function CreateTournament() {
                       style={inputStyle}
                     >
                       <option value="pubg">PUBG Mobile</option>
-                      <option value="freefire">Free Fire</option>
                     </select>
                   </div>
 
@@ -1195,9 +1194,6 @@ export default function CreateTournament() {
                       <option value="Miramar">Miramar (PUBG)</option>
                       <option value="Sanhok">Sanhok (PUBG)</option>
                       <option value="Livik">Livik (PUBG)</option>
-                      <option value="Bermuda">Bermuda (Free Fire)</option>
-                      <option value="Purgatory">Purgatory (Free Fire)</option>
-                      <option value="Kalahari">Kalahari (Free Fire)</option>
                     </select>
                   </div>
 
@@ -1446,7 +1442,7 @@ export default function CreateTournament() {
                               <Users size={14} color="#FF6B4A" />
                             </div>
                             <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
-                              {t.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire'} • {t.matchType} • {t.mapName || 'Erangel'}
+                              PUBG Mobile • {t.matchType} • {t.mapName || 'Erangel'}
                             </div>
                           </td>
 
@@ -1967,7 +1963,6 @@ export default function CreateTournament() {
                       style={inputStyle}
                     >
                       <option value="pubg">PUBG Mobile</option>
-                      <option value="freefire">Free Fire</option>
                     </select>
                   </div>
 
@@ -2035,9 +2030,6 @@ export default function CreateTournament() {
                     <option value="Miramar">Miramar (PUBG)</option>
                     <option value="Sanhok">Sanhok (PUBG)</option>
                     <option value="Livik">Livik (PUBG)</option>
-                    <option value="Bermuda">Bermuda (Free Fire)</option>
-                    <option value="Purgatory">Purgatory (Free Fire)</option>
-                    <option value="Kalahari">Kalahari (Free Fire)</option>
                   </select>
                 </div>
 

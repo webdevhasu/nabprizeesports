@@ -816,7 +816,7 @@ export default function MatchResults() {
           {[
             { key: 'all', label: 'All Games' },
             { key: 'pubg', label: 'PUBG Mobile' },
-            { key: 'freefire', label: 'Free Fire' },
+            { key: 'pubg', label: 'PUBG Mobile' },
           ].map(f => (
             <button
               key={f.key}
@@ -956,7 +956,7 @@ export default function MatchResults() {
   return (
     <AdminLayout
       title={`${isReadOnly ? 'View Results' : 'Match Results'}: ${selectedTournament.name}`}
-      subtitle={`${selectedTournament.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire'} • ${selectedTournament.matchType} • Prize Pool: Rs ${selectedTournament.fixedReward}`}
+      subtitle={`PUBG Mobile • ${selectedTournament.matchType} • Prize Pool: Rs ${selectedTournament.fixedReward}`}
       actions={
         <button
           onClick={() => { setSelectedTournament(null); setRegisteredPlayers([]); }}

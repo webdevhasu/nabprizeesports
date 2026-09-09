@@ -66,7 +66,6 @@ export default function AccountSetup() {
     if (!fullName.trim() || !username.trim() || usernameStatus !== 'available') return false;
     if (selectedGames.length === 0) return false;
     if (selectedGames.includes('pubg') && (!pubgUid || !pubgIgn.trim())) return false;
-    if (selectedGames.includes('freefire') && (!ffUid || !ffIgn.trim())) return false;
     return true;
   };
 
@@ -79,9 +78,6 @@ export default function AccountSetup() {
       const games = [];
       if (selectedGames.includes('pubg')) {
         games.push({ game: 'pubg', uid: pubgUid, ign: pubgIgn.trim() });
-      }
-      if (selectedGames.includes('freefire')) {
-        games.push({ game: 'freefire', uid: ffUid, ign: ffIgn.trim() });
       }
 
       await setDoc(doc(db, 'users', user.uid), {
@@ -166,7 +162,6 @@ export default function AccountSetup() {
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
         {[
           { key: 'pubg', label: 'PUBG Mobile' },
-          { key: 'freefire', label: 'Free Fire' },
         ].map(({ key, label }) => (
           <button key={key} type="button" onClick={() => toggleGame(key)} style={{
             flex: 1, padding: '16px', background: selectedGames.includes(key) ? '#FFF4EC' : '#FFFFFF',
@@ -200,36 +195,6 @@ export default function AccountSetup() {
             value={pubgIgn}
             onChange={(e) => setPubgIgn(e.target.value.slice(0, 20))}
             placeholder="Your PUBG IGN (max 20 chars)"
-            style={{
-              width: '100%', padding: '12px', background: '#FFF8F0', border: '1px solid #F0E6D8',
-              borderRadius: '10px', fontSize: '14px', outline: 'none',
-            }}
-          />
-        </div>
-      )}
-
-      {selectedGames.includes('freefire') && (
-        <div style={{ marginBottom: '16px', padding: '16px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid #F0E6D8' }}>
-          <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Free Fire UID (Numbers only)</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={14}
-            value={ffUid}
-            onChange={(e) => setFfUid(e.target.value.replace(/\D/g, '').slice(0, 14))}
-            placeholder="Numeric UID"
-            style={{
-              width: '100%', padding: '12px', background: '#FFF8F0', border: '1px solid #F0E6D8',
-              borderRadius: '10px', fontSize: '14px', outline: 'none', marginBottom: '12px',
-            }}
-          />
-          <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>In-Game Name (IGN)</label>
-          <input
-            type="text"
-            maxLength={20}
-            value={ffIgn}
-            onChange={(e) => setFfIgn(e.target.value.slice(0, 20))}
-            placeholder="Your Free Fire IGN (max 20 chars)"
             style={{
               width: '100%', padding: '12px', background: '#FFF8F0', border: '1px solid #F0E6D8',
               borderRadius: '10px', fontSize: '14px', outline: 'none',

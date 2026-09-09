@@ -233,7 +233,7 @@ export default function Landing() {
           maxWidth: '860px',
           letterSpacing: '-0.5px',
         }}>
-          Play PUBG & Free Fire.{' '}
+          Play PUBG Mobile.{' '}
           <span style={{
             background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
             WebkitBackgroundClip: 'text',
@@ -575,53 +575,6 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Free Fire Card */}
-          <div style={{
-            background: '#FFFFFF',
-            border: '1px solid #F0E6D8',
-            borderRadius: '20px',
-            overflow: 'hidden',
-            boxShadow: '0 6px 20px rgba(46, 42, 38, 0.05)',
-          }}>
-            <div style={{ height: '170px', position: 'relative', overflow: 'hidden' }}>
-              <img
-                src="/banner-ff-daily.jpg"
-                alt="Free Fire"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              <div style={{
-                position: 'absolute', top: '12px', left: '12px',
-                background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
-                borderRadius: '8px', padding: '4px 10px',
-                fontSize: '11px', fontWeight: 700, color: '#FF6B4A',
-              }}>
-                FREE FIRE MAX
-              </div>
-            </div>
-            <div style={{ padding: '20px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#2E2A26', margin: '0 0 8px' }}>
-                Clash Squad & Bermuda Cups
-              </h3>
-              <p style={{ fontSize: '13px', color: '#5E5851', lineHeight: 1.5, margin: '0 0 16px' }}>
-                Compete in intense 4v4 clash squad battles or full lobby survival rooms. Verified room IDs and direct skill rewards.
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#2E7D32', fontWeight: 700 }}>
-                  Service Charges PKR 50
-                </span>
-                <button
-                  onClick={handleContinueInBrowser}
-                  style={{
-                    background: 'none', border: 'none', color: '#FF6B4A',
-                    fontWeight: 700, fontSize: '13px', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '4px',
-                  }}
-                >
-                  Join Match <ChevronRight size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 

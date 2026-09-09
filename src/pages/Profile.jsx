@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FaCrosshairs, FaFire, FaPhone, FaClock } from 'react-icons/fa';
+import { FaCrosshairs, FaPhone, FaClock } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -90,12 +90,9 @@ export default function Profile() {
   const openGameIdsModal = () => {
     const games = userProfile?.games || [];
     const pubg = games.find(g => g.game === 'pubg') || {};
-    const ff = games.find(g => g.game === 'freefire') || {};
 
     setPubgIgn(pubg.ign || '');
     setPubgUid(pubg.uid || '');
-    setFfIgn(ff.ign || '');
-    setFfUid(ff.uid || '');
     setShowEditGameIds(true);
   };
 
@@ -106,7 +103,6 @@ export default function Profile() {
     try {
       const updatedGames = [
         { game: 'pubg', ign: pubgIgn.trim(), uid: pubgUid.trim() },
-        { game: 'freefire', ign: ffIgn.trim(), uid: ffUid.trim() },
       ];
 
       await updateDoc(doc(db, 'users', auth.currentUser.uid), {
@@ -127,7 +123,7 @@ export default function Profile() {
 
   const menuItems = [
     { label: 'Edit Username', action: () => { setNewUsername(userProfile?.username || ''); setShowEditUsername(true); } },
-    { label: 'Edit PUBG & Free Fire Game IDs', action: openGameIdsModal },
+    { label: 'Edit PUBG Game ID', action: openGameIdsModal },
     { label: 'Transaction History', to: '/transactions' },
     { label: 'Terms & Conditions', to: '/terms' },
     { label: 'Reviews', to: '/reviews' },
@@ -301,7 +297,7 @@ export default function Profile() {
               }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
-                    {g.game === 'pubg' ? 'PUBG Mobile' : 'Free Fire'}
+                    PUBG Mobile
                   </div>
                   <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
                     IGN: <strong style={{ color: '#2E2A26' }}>{g.ign || 'Not set'}</strong>
@@ -497,35 +493,6 @@ export default function Profile() {
                   maxLength={14}
                   value={pubgUid}
                   onChange={e => setPubgUid(e.target.value.replace(/\D/g, '').slice(0, 14))}
-                  style={{
-                    width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D9D3CC',
-                    fontSize: '13px', boxSizing: 'border-box', outline: 'none',
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#7B4FE0', marginBottom: '6px' }}>
-                  <><FaFire size={12} style={{display:'inline'}} /> Free Fire</>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Free Fire In-Game Name (IGN, max 20 chars)"
-                  maxLength={20}
-                  value={ffIgn}
-                  onChange={e => setFfIgn(e.target.value.slice(0, 20))}
-                  style={{
-                    width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D9D3CC',
-                    fontSize: '13px', marginBottom: '8px', boxSizing: 'border-box', outline: 'none',
-                  }}
-                />
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Free Fire Character UID (Numbers only, max 14 digits)"
-                  maxLength={14}
-                  value={ffUid}
-                  onChange={e => setFfUid(e.target.value.replace(/\D/g, '').slice(0, 14))}
                   style={{
                     width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D9D3CC',
                     fontSize: '13px', boxSizing: 'border-box', outline: 'none',

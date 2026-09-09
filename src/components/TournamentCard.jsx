@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { Trophy, Users, Clock, ChevronRight } from 'lucide-react';
-import { FaFire } from 'react-icons/fa';
 
 // Banner image map based on game + tournament type
 const BANNER_MAP = {
@@ -9,16 +8,10 @@ const BANNER_MAP = {
     special: '/banner-pubg-weekly.jpg',
     default: '/banner-pubg-daily.jpg',
   },
-  freefire: {
-    weekly: '/banner-ff-weekly.jpg',
-    special: '/banner-ff-weekly.jpg',
-    default: '/banner-ff-daily.jpg',
-  },
 };
 
 function getBanner(game, tournamentType) {
-  const gameKey = game === 'pubg' ? 'pubg' : 'freefire';
-  const map = BANNER_MAP[gameKey];
+  const map = BANNER_MAP.pubg;
   const typeKey = tournamentType?.toLowerCase() || '';
   if (typeKey.includes('weekly') || typeKey.includes('special')) return map.weekly;
   return map.default;

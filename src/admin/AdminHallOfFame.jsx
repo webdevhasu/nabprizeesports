@@ -333,7 +333,7 @@ export default function AdminHallOfFame() {
             {[
               { key: 'all', label: 'All' },
               { key: 'pubg', label: 'PUBG' },
-              { key: 'freefire', label: 'Free Fire' },
+              { key: 'pubg', label: 'PUBG Mobile' },
             ].map(f => (
               <button
                 key={f.key}
