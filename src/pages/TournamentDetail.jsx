@@ -658,15 +658,17 @@ export default function TournamentDetail() {
             </p>
           ) : (
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-              {registeredPlayers.map((player, i) => (
+              {registeredPlayers.map((player, i) => {
+                const hasSquadData = player.isSquad || player.teamName;
+                return (
                 <div key={player.id} style={{
                   padding: '10px',
                   marginBottom: '8px',
                   borderRadius: '10px',
-                  border: player.isSquad ? '1px solid #E8DEFF' : '1px solid #F0ECE4',
-                  background: player.isSquad ? '#FAFAFF' : '#FFFFFF',
+                  border: hasSquadData ? '1px solid #E8DEFF' : '1px solid #F0ECE4',
+                  background: hasSquadData ? '#FAFAFF' : '#FFFFFF',
                 }}>
-                  {player.isSquad ? (
+                  {hasSquadData ? (
                     <>
                       {/* Squad Team Header */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #E8DEFF' }}>
@@ -734,7 +736,8 @@ export default function TournamentDetail() {
                     </div>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>

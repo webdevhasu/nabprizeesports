@@ -2222,7 +2222,7 @@ export default function CreateTournament() {
                   </thead>
                   <tbody>
                     {filteredModalPlayers.map((player, idx) => {
-                      const isSquad = player.isSquad;
+                      const isSquad = player.isSquad || player.teamName;
                       return (
                         <Fragment key={player.id}>
                           {/* Main player / team leader row */}
