@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { collection, query, onSnapshot, orderBy, where, limit, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, getDocs, setDoc, getDoc, runTransaction, increment } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { notifyAllUsers, notifyMultipleUsers } from '../utils/notify';
@@ -2213,7 +2213,7 @@ export default function CreateTournament() {
                   <thead>
                     <tr style={{ background: '#FCFAF7', borderBottom: '2px solid #F0ECE4', position: 'sticky', top: 0 }}>
                       <th style={{ textAlign: 'left', padding: '10px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>#</th>
-                      <th style={{ textAlign: 'left', padding: '10px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>APP USERNAME</th>
+                      <th style={{ textAlign: 'left', padding: '10px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>TEAM / PLAYER</th>
                       <th style={{ textAlign: 'left', padding: '10px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>IN-GAME NAME (IGN)</th>
                       <th style={{ textAlign: 'left', padding: '10px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>GAME UID</th>
                       <th style={{ textAlign: 'center', padding: '10px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>STATUS</th>
@@ -2221,94 +2221,96 @@ export default function CreateTournament() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredModalPlayers.map((player, idx) => (
-                      <tr
-                        key={player.id}
-                        style={{
-                          borderBottom: '1px solid #F0ECE4',
-                          transition: 'background 0.15s ease',
-                        }}
-                      >
-                        <td style={{ padding: '12px 14px', fontWeight: 600, color: '#A69E94' }}>
-                          {idx + 1}
-                        </td>
-
-                        <td style={{ padding: '12px 14px' }}>
-                          <div style={{ fontWeight: 700, color: '#2E2A26' }}>
-                            @{player.username}
-                          </div>
-                          <div style={{ fontSize: '10px', color: '#A69E94', fontFamily: 'monospace' }}>
-                            ID: {player.userId?.slice(0, 10)}...
-                          </div>
-                        </td>
-
-                        <td style={{ padding: '12px 14px' }}>
-                          <span style={{
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            color: '#FF6B4A',
-                            background: '#FFF0EC',
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                          }}>
-                            {player.ign || 'Unknown IGN'}
-                          </span>
-                        </td>
-
-                        <td style={{ padding: '12px 14px' }}>
-                          {player.uid ? (
-                            <button
-                              onClick={() => handleCopyUid(player.uid)}
-                              title="Click to copy Game UID"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                fontSize: '12px',
-                                fontFamily: 'monospace',
-                                fontWeight: 700,
-                                color: '#5E5851',
-                                background: '#F0ECE4',
-                                padding: '3px 8px',
-                                borderRadius: '6px',
-                                border: 'none',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <span>{player.uid}</span>
-                              {copiedPlayerUid === player.uid ? <Check size={12} color="#3FA65C" /> : <Copy size={12} color="#8A8078" />}
-                            </button>
-                          ) : (
-                            <span style={{ color: '#C4BCB2', fontSize: '11px' }}>—</span>
-                          )}
-                        </td>
-
-                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                          <span style={{
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            background: '#E8F5E9',
-                            color: '#3FA65C',
-                          }}>
-                            REGISTERED ✓
-                          </span>
-                        </td>
-
-                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                          {playersModalTournament.status !== 'completed' && (
-                            <button
-                              type="button"
-                              onClick={() => handleDismissPlayer(player)}
-                              style={{ padding: '5px 9px', borderRadius: '6px', border: '1px solid #FECACA', background: '#FFF1F2', color: '#B42318', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
-                            >
-                              Dismiss
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredModalPlayers.map((player, idx) => {
+                      const isSquad = player.isSquad;
+                      return (
+                        <Fragment key={player.id}>
+                          {/* Main player / team leader row */}
+                          <tr style={{ borderBottom: isSquad ? 'none' : '1px solid #F0ECE4', background: isSquad ? '#FAFAFF' : 'transparent' }}>
+                            <td style={{ padding: '12px 14px', fontWeight: 600, color: '#A69E94' }}>
+                              {idx + 1}
+                            </td>
+                            <td style={{ padding: '12px 14px' }}>
+                              {isSquad ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{
+                                    width: '30px', height: '30px', borderRadius: '6px',
+                                    background: player.teamLogo ? 'none' : 'linear-gradient(135deg, #7B4FE0 0%, #5B2FBF 100%)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    overflow: 'hidden', flexShrink: 0,
+                                  }}>
+                                    {player.teamLogo ? (
+                                      <img src={player.teamLogo} alt={player.teamName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                      <span style={{ color: '#FFF', fontWeight: 800, fontSize: '11px' }}>{(player.teamName || 'T')[0].toUpperCase()}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontWeight: 700, fontSize: '12px', color: '#2E2A26' }}>{player.teamName || 'Unnamed Team'}</div>
+                                    <div style={{ fontSize: '10px', color: '#7B4FE0', fontWeight: 600 }}>Team #{player.teamSlot || idx + 1} • LEADER</div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div style={{ fontWeight: 700, color: '#2E2A26' }}>@{player.username}</div>
+                                  <div style={{ fontSize: '10px', color: '#A69E94', fontFamily: 'monospace' }}>ID: {player.userId?.slice(0, 10)}...</div>
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '12px 14px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: isSquad ? '#7B4FE0' : '#FF6B4A', background: isSquad ? '#F3EEFF' : '#FFF0EC', padding: '3px 8px', borderRadius: '6px' }}>
+                                {player.ign || 'Unknown IGN'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 14px' }}>
+                              {player.uid ? (
+                                <button onClick={() => handleCopyUid(player.uid)} title="Click to copy" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontFamily: 'monospace', fontWeight: 700, color: '#5E5851', background: '#F0ECE4', padding: '3px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer' }}>
+                                  <span>{player.uid}</span>
+                                  {copiedPlayerUid === player.uid ? <Check size={12} color="#3FA65C" /> : <Copy size={12} color="#8A8078" />}
+                                </button>
+                              ) : <span style={{ color: '#C4BCB2', fontSize: '11px' }}>—</span>}
+                            </td>
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#E8F5E9', color: '#3FA65C' }}>
+                                REGISTERED ✓
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              {playersModalTournament.status !== 'completed' && (
+                                <button type="button" onClick={() => handleDismissPlayer(player)} style={{ padding: '5px 9px', borderRadius: '6px', border: '1px solid #FECACA', background: '#FFF1F2', color: '#B42318', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>
+                                  Dismiss
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                          {/* Squad teammates rows */}
+                          {isSquad && player.teammates && player.teammates.filter(t => t.ign && t.uid).map((t, tIdx) => (
+                            <tr key={`tm-${player.id}-${tIdx}`} style={{ borderBottom: '1px solid #F0ECE4', background: '#FAFAFF' }}>
+                              <td style={{ padding: '8px 14px 8px 28px', fontSize: '11px', color: '#A69E94' }}>—</td>
+                              <td style={{ padding: '8px 14px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#F0ECE4', color: '#5E5851' }}>P{tIdx + 2}</span>
+                                  <span style={{ fontSize: '11px', color: '#8A8078' }}>Teammate</span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '8px 14px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#5E5851' }}>{t.ign}</span>
+                              </td>
+                              <td style={{ padding: '8px 14px' }}>
+                                <button onClick={() => handleCopyUid(t.uid)} title="Click to copy" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4', padding: '2px 6px', borderRadius: '4px', border: 'none', cursor: 'pointer' }}>
+                                  <span>{t.uid}</span>
+                                  {copiedPlayerUid === t.uid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
+                                </button>
+                              </td>
+                              <td style={{ padding: '8px 14px', textAlign: 'center' }}>
+                                <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#F3EEFF', color: '#7B4FE0' }}>MEMBER</span>
+                              </td>
+                              <td style={{ padding: '8px 14px' }}></td>
+                            </tr>
+                          ))}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}

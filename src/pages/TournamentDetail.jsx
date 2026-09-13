@@ -657,60 +657,82 @@ export default function TournamentDetail() {
               No players yet. Be the first to join and secure your slot!
             </p>
           ) : (
-            <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
+            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
               {registeredPlayers.map((player, i) => (
                 <div key={player.id} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '8px 0',
-                  borderBottom: i < registeredPlayers.length - 1 ? '1px solid #F0ECE4' : 'none',
+                  padding: '10px',
+                  marginBottom: '8px',
+                  borderRadius: '10px',
+                  border: player.isSquad ? '1px solid #E8DEFF' : '1px solid #F0ECE4',
+                  background: player.isSquad ? '#FAFAFF' : '#FFFFFF',
                 }}>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: '#FFF0EC',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '12px',
-                    color: '#FF6B4A',
-                    flexShrink: 0,
-                    overflow: 'hidden',
-                  }}>
-                    {player.isSquad && player.teamLogo ? (
-                      <img src={player.teamLogo} alt={player.teamName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      (player.isSquad ? (player.teamName || 'T') : (player.username || 'U'))[0].toUpperCase()
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {player.isSquad ? (
-                      <>
-                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
-                          Team {player.teamSlot || 'N/A'}: {player.teamName}
+                  {player.isSquad ? (
+                    <>
+                      {/* Squad Team Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #E8DEFF' }}>
+                        <div style={{
+                          width: '34px', height: '34px', borderRadius: '8px',
+                          background: player.teamLogo ? 'none' : 'linear-gradient(135deg, #7B4FE0 0%, #5B2FBF 100%)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          overflow: 'hidden', flexShrink: 0,
+                        }}>
+                          {player.teamLogo ? (
+                            <img src={player.teamLogo} alt={player.teamName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ color: '#FFF', fontWeight: 800, fontSize: '13px' }}>{(player.teamName || 'T')[0].toUpperCase()}</span>
+                          )}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#8A8078', marginTop: '2px', flexWrap: 'wrap' }}>
-                          <span>Leader: <strong>{player.ign || 'Player'}</strong> <code style={{ background: '#F0ECE4', padding: '1px 5px', borderRadius: '4px', fontSize: '10px' }}>{player.uid}</code></span>
-                          {player.teammates && player.teammates.map((t, idx) => (
-                            <span key={idx}>• P{idx+2}: <strong>{t.ign}</strong> <code style={{ background: '#F0ECE4', padding: '1px 5px', borderRadius: '4px', fontSize: '10px' }}>{t.uid}</code></span>
-                          ))}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
+                            {player.teamName || 'Unnamed Team'}
+                          </div>
+                          <div style={{ fontSize: '10px', color: '#7B4FE0', fontWeight: 600 }}>
+                            Team #{player.teamSlot || i + 1}
+                          </div>
                         </div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
-                          @{player.username}
+                        <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', background: '#F3EEFF', color: '#7B4FE0' }}>
+                          SQUAD
+                        </span>
+                      </div>
+                      {/* Leader Card */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: '#FFFFFF', borderRadius: '8px', border: '1px solid #E8DEFF', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: '#F4B740', color: '#FFF', flexShrink: 0 }}>LEADER</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: '12px', color: '#2E2A26' }}>{player.ign || 'Unknown'}</div>
+                          <div style={{ fontSize: '10px', color: '#8A8078', fontFamily: 'monospace' }}>UID: {player.uid || '—'}</div>
                         </div>
+                        <span style={{ fontSize: '10px', color: '#8A8078' }}>@{player.username}</span>
+                      </div>
+                      {/* Teammates */}
+                      {player.teammates && player.teammates.filter(t => t.ign && t.uid).map((t, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', background: '#FFFFFF', borderRadius: '8px', border: '1px solid #F0ECE4', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#F0ECE4', color: '#5E5851', flexShrink: 0 }}>P{idx + 2}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, fontSize: '12px', color: '#2E2A26' }}>{t.ign}</div>
+                            <div style={{ fontSize: '10px', color: '#8A8078', fontFamily: 'monospace' }}>UID: {t.uid}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    /* Solo Player */
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: '50%',
+                        background: '#FFF0EC', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: '12px', color: '#FF6B4A', flexShrink: 0,
+                      }}>
+                        {(player.username || 'U')[0].toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>@{player.username}</div>
                         <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
                           <span>IGN: <strong>{player.ign || 'Player'}</strong></span>
                           {player.uid && <span>• UID: <code style={{ background: '#F0ECE4', padding: '1px 5px', borderRadius: '4px', fontSize: '10px' }}>{player.uid}</code></span>}
                         </div>
-                      </>
-                    )}
-                  </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
