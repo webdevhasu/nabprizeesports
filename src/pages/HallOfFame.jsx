@@ -135,6 +135,7 @@ export default function HallOfFame() {
         isSquad: r.isSquad || false,
         teamName: r.teamName || '',
         teamLogo: r.teamLogo || '',
+        teammates: Array.isArray(r.teammates) ? r.teammates : [],
       });
     }
   }
@@ -311,6 +312,9 @@ export default function HallOfFame() {
                             <div style={{ fontWeight: 800, fontSize: '16px', color: '#2E2A26' }}>🏆 {mostRecentWinner.teamName || mostRecentWinner.username}</div>
                             <div style={{ fontSize: '11px', color: '#7B4FE0', marginTop: '2px', fontWeight: 700 }}>Squad Team · {mostRecentWinner.tournamentName}</div>
                             <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '3px' }}>Leader: {mostRecentWinner.ign || mostRecentWinner.username}</div>
+                            {mostRecentWinner.teammates && mostRecentWinner.teammates.filter(t => t.ign).map((t, i) => (
+                              <div key={i} style={{ fontSize: '10px', color: '#8A8078', marginTop: '1px' }}>P{i + 2}: {t.ign}</div>
+                            ))}
                           </>
                         ) : (
                           <>
@@ -370,13 +374,16 @@ export default function HallOfFame() {
                            <PlayerAvatar photoURL={player.photoURL} name={player.isSquad ? (player.teamName || player.username) : player.username} teamLogo={player.teamLogo} isSquad={player.isSquad} />
 
                            <div style={{ flex: 1, minWidth: 0 }}>
-                             {player.isSquad ? (
-                               <>
-                                 <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>{player.teamName || player.username}</div>
-                                 <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 600, marginTop: '2px' }}>Squad Team</div>
-                                 <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>Leader: {player.ign || player.username} · {player.lastTournament}</div>
-                               </>
-                             ) : (
+                              {player.isSquad ? (
+                                <>
+                                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>{player.teamName || player.username}</div>
+                                  <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 600, marginTop: '2px' }}>Squad Team</div>
+                                  <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>Leader: {player.ign || player.username} · {player.lastTournament}</div>
+                                  {player.teammates && player.teammates.filter(t => t.ign).map((t, i) => (
+                                    <div key={i} style={{ fontSize: '10px', color: '#8A8078', marginTop: '1px' }}>P{i + 2}: {t.ign}</div>
+                                  ))}
+                                </>
+                              ) : (
                                <>
                                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{player.username}</div>
                                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '3px' }}>
