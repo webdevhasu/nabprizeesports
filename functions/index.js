@@ -77,6 +77,7 @@ async function declareMatchWinnerLogic(request) {
   const winner = registeredPlayers.find((player) => player.id === winnerId);
   if (!winner || !winner.userId) throw new HttpsError('invalid-argument', 'Winner is not registered in this tournament.');
 
+  const isSquadTournament = tournament.matchType === 'Squad' || registeredPlayers.some(p => p.isSquad);
   const players = registeredPlayers.map((player) => {
     const kills = asNonNegativeInteger(killsByPlayer[player.id] ?? 0);
     if (kills === null || kills > 99) throw new HttpsError('invalid-argument', 'Invalid kill count.');
@@ -93,6 +94,7 @@ async function declareMatchWinnerLogic(request) {
       teamName: player.teamName || '',
       teamLogo: player.teamLogo || '',
       teamSlot: player.teamSlot || null,
+      teammates: isSquadTournament ? (Array.isArray(player.teammates) ? player.teammates : []) : [],
       kills,
       killReward: kills * perKillReward,
       reward: isWinner ? (Number(tournament.fixedReward) || 0) : 0,
@@ -100,6 +102,19 @@ async function declareMatchWinnerLogic(request) {
       placement: isWinner ? 1 : 0,
     };
   });
+
+  const topTeams = isSquadTournament
+    ? players.filter(p => p.isSquad).sort((a, b) => b.kills - a.kills).slice(0, 10).map((p, i) => ({
+        rank: i + 1,
+        teamName: p.teamName,
+        teamLogo: p.teamLogo,
+        teamSlot: p.teamSlot,
+        leaderUsername: p.username,
+        leaderIgn: p.ign,
+        totalKills: p.kills,
+        members: [p.ign, ...(p.teammates || []).map(t => t.ign)].filter(Boolean),
+      }))
+    : [];
 
   const existingResult = await resultRef.get();
   if (existingResult.exists && existingResult.data().winnerDeclared === true) {
@@ -152,12 +167,15 @@ async function declareMatchWinnerLogic(request) {
     transaction.set(resultRef, {
       tournamentName: tournament.name,
       game: tournament.game,
+      matchType: tournament.matchType || 'Solo',
       players,
       winnerDeclared: true,
       winnerId: winner.userId,
       winnerUsername: winner.username || 'Winner',
+      winnerTeamName: isSquadTournament ? (winner.teamName || '') : '',
       perKillReward,
       fixedReward,
+      topTeams,
       submittedAt: FieldValue.serverTimestamp(),
       processedBy: request.auth.uid,
     }, { merge: true });

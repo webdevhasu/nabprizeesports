@@ -131,9 +131,20 @@ export default function MatchResults() {
     setPlayerKills(prev => ({ ...prev, [playerId]: val }));
   };
 
+  const isSquadTournament = selectedTournament?.matchType === 'Squad' || registeredPlayers.some(p => p.isSquad);
+
   const topFraggers = registeredPlayers
     .filter(p => (playerKills[p.id] || 0) > 0)
     .sort((a, b) => (playerKills[b.id] || 0) - (playerKills[a.id] || 0));
+
+  const topTeams = isSquadTournament ? topFraggers.map((p, i) => ({
+    rank: i + 1,
+    ...p,
+    totalKills: Number(playerKills[p.id]) || 0,
+    members: [p.username, ...(p.teammates || []).map(t => t.ign)].filter(Boolean),
+  })) : [];
+
+  const winnerPlayer = winnerId ? registeredPlayers.find(p => p.id === winnerId) : null;
 
   const existingResult = selectedTournament ? matchResultsList.find(d => d.id === selectedTournament.id) : null;
   const isReadOnly = Boolean(selectedTournament && (selectedTournament.status === 'completed' || existingResult?.winnerDeclared));
@@ -160,7 +171,6 @@ export default function MatchResults() {
 
   // Confirmation modal data
   const perKillReward = Number(selectedTournament?.perKillReward) || 0;
-  const winnerPlayer = winnerId ? registeredPlayers.find(p => p.id === winnerId) : null;
   const winnerKills = winnerId ? Number(playerKills[winnerId]) || 0 : 0;
   const winnerPrize = Number(selectedTournament?.fixedReward) || 0;
   const winnerKillReward = winnerKills * perKillReward;
@@ -346,20 +356,24 @@ export default function MatchResults() {
 
   const submitFraggers = async () => {
     if (!selectedTournament || topFraggers.length === 0) return;
-    // Check if already submitted
     if (existingResult?.fraggersSubmitted) {
       alert('Top fraggers already submitted for this tournament.');
       return;
     }
     setSubmittingFraggers(true);
     try {
-      const fraggerData = topFraggers.slice(0, 10).map((p, i) => ({
+      const fraggerData = (isSquadTournament ? topTeams : topFraggers).slice(0, 10).map((p, i) => ({
         rank: i + 1,
         userId: p.userId || p.id,
         username: p.username || 'Player',
         ign: p.ign || '',
         gameUid: p.uid || p.gameUid || '',
         kills: Number(playerKills[p.id]) || 0,
+        ...(isSquadTournament ? {
+          teamName: p.teamName || '',
+          teamSlot: p.teamSlot || null,
+          teammates: p.teammates || [],
+        } : {}),
       }));
 
       await setDoc(doc(db, 'matchResults', selectedTournament.id), {
@@ -393,12 +407,12 @@ export default function MatchResults() {
     return (
       p.username?.toLowerCase().includes(q) ||
       p.ign?.toLowerCase().includes(q) ||
-      p.uid?.toString().includes(q)
+      p.uid?.toString().includes(q) ||
+      (isSquadTournament && (p.teamName?.toLowerCase().includes(q)))
     );
   });
 
   // ALL-TIME WINNERS AGGREGATION LOGIC
-  // Groups multiple wins by same player so "Ali" who won 2 times appears ONCE as "2x Champion"!
   const allTimeWinnersMap = new Map();
   for (const match of matchResultsList) {
     if (match.players && Array.isArray(match.players)) {
@@ -414,6 +428,8 @@ export default function MatchResults() {
               username: p.username || 'User',
               ign: p.ign || '',
               gameUid: p.gameUid || p.uid || '',
+              teamName: p.teamName || '',
+              isSquad: p.isSquad || false,
               winsCount: 1,
               totalPrizeWon: reward,
               totalKills: kills,
@@ -427,6 +443,7 @@ export default function MatchResults() {
             existing.totalKills += kills;
             if (p.ign && !existing.ign) existing.ign = p.ign;
             if (p.gameUid && !existing.gameUid) existing.gameUid = p.gameUid;
+            if (p.teamName && !existing.teamName) existing.teamName = p.teamName;
             if (!existing.matchesWon.includes(match.tournamentName)) {
               existing.matchesWon.push(match.tournamentName);
             }
@@ -444,7 +461,8 @@ export default function MatchResults() {
         c.username?.toLowerCase().includes(q) ||
         c.ign?.toLowerCase().includes(q) ||
         c.gameUid?.toString().includes(q) ||
-        c.userId?.toLowerCase().includes(q)
+        c.userId?.toLowerCase().includes(q) ||
+        c.teamName?.toLowerCase().includes(q)
       );
     })
     .sort((a, b) => {
@@ -620,9 +638,9 @@ export default function MatchResults() {
                           <div style={{
                             width: '36px',
                             height: '36px',
-                            borderRadius: '50%',
-                            background: index === 0 ? '#FFF6E0' : '#FFF0EC',
-                            color: index === 0 ? '#F4B740' : '#FF6B4A',
+                            borderRadius: champ.isSquad ? '8px' : '50%',
+                            background: index === 0 ? '#FFF6E0' : champ.isSquad ? '#F3EEFF' : '#FFF0EC',
+                            color: index === 0 ? '#F4B740' : champ.isSquad ? '#7B4FE0' : '#FF6B4A',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -632,6 +650,11 @@ export default function MatchResults() {
                             {champ.username[0]?.toUpperCase() || 'U'}
                           </div>
                           <div>
+                            {champ.isSquad && champ.teamName ? (
+                              <div style={{ fontWeight: 800, color: '#7B4FE0', fontSize: '13px' }}>
+                                {champ.teamName}
+                              </div>
+                            ) : null}
                             <div style={{ fontWeight: 800, color: '#2E2A26', fontSize: '14px' }}>
                               @{champ.username}
                             </div>
@@ -815,7 +838,6 @@ export default function MatchResults() {
           <span style={{ fontSize: '12px', color: '#8A8078', fontWeight: 600 }}>Filter Game:</span>
           {[
             { key: 'all', label: 'All Games' },
-            { key: 'pubg', label: 'PUBG Mobile' },
             { key: 'pubg', label: 'PUBG Mobile' },
           ].map(f => (
             <button
@@ -1016,20 +1038,29 @@ export default function MatchResults() {
                 />
               </div>
               <div style={{ fontSize: '12px', color: '#8A8078', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {registeredPlayers.length} Total Players
+                {isSquadTournament ? `${filteredPlayers.length} Teams` : `${registeredPlayers.length} Players`}
               </div>
             </div>
 
             <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
               <div style={{ overflowX: 'auto', width: '100%' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '650px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: isSquadTournament ? '750px' : '650px' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid #F0ECE4', background: '#FCFAF7' }}>
                       <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>#</th>
-                      <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>PLAYER</th>
-                      <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>IN-GAME (IGN)</th>
-                      <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>GAME UID</th>
-                      <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>KILLS</th>
+                      {isSquadTournament ? (
+                        <>
+                          <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>TEAM</th>
+                          <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>MEMBERS</th>
+                        </>
+                      ) : (
+                        <>
+                          <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>PLAYER</th>
+                          <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>IN-GAME (IGN)</th>
+                          <th style={{ textAlign: 'left', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>GAME UID</th>
+                        </>
+                      )}
+                      <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>{isSquadTournament ? 'TEAM KILLS' : 'KILLS'}</th>
                       <th style={{ textAlign: 'center', padding: '12px 14px', color: '#8A8078', fontWeight: 600, fontSize: '11px' }}>WINNER</th>
                     </tr>
                   </thead>
@@ -1038,6 +1069,7 @@ export default function MatchResults() {
                       const isWinner = player.id === winnerId;
                       const fragRank = topFraggers.findIndex(f => f.id === player.id);
                       const isTop3 = fragRank >= 0 && fragRank < 3;
+                      const teammates = player.teammates || [];
 
                       return (
                         <tr
@@ -1052,22 +1084,67 @@ export default function MatchResults() {
                             {idx + 1}
                           </td>
 
-                          <td style={{ padding: '12px 14px' }}>
-                            <div style={{ fontWeight: 700, color: '#2E2A26' }}>
-                              @{player.username}
-                            </div>
-                            <div style={{ fontSize: '10px', color: '#A69E94', fontFamily: 'monospace' }}>
-                              ID: {player.userId?.slice(0, 8)}...
-                            </div>
-                          </td>
-
-                          <td style={{ padding: '12px 14px', color: '#5E5851', fontWeight: 500 }}>
-                            {player.ign || '—'}
-                          </td>
-
-                          <td style={{ padding: '12px 14px', color: '#8A8078', fontFamily: 'monospace', fontSize: '12px' }}>
-                            {player.uid || '—'}
-                          </td>
+                          {isSquadTournament ? (
+                            <>
+                              <td style={{ padding: '12px 14px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{
+                                    width: '32px', height: '32px', borderRadius: '8px',
+                                    background: player.teamLogo ? 'none' : 'linear-gradient(135deg, #7B4FE0 0%, #5B2FBF 100%)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    overflow: 'hidden', flexShrink: 0,
+                                  }}>
+                                    {player.teamLogo ? (
+                                      <img src={player.teamLogo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                      <span style={{ color: '#FFF', fontWeight: 800, fontSize: '12px' }}>{(player.teamName || 'T')[0].toUpperCase()}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontWeight: 700, color: '#2E2A26', fontSize: '13px' }}>
+                                      {player.teamName || 'Unnamed Team'}
+                                    </div>
+                                    <div style={{ fontSize: '10px', color: '#7B4FE0', fontWeight: 600 }}>
+                                      Team #{player.teamSlot || idx + 1}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 14px' }}>
+                                <div style={{ fontSize: '12px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+                                    <span style={{ fontSize: '8px', fontWeight: 800, padding: '1px 4px', borderRadius: '3px', background: '#F4B740', color: '#FFF' }}>L</span>
+                                    <span style={{ fontWeight: 600, color: '#2E2A26' }}>@{player.username}</span>
+                                    <span style={{ color: '#8A8078', fontSize: '10px' }}>• {player.ign || '—'}</span>
+                                  </div>
+                                  {teammates.filter(t => t.ign).map((t, ti) => (
+                                    <div key={ti} style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '1px' }}>
+                                      <span style={{ fontSize: '8px', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', background: '#F0ECE4', color: '#5E5851' }}>P{ti + 2}</span>
+                                      <span style={{ color: '#5E5851', fontSize: '11px' }}>{t.ign}</span>
+                                      {t.uid && <span style={{ color: '#A69E94', fontSize: '9px', fontFamily: 'monospace' }}>({t.uid})</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td style={{ padding: '12px 14px' }}>
+                                <div style={{ fontWeight: 700, color: '#2E2A26' }}>
+                                  @{player.username}
+                                </div>
+                                <div style={{ fontSize: '10px', color: '#A69E94', fontFamily: 'monospace' }}>
+                                  ID: {player.userId?.slice(0, 8)}...
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 14px', color: '#5E5851', fontWeight: 500 }}>
+                                {player.ign || '—'}
+                              </td>
+                              <td style={{ padding: '12px 14px', color: '#8A8078', fontFamily: 'monospace', fontSize: '12px' }}>
+                                {player.uid || '—'}
+                              </td>
+                            </>
+                          )}
 
                           <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                             <input
@@ -1131,11 +1208,14 @@ export default function MatchResults() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                 <Crown size={20} color="#F4B740" />
                 <h4 style={{ fontWeight: 700, fontSize: '16px', color: '#2E2A26', margin: 0 }}>
-                  {isReadOnly ? 'Winner & Results (Read-only)' : 'Declare Match Winner'}
+                  {isReadOnly ? 'Winner & Results (Read-only)' : isSquadTournament ? 'Declare Winning Team' : 'Declare Match Winner'}
                 </h4>
               </div>
               <p style={{ fontSize: '12px', color: '#8A8078', margin: '0 0 14px' }}>
-                Winner will be credited Rs {selectedTournament.fixedReward} and recorded in the All-Time Champions list.
+                {isSquadTournament
+                  ? `Winning team leader gets Rs ${selectedTournament.fixedReward} + per-kill rewards.`
+                  : `Winner will be credited Rs ${selectedTournament.fixedReward} and recorded in the All-Time Champions list.`
+                }
               </p>
 
               {winnerPlayer ? (
@@ -1146,21 +1226,67 @@ export default function MatchResults() {
                   marginBottom: '16px',
                   border: '1px solid #C8E6C9',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ fontWeight: 800, fontSize: '15px', color: '#2E7D32' }}>
-                      @{winnerPlayer.username}
+                  {isSquadTournament && winnerPlayer.teamName ? (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <div style={{
+                          width: '28px', height: '28px', borderRadius: '6px',
+                          background: winnerPlayer.teamLogo ? 'none' : 'linear-gradient(135deg, #7B4FE0 0%, #5B2FBF 100%)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          overflow: 'hidden', flexShrink: 0,
+                        }}>
+                          {winnerPlayer.teamLogo ? (
+                            <img src={winnerPlayer.teamLogo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ color: '#FFF', fontWeight: 800, fontSize: '11px' }}>{(winnerPlayer.teamName || 'T')[0].toUpperCase()}</span>
+                          )}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 800, fontSize: '14px', color: '#2E7D32' }}>{winnerPlayer.teamName}</div>
+                          <div style={{ fontSize: '10px', color: '#7B4FE0', fontWeight: 600 }}>Team #{winnerPlayer.teamSlot}</div>
+                        </div>
+                        <span style={{ fontSize: '11px', background: '#3FA65C', color: '#FFF', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                          CHAMPION
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#388E3C', marginBottom: '4px' }}>
+                        Leader: <strong>@{winnerPlayer.username}</strong> (IGN: {winnerPlayer.ign || 'N/A'})
+                      </div>
+                      {(winnerPlayer.teammates || []).filter(t => t.ign).map((t, i) => (
+                        <div key={i} style={{ fontSize: '11px', color: '#388E3C', marginBottom: '1px' }}>
+                          P{i + 2}: {t.ign} {t.uid ? `(UID: ${t.uid})` : ''}
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontWeight: 800, fontSize: '15px', color: '#2E7D32' }}>
+                          @{winnerPlayer.username}
+                        </div>
+                        <span style={{ fontSize: '11px', background: '#3FA65C', color: '#FFF', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                          1st Place
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#388E3C', marginTop: '6px' }}>
+                        IGN: <strong>{winnerPlayer.ign || 'N/A'}</strong> • UID: {winnerPlayer.uid || 'N/A'}
+                      </div>
+                    </>
+                  )}
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '8px' }}>
+                    <div style={{ background: '#FFF', borderRadius: '6px', padding: '6px 8px', border: '1px solid #C8E6C9', textAlign: 'center' }}>
+                      <div style={{ fontSize: '9px', color: '#8A8078', fontWeight: 600 }}>Prize</div>
+                      <div style={{ fontSize: '14px', fontWeight: 800, color: '#FF6B4A' }}>Rs {selectedTournament.fixedReward}</div>
                     </div>
-                    <span style={{ fontSize: '11px', background: '#3FA65C', color: '#FFF', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
-                      1st Place
-                    </span>
+                    <div style={{ background: '#FFF', borderRadius: '6px', padding: '6px 8px', border: '1px solid #C8E6C9', textAlign: 'center' }}>
+                      <div style={{ fontSize: '9px', color: '#8A8078', fontWeight: 600 }}>Kills ({playerKills[winnerId] || 0} × Rs {perKillReward})</div>
+                      <div style={{ fontSize: '14px', fontWeight: 800, color: '#7B4FE0' }}>Rs {winnerKillReward}</div>
+                    </div>
                   </div>
-
-                  <div style={{ fontSize: '12px', color: '#388E3C', marginTop: '6px' }}>
-                    IGN: <strong>{winnerPlayer.ign || 'N/A'}</strong> • UID: {winnerPlayer.uid || 'N/A'}
-                  </div>
-
-                  <div style={{ fontSize: '12px', color: '#388E3C', marginTop: '4px', fontWeight: 600 }}>
-                    Kills: {playerKills[winnerId] || 0} • Reward: Rs {selectedTournament.fixedReward}
+                  <div style={{ marginTop: '6px', padding: '6px 8px', background: '#FFF', borderRadius: '6px', border: '1px solid #C8E6C9', textAlign: 'center' }}>
+                    <div style={{ fontSize: '9px', color: '#8A8078', fontWeight: 600 }}>Total Credit</div>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#2E7D32' }}>Rs {winnerTotal}</div>
                   </div>
                 </div>
               ) : (
@@ -1173,7 +1299,7 @@ export default function MatchResults() {
                   color: '#E88B00',
                   border: '1px solid #FFE082',
                 }}>
-                  <FaExclamationTriangle size={14} style={{display:'inline'}} /> Click "Set Winner" next to a player in the table.
+                  <FaExclamationTriangle size={14} style={{display:'inline'}} /> Click "Set Winner" next to {isSquadTournament ? 'a team' : 'a player'} in the table.
                 </div>
               )}
 
@@ -1205,16 +1331,16 @@ export default function MatchResults() {
               </button>
             </div>
 
-            {/* Top Fraggers Card */}
+            {/* Top Fraggers / Top Teams Card */}
             <div style={cardStyle}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                 <Target size={20} color="#7B4FE0" />
                 <h4 style={{ fontWeight: 700, fontSize: '16px', color: '#2E2A26', margin: 0 }}>
-                  Match Top Fraggers
+                  {isSquadTournament ? 'Top Teams by Kills' : 'Match Top Fraggers'}
                 </h4>
               </div>
               <p style={{ fontSize: '12px', color: '#8A8078', margin: '0 0 14px' }}>
-                Calculated automatically from kills entered in table
+                {isSquadTournament ? 'Ranked by total team kills entered in table' : 'Calculated automatically from kills entered in table'}
               </p>
 
               {topFraggers.length === 0 ? (
@@ -1227,11 +1353,11 @@ export default function MatchResults() {
                   textAlign: 'center',
                   marginBottom: '16px',
                 }}>
-                  Enter kill numbers in the table to generate match fraggers.
+                  Enter {isSquadTournament ? 'team ' : ''}kill numbers in the table to generate {isSquadTournament ? 'top teams' : 'match fraggers'}.
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                  {topFraggers.slice(0, 5).map((p, i) => (
+                  {(isSquadTournament ? topTeams : topFraggers).slice(0, 5).map((p, i) => (
                     <div
                       key={p.id}
                       style={{
@@ -1248,12 +1374,25 @@ export default function MatchResults() {
                         {i === 0 ? (<><FaMedal color="#F4B740" /></>) : i === 1 ? (<><FaMedal color="#9E9E9E" /></>) : i === 2 ? (<><FaMedal color="#CD7F32" /></>) : `#${i + 1}`}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: '12px', color: '#2E2A26' }}>
-                          @{p.username}
-                        </div>
-                        <div style={{ fontSize: '10px', color: '#8A8078' }}>
-                          IGN: {p.ign || 'N/A'}
-                        </div>
+                        {isSquadTournament && p.teamName ? (
+                          <>
+                            <div style={{ fontWeight: 700, fontSize: '12px', color: '#2E2A26' }}>
+                              {p.teamName}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#8A8078' }}>
+                              Leader: @{p.username} • {(p.teammates || []).filter(t => t.ign).length + 1} members
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ fontWeight: 700, fontSize: '12px', color: '#2E2A26' }}>
+                              @{p.username}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#8A8078' }}>
+                              IGN: {p.ign || 'N/A'}
+                            </div>
+                          </>
+                        )}
                       </div>
                       <div style={{ fontWeight: 800, fontSize: '13px', color: '#7B4FE0' }}>
                         {playerKills[p.id] || 0} kills
@@ -1284,7 +1423,7 @@ export default function MatchResults() {
                 }}
               >
                 <Medal size={16} />
-                {submittingFraggers ? 'Submitting...' : `Submit Top ${Math.min(topFraggers.length, 10)} Fraggers`}
+                {submittingFraggers ? 'Submitting...' : `Submit Top ${isSquadTournament ? 'Teams' : `${Math.min(topFraggers.length, 10)} Fraggers`}`}
               </button>
             </div>
 
@@ -1314,7 +1453,7 @@ export default function MatchResults() {
                 <Crown size={26} color="#F4B740" />
               </div>
               <h3 style={{ fontWeight: 800, fontSize: '18px', color: '#2E2A26', margin: 0 }}>
-                Confirm Winner Submission
+                {isSquadTournament ? 'Confirm Team Winner Submission' : 'Confirm Winner Submission'}
               </h3>
               <p style={{ fontSize: '12px', color: '#8A8078', margin: '6px 0 0' }}>
                 {selectedTournament.name}
@@ -1329,15 +1468,24 @@ export default function MatchResults() {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontWeight: 800, fontSize: '14px', color: '#2E7D32' }}>
-                    @{winnerPlayer.username}
+                    {isSquadTournament && winnerPlayer.teamName ? winnerPlayer.teamName : `@${winnerPlayer.username}`}
                   </span>
                   <span style={{ fontSize: '10px', fontWeight: 700, color: '#FFF', background: '#3FA65C', padding: '2px 8px', borderRadius: '10px' }}>
-                    CHAMPION
+                    {isSquadTournament ? 'CHAMPION TEAM' : 'CHAMPION'}
                   </span>
                 </div>
-                <div style={{ fontSize: '12px', color: '#388E3C', marginBottom: '6px' }}>
-                  IGN: <strong>{winnerPlayer.ign || 'N/A'}</strong> • UID: {winnerPlayer.uid || 'N/A'}
-                </div>
+                {isSquadTournament && winnerPlayer.teamName ? (
+                  <div style={{ fontSize: '11px', color: '#388E3C', marginBottom: '6px' }}>
+                    Leader: <strong>@{winnerPlayer.username}</strong> (IGN: {winnerPlayer.ign || 'N/A'})
+                    {(winnerPlayer.teammates || []).filter(t => t.ign).map((t, i) => (
+                      <div key={i}>P{i + 2}: {t.ign}</div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '12px', color: '#388E3C', marginBottom: '6px' }}>
+                    IGN: <strong>{winnerPlayer.ign || 'N/A'}</strong> • UID: {winnerPlayer.uid || 'N/A'}
+                  </div>
+                )}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div style={{ background: '#FFF', borderRadius: '8px', padding: '8px 10px', border: '1px solid #C8E6C9' }}>
                     <div style={{ fontSize: '10px', color: '#8A8078', fontWeight: 600 }}>Prize Reward</div>
@@ -1355,11 +1503,11 @@ export default function MatchResults() {
               </div>
             )}
 
-            {/* Other Players */}
+            {/* Other Players / Other Teams */}
             {playerRewards.length > 0 && (
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#2E2A26', marginBottom: '8px' }}>
-                  Kill Rewards — Other Players
+                  {isSquadTournament ? 'Kill Rewards — Other Teams' : 'Kill Rewards — Other Players'}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {playerRewards.map(p => (
@@ -1369,7 +1517,9 @@ export default function MatchResults() {
                       border: '1px solid #F0ECE4',
                     }}>
                       <div style={{ minWidth: 0 }}>
-                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>@{p.username}</span>
+                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
+                          {isSquadTournament && p.teamName ? p.teamName : `@${p.username}`}
+                        </span>
                         <span style={{ fontSize: '11px', color: '#8A8078', marginLeft: '6px' }}>
                           {p.kills} kill{p.kills !== 1 ? 's' : ''}
                         </span>
