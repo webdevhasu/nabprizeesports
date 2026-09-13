@@ -89,6 +89,10 @@ async function declareMatchWinnerLogic(request) {
       ign: player.ign || '',
       gameUid: player.uid || player.gameUid || '',
       uid: player.uid || player.gameUid || '',
+      isSquad: player.isSquad || false,
+      teamName: player.teamName || '',
+      teamLogo: player.teamLogo || '',
+      teamSlot: player.teamSlot || null,
       kills,
       killReward: kills * perKillReward,
       reward: isWinner ? (Number(tournament.fixedReward) || 0) : 0,
@@ -213,6 +217,9 @@ exports.trackInstallClick = onCall({
 exports.registerForTournament = onCall({ invoker: 'public' }, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Please sign in first.');
   const tournamentId = request.data?.tournamentId;
+  const teamName = request.data?.teamName;
+  const teamLogo = request.data?.teamLogo;
+  const teammates = Array.isArray(request.data?.teammates) ? request.data.teammates : [];
   if (typeof tournamentId !== 'string' || tournamentId.length < 1 || tournamentId.length > 150) {
     throw new HttpsError('invalid-argument', 'Tournament is required.');
   }
@@ -258,6 +265,11 @@ exports.registerForTournament = onCall({ invoker: 'public' }, async (request) =>
       uid: primaryGame.uid || '',
       registeredAt: FieldValue.serverTimestamp(),
       status: 'registered',
+      isSquad: !!teamName,
+      teamName: teamName || null,
+      teamLogo: teamLogo || null,
+      teammates: teammates,
+      teamSlot: (tournament.slotsFilled || 0) + 1,
     });
   });
 
@@ -275,6 +287,9 @@ exports.registerForTournamentHttp = onRequest({
     if (!authorization.startsWith('Bearer ')) return response.status(401).json({ error: 'Please sign in first.' });
     const token = await getAuth().verifyIdToken(authorization.slice(7));
     const tournamentId = request.body?.tournamentId;
+    const teamName = request.body?.teamName;
+    const teamLogo = request.body?.teamLogo;
+    const teammates = Array.isArray(request.body?.teammates) ? request.body.teammates : [];
     if (typeof tournamentId !== 'string' || !tournamentId) return response.status(400).json({ error: 'Tournament is required.' });
 
     const tournamentRef = db.doc(`tournaments/${tournamentId}`);
@@ -297,7 +312,20 @@ exports.registerForTournamentHttp = onRequest({
       const primaryGame = games.find((game) => game.game === tournament.game) || games[0] || {};
       transaction.update(userRef, { ...(fee > 0 ? { walletBalance: FieldValue.increment(-fee) } : {}), tournamentsPlayed: FieldValue.increment(1) });
       transaction.update(tournamentRef, { slotsFilled: FieldValue.increment(1) });
-      transaction.set(playerRef, { userId: token.uid, username: user.username || 'Player', photoURL: user.photoURL || '', ign: primaryGame.ign || 'Unknown', uid: primaryGame.uid || '', registeredAt: FieldValue.serverTimestamp(), status: 'registered' });
+      transaction.set(playerRef, { 
+        userId: token.uid, 
+        username: user.username || 'Player', 
+        photoURL: user.photoURL || '', 
+        ign: primaryGame.ign || 'Unknown', 
+        uid: primaryGame.uid || '', 
+        registeredAt: FieldValue.serverTimestamp(), 
+        status: 'registered',
+        isSquad: !!teamName,
+        teamName: teamName || null,
+        teamLogo: teamLogo || null,
+        teammates: teammates,
+        teamSlot: (tournament.slotsFilled || 0) + 1
+      });
     });
     return response.status(200).json({ ok: true, tournamentId });
   } catch (error) {

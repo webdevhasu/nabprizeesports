@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, onSnapshot, limit } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { useServerTime } from '../hooks/useServerTime';
 import TopBar from '../components/TopBar';
@@ -24,6 +25,14 @@ export default function TournamentDetail() {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState('');
   const [copiedField, setCopiedField] = useState(null);
+
+  // Squad State
+  const [teamName, setTeamName] = useState('');
+  const [teamLogo, setTeamLogo] = useState(null);
+  const [teammate1, setTeammate1] = useState({ ign: '', uid: '' });
+  const [teammate2, setTeammate2] = useState({ ign: '', uid: '' });
+  const [teammate3, setTeammate3] = useState({ ign: '', uid: '' });
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => getNow());
   const [roomInfo, setRoomInfo] = useState(null);
 
@@ -157,14 +166,44 @@ export default function TournamentDetail() {
       return;
     }
 
+    const isSquad = tournament.matchType?.toLowerCase().includes('squad');
+    if (isSquad) {
+      if (!teamName || !teamName.trim()) {
+        setJoinError('Team Name is required for Squad matches.');
+        return;
+      }
+      if (!teammate1.ign.trim() || !teammate1.uid.trim()) {
+        setJoinError('At least one teammate (Player 2) is required.');
+        return;
+      }
+    }
+
     setJoining(true);
     setJoinError('');
     try {
+      let logoUrl = null;
+      if (isSquad && teamLogo) {
+        setUploadingLogo(true);
+        const storageRef = ref(storage, `tournaments/${id}/teams/${currentUser.uid}_${Date.now()}`);
+        await uploadBytes(storageRef, teamLogo);
+        logoUrl = await getDownloadURL(storageRef);
+        setUploadingLogo(false);
+      }
+      
+      const teammates = isSquad 
+        ? [teammate1, teammate2, teammate3].filter(t => t.ign.trim() && t.uid.trim())
+        : [];
+
       const idToken = await currentUser.getIdToken();
       const response = await fetch('https://asia-southeast1-nabprize-esports.cloudfunctions.net/registerForTournamentHttp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
-        body: JSON.stringify({ tournamentId: id }),
+        body: JSON.stringify({ 
+          tournamentId: id,
+          teamName: isSquad ? teamName.trim() : undefined,
+          teamLogo: logoUrl,
+          teammates: isSquad ? teammates : undefined
+        }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Registration failed.');
@@ -639,17 +678,38 @@ export default function TournamentDetail() {
                     fontSize: '12px',
                     color: '#FF6B4A',
                     flexShrink: 0,
+                    overflow: 'hidden',
                   }}>
-                    {(player.username || 'U')[0].toUpperCase()}
+                    {player.isSquad && player.teamLogo ? (
+                      <img src={player.teamLogo} alt={player.teamName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      (player.isSquad ? (player.teamName || 'T') : (player.username || 'U'))[0].toUpperCase()
+                    )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
-                      @{player.username}
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
-                      <span>IGN: <strong>{player.ign || 'Player'}</strong></span>
-                      {player.uid && <span>• UID: <code style={{ background: '#F0ECE4', padding: '1px 5px', borderRadius: '4px', fontSize: '10px' }}>{player.uid}</code></span>}
-                    </div>
+                    {player.isSquad ? (
+                      <>
+                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
+                          Team {player.teamSlot || 'N/A'}: {player.teamName}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#8A8078', marginTop: '2px', flexWrap: 'wrap' }}>
+                          <span>Leader: <strong>{player.ign || 'Player'}</strong> <code style={{ background: '#F0ECE4', padding: '1px 5px', borderRadius: '4px', fontSize: '10px' }}>{player.uid}</code></span>
+                          {player.teammates && player.teammates.map((t, idx) => (
+                            <span key={idx}>• P{idx+2}: <strong>{t.ign}</strong> <code style={{ background: '#F0ECE4', padding: '1px 5px', borderRadius: '4px', fontSize: '10px' }}>{t.uid}</code></span>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>
+                          @{player.username}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
+                          <span>IGN: <strong>{player.ign || 'Player'}</strong></span>
+                          {player.uid && <span>• UID: <code style={{ background: '#F0ECE4', padding: '1px 5px', borderRadius: '4px', fontSize: '10px' }}>{player.uid}</code></span>}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -792,6 +852,140 @@ export default function TournamentDetail() {
                   Room ID will be released at <strong>{timeline?.regCloseStr}</strong> with a 10-minute joining window before match starts at <strong>{timeline?.matchStartStr}</strong>.
                 </div>
 
+                {/* SQUAD REGISTRATION FORM */}
+                {tournament?.matchType?.toLowerCase().includes('squad') && (
+                  <div style={{ marginBottom: '20px', background: '#F8F6F1', padding: '16px', borderRadius: '12px', border: '1px solid #EBE4DA' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#2E2A26', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Users size={16} color="#FF6B4A" /> Squad Details
+                    </h3>
+                    
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '4px' }}>Team Name *</label>
+                      <input 
+                        type="text" 
+                        value={teamName} 
+                        onChange={e => setTeamName(e.target.value)} 
+                        placeholder="Enter your Team/Clan Name"
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EBE4DA', fontSize: '13px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '4px' }}>Team Logo (Optional)</label>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={e => setTeamLogo(e.target.files[0])} 
+                        style={{ width: '100%', fontSize: '12px' }}
+                      />
+                    </div>
+
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#2E2A26', marginBottom: '8px', paddingBottom: '4px', borderBottom: '1px solid #EBE4DA' }}>
+                      Team Roster
+                    </div>
+                    
+                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#FF6B4A', marginBottom: '4px' }}>Player 1 (Leader - You)</div>
+                      <div style={{ fontSize: '12px', color: '#5E5851' }}>IGN: {userProfile?.games?.[0]?.ign || 'Set in profile'} | UID: {userProfile?.games?.[0]?.uid || 'Set in profile'}</div>
+                    </div>
+
+                    {/* Player 2 (Required) */}
+                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#2E2A26', marginBottom: '4px' }}>Player 2 (Required) *</div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="text" placeholder="IGN" value={teammate1.ign} onChange={e => setTeammate1({...teammate1, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                        <input type="text" placeholder="UID" value={teammate1.uid} onChange={e => setTeammate1({...teammate1, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                      </div>
+                    </div>
+
+                    {/* Player 3 (Optional) */}
+                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#8A8078', marginBottom: '4px' }}>Player 3 (Optional)</div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="text" placeholder="IGN" value={teammate2.ign} onChange={e => setTeammate2({...teammate2, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                        <input type="text" placeholder="UID" value={teammate2.uid} onChange={e => setTeammate2({...teammate2, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                      </div>
+                    </div>
+
+                    {/* Player 4 (Optional) */}
+                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#8A8078', marginBottom: '4px' }}>Player 4 (Optional)</div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="text" placeholder="IGN" value={teammate3.ign} onChange={e => setTeammate3({...teammate3, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                        <input type="text" placeholder="UID" value={teammate3.uid} onChange={e => setTeammate3({...teammate3, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+
+                {/* SQUAD REGISTRATION FORM */}
+                {tournament?.matchType?.toLowerCase().includes('squad') && (
+                  <div style={{ marginBottom: '20px', background: '#F8F6F1', padding: '16px', borderRadius: '12px', border: '1px solid #EBE4DA' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#2E2A26', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Users size={16} color="#FF6B4A" /> Squad Details
+                    </h3>
+                    
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '4px' }}>Team Name *</label>
+                      <input 
+                        type="text" 
+                        value={teamName} 
+                        onChange={e => setTeamName(e.target.value)} 
+                        placeholder="Enter your Team/Clan Name"
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EBE4DA', fontSize: '13px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '4px' }}>Team Logo (Optional)</label>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={e => setTeamLogo(e.target.files[0])} 
+                        style={{ width: '100%', fontSize: '12px' }}
+                      />
+                    </div>
+
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#2E2A26', marginBottom: '8px', paddingBottom: '4px', borderBottom: '1px solid #EBE4DA' }}>
+                      Team Roster
+                    </div>
+                    
+                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#FF6B4A', marginBottom: '4px' }}>Player 1 (Leader - You)</div>
+                      <div style={{ fontSize: '12px', color: '#5E5851' }}>IGN: {userProfile?.games?.[0]?.ign || 'Set in profile'} | UID: {userProfile?.games?.[0]?.uid || 'Set in profile'}</div>
+                    </div>
+
+                    {/* Player 2 (Required) */}
+                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#2E2A26', marginBottom: '4px' }}>Player 2 (Required) *</div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="text" placeholder="IGN" value={teammate1.ign} onChange={e => setTeammate1({...teammate1, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                        <input type="text" placeholder="UID" value={teammate1.uid} onChange={e => setTeammate1({...teammate1, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                      </div>
+                    </div>
+
+                    {/* Player 3 (Optional) */}
+                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#8A8078', marginBottom: '4px' }}>Player 3 (Optional)</div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="text" placeholder="IGN" value={teammate2.ign} onChange={e => setTeammate2({...teammate2, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                        <input type="text" placeholder="UID" value={teammate2.uid} onChange={e => setTeammate2({...teammate2, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                      </div>
+                    </div>
+
+                    {/* Player 4 (Optional) */}
+                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#8A8078', marginBottom: '4px' }}>Player 4 (Optional)</div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="text" placeholder="IGN" value={teammate3.ign} onChange={e => setTeammate3({...teammate3, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                        <input type="text" placeholder="UID" value={teammate3.uid} onChange={e => setTeammate3({...teammate3, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+
                 <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '20px', cursor: 'pointer' }}>
                   <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: '2px' }} />
                   <span style={{ fontSize: '13px', color: '#2E2A26', fontWeight: 500 }}>
@@ -829,7 +1023,7 @@ export default function TournamentDetail() {
                         borderTop: '2px solid transparent', borderRadius: '50%',
                         animation: 'spin 0.8s linear infinite',
                       }} />
-                      Registering...
+                      {uploadingLogo ? 'Uploading Logo...' : 'Registering...'}
                     </>
                   ) : tournament?.registrationCharge > 0 ? 'Continue to Payment' : 'Register for Free'}
                 </button>

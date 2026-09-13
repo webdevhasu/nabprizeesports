@@ -6,11 +6,12 @@ import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Trophy, Crown, Medal, Flame, Copy, Check, Users, Star } from 'lucide-react';
 
-function PlayerAvatar({ photoURL, name, size = 36 }) {
-  return photoURL ? (
-    <img src={photoURL} alt={`${name || 'Player'} avatar`} referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #FFFFFF', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }} />
+function PlayerAvatar({ photoURL, name, size = 36, teamLogo, isSquad }) {
+  const src = isSquad ? (teamLogo || photoURL) : photoURL;
+  return src ? (
+    <img src={src} alt={`${name || 'Player'} avatar`} referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: isSquad ? '8px' : '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #FFFFFF', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }} />
   ) : (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: Math.max(12, Math.round(size * 0.38)), flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: isSquad ? '8px' : '50%', background: isSquad ? 'linear-gradient(135deg, #7B4FE0 0%, #5B2FBF 100%)' : 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: Math.max(12, Math.round(size * 0.38)), flexShrink: 0 }}>
       {(name || 'P').charAt(0).toUpperCase()}
     </div>
   );
@@ -131,6 +132,9 @@ export default function HallOfFame() {
         lastTimestamp: r.timestamp,
         lastTimestampMs: tTime,
         game: r.game,
+        isSquad: r.isSquad || false,
+        teamName: r.teamName || '',
+        teamLogo: r.teamLogo || '',
       });
     }
   }
@@ -300,27 +304,37 @@ export default function HallOfFame() {
                       }}>
                         <Trophy size={24} color="#FFFFFF" />
                       </div>
-                      <PlayerAvatar photoURL={mostRecentWinner.photoURL} name={mostRecentWinner.username} size={48} />
+                      <PlayerAvatar photoURL={mostRecentWinner.photoURL} name={mostRecentWinner.isSquad ? (mostRecentWinner.teamName || mostRecentWinner.username) : mostRecentWinner.username} size={48} teamLogo={mostRecentWinner.teamLogo} isSquad={mostRecentWinner.isSquad} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 800, fontSize: '16px', color: '#2E2A26' }}>@{mostRecentWinner.username}</div>
-                        <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px', fontWeight: 600 }}>
-                          {mostRecentWinner.tournamentName}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
-                            IGN: {mostRecentWinner.ign || 'Player'}
-                          </span>
-                          {uid && (
-                            <button onClick={() => handleCopyUid(uid)} style={{
-                              display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px',
-                              fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4',
-                              padding: '2px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                            }}>
-                              <span>UID: {uid}</span>
-                              {copiedUid === uid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
-                            </button>
-                          )}
-                        </div>
+                        {mostRecentWinner.isSquad ? (
+                          <>
+                            <div style={{ fontWeight: 800, fontSize: '16px', color: '#2E2A26' }}>🏆 {mostRecentWinner.teamName || mostRecentWinner.username}</div>
+                            <div style={{ fontSize: '11px', color: '#7B4FE0', marginTop: '2px', fontWeight: 700 }}>Squad Team · {mostRecentWinner.tournamentName}</div>
+                            <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '3px' }}>Leader: {mostRecentWinner.ign || mostRecentWinner.username}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ fontWeight: 800, fontSize: '16px', color: '#2E2A26' }}>@{mostRecentWinner.username}</div>
+                            <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px', fontWeight: 600 }}>
+                              {mostRecentWinner.tournamentName}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
+                                IGN: {mostRecentWinner.ign || 'Player'}
+                              </span>
+                              {uid && (
+                                <button onClick={() => handleCopyUid(uid)} style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px',
+                                  fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4',
+                                  padding: '2px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                                }}>
+                                  <span>UID: {uid}</span>
+                                  {copiedUid === uid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
                         <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 700 }}>{mostRecentWinner.kills || 0} Kills</div>
@@ -353,29 +367,33 @@ export default function HallOfFame() {
                             fontWeight: 800, fontSize: i < 3 ? '18px' : '12px', color: rank.color, flexShrink: 0,
                           }}>{rank.icon}</div>
 
-                          <PlayerAvatar photoURL={player.photoURL} name={player.username} />
+                           <PlayerAvatar photoURL={player.photoURL} name={player.isSquad ? (player.teamName || player.username) : player.username} teamLogo={player.teamLogo} isSquad={player.isSquad} />
 
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{player.username}</div>
-                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '3px' }}>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
-                                IGN: {player.ign || 'Player'}
-                              </span>
-                              {uid && (
-                                <button onClick={() => handleCopyUid(uid)} style={{
-                                  display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px',
-                                  fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4',
-                                  padding: '2px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                                }}>
-                                  <span>UID: {uid}</span>
-                                  {copiedUid === uid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
-                                </button>
-                              )}
-                            </div>
-                            <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '3px' }}>
-                              {player.lastTournament}
-                            </div>
-                          </div>
+                           <div style={{ flex: 1, minWidth: 0 }}>
+                             {player.isSquad ? (
+                               <>
+                                 <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>{player.teamName || player.username}</div>
+                                 <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 600, marginTop: '2px' }}>Squad Team</div>
+                                 <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>Leader: {player.ign || player.username} · {player.lastTournament}</div>
+                               </>
+                             ) : (
+                               <>
+                                 <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>@{player.username}</div>
+                                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '3px' }}>
+                                   <span style={{ fontSize: '11px', fontWeight: 600, color: '#FF6B4A', background: '#FFF0EC', padding: '2px 8px', borderRadius: '6px' }}>
+                                     IGN: {player.ign || 'Player'}
+                                   </span>
+                                   {uid && (
+                                     <button onClick={() => handleCopyUid(uid)} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontFamily: 'monospace', fontWeight: 600, color: '#5E5851', background: '#F0ECE4', padding: '2px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer' }}>
+                                       <span>UID: {uid}</span>
+                                       {copiedUid === uid ? <Check size={11} color="#3FA65C" /> : <Copy size={11} color="#8A8078" />}
+                                     </button>
+                                   )}
+                                 </div>
+                                 <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '3px' }}>{player.lastTournament}</div>
+                               </>
+                             )}
+                           </div>
 
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
                             <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '20px', color: '#FF6B4A', lineHeight: 1 }}>
