@@ -10,7 +10,7 @@ import TournamentCard from '../components/TournamentCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NotificationPanel from '../components/NotificationPanel';
 import InstallAppBanner from '../components/InstallAppBanner';
-import { Trophy, Target, Gamepad2, Eye, EyeOff, Plus, ArrowUpRight } from 'lucide-react';
+import { Trophy, Target, Gamepad2, Eye, EyeOff, Plus, ArrowUpRight, Play } from 'lucide-react';
 
 // Shimmer for dark backgrounds (wallet card)
 function Shimmer({ width = '100%', height = '20px', radius = '8px', style = {} }) {
@@ -419,6 +419,64 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {/* YouTube Video Tutorial Guide Banner */}
+        <a
+          href="https://www.youtube.com/shorts/L5KtdDgm34Q"
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'linear-gradient(135deg, #FFF5F2 0%, #FFEBE5 100%)',
+            borderRadius: '14px',
+            padding: '12px 16px',
+            marginTop: '16px',
+            marginBottom: '20px',
+            border: '1.5px solid #FFD4C7',
+            textDecoration: 'none',
+            boxShadow: '0 2px 8px rgba(255,107,74,0.08)',
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: '#FF0000',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              boxShadow: '0 3px 8px rgba(255,0,0,0.3)',
+              flexShrink: 0,
+            }}>
+              <Play size={16} fill="#FFFFFF" />
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#2E2A26' }}>
+                How to Join & Play?
+              </div>
+              <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '1px' }}>
+                Watch 1-minute video guide on YouTube
+              </div>
+            </div>
+          </div>
+          <span style={{
+            background: '#FF6B4A',
+            color: '#FFFFFF',
+            fontSize: '11px',
+            fontWeight: 700,
+            padding: '6px 12px',
+            borderRadius: '8px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}>
+            Watch Video ▶
+          </span>
+        </a>
 
         {/* Tournaments Section Header & Filter */}
         <div style={{

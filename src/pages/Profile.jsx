@@ -129,6 +129,7 @@ export default function Profile() {
     { label: 'Reviews', to: '/reviews' },
     { label: 'Privacy Policy', action: () => setShowPrivacyModal(true) },
     { label: 'How It Works', to: '/how-it-works' },
+    { label: '🎥 Video Tutorial (How to Join)', action: () => window.open('https://www.youtube.com/shorts/L5KtdDgm34Q', '_blank'), color: '#FF6B4A' },
     { label: 'Report Suspicious Player', action: () => setShowReportModal(true), color: '#D9503F' },
     { label: 'Support & Community Help', action: () => setShowSupportModal(true) },
   ];

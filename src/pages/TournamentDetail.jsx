@@ -349,6 +349,62 @@ export default function TournamentDetail() {
           </div>
         </div>
 
+        {/* How to Join Video Tutorial Card */}
+        <a
+          href="https://www.youtube.com/shorts/L5KtdDgm34Q"
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'linear-gradient(135deg, #FFF5F2 0%, #FFEBE5 100%)',
+            borderRadius: '14px',
+            padding: '12px 14px',
+            marginBottom: '16px',
+            border: '1.5px solid #FFD4C7',
+            textDecoration: 'none',
+            boxShadow: '0 2px 8px rgba(255,107,74,0.08)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '50%',
+              background: '#FF0000',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              boxShadow: '0 3px 8px rgba(255,0,0,0.3)',
+              flexShrink: 0,
+            }}>
+              <Play size={15} fill="#FFFFFF" />
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#2E2A26' }}>
+                How to Join this Tournament?
+              </div>
+              <div style={{ fontSize: '11px', color: '#8A8078' }}>
+                Watch 1-minute video tutorial on YouTube
+              </div>
+            </div>
+          </div>
+          <span style={{
+            background: '#FF6B4A',
+            color: '#FFFFFF',
+            fontSize: '11px',
+            fontWeight: 700,
+            padding: '6px 10px',
+            borderRadius: '8px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}>
+            Watch Video ▶
+          </span>
+        </a>
+
         {/* PKT OFFICIAL MATCH TIMELINE SCHEDULE CARD */}
         <div style={{
           background: '#FFFFFF',
@@ -817,23 +873,43 @@ export default function TournamentDetail() {
               Registration Closed ({timeline?.regCloseStr})
             </div>
           ) : (
-            <button
-              onClick={() => { setShowJoinSheet(true); setJoinStep(1); setAgreed(false); setJoinError(''); }}
-              style={{
-                width: '100%',
-                padding: '14px',
-                background: '#FF6B4A',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '12px',
-                fontWeight: 700,
-                fontSize: '14px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(255,107,74,0.35)',
-              }}
-            >
-              Join Tournament • Rs {tournament.registrationCharge}
-            </button>
+            <>
+              <a
+                href="https://www.youtube.com/shorts/L5KtdDgm34Q"
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  marginBottom: '8px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#FF6B4A',
+                  textDecoration: 'none',
+                }}
+              >
+                <Play size={13} fill="#FF6B4A" /> How to join? Watch 1-minute video tutorial
+              </a>
+              <button
+                onClick={() => { setShowJoinSheet(true); setJoinStep(1); setAgreed(false); setJoinError(''); }}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: '#FF6B4A',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 16px rgba(255,107,74,0.35)',
+                }}
+              >
+                Join Tournament • Rs {tournament.registrationCharge}
+              </button>
+            </>
           )}
         </div>
       </div>
