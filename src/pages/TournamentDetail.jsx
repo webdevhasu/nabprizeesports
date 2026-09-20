@@ -26,6 +26,10 @@ export default function TournamentDetail() {
   const [joinError, setJoinError] = useState('');
   const [copiedField, setCopiedField] = useState(null);
 
+  // Solo IGN/UID inline state (shown when profile missing game info)
+  const [inlineIgn, setInlineIgn] = useState('');
+  const [inlineUid, setInlineUid] = useState('');
+
   // Squad State
   const [teamName, setTeamName] = useState('');
   const [teamLogo, setTeamLogo] = useState(null);
@@ -166,7 +170,15 @@ export default function TournamentDetail() {
       return;
     }
 
+    // Check if solo player has IGN/UID — if not, require inline entry
     const isSquad = tournament.matchType?.toLowerCase().includes('squad');
+    const hasGameInfo = userProfile?.games?.some(g => g.ign && g.uid);
+    if (!isSquad && !hasGameInfo) {
+      if (!inlineIgn.trim() || !inlineUid.trim()) {
+        setJoinError('Please enter your PUBG IGN and UID to join.');
+        return;
+      }
+    }
     if (isSquad) {
       if (!teamName || !teamName.trim()) {
         setJoinError('Team Name is required for Squad matches.');
@@ -202,7 +214,9 @@ export default function TournamentDetail() {
           tournamentId: id,
           teamName: isSquad ? teamName.trim() : undefined,
           teamLogo: logoUrl,
-          teammates: isSquad ? teammates : undefined
+          teammates: isSquad ? teammates : undefined,
+          inlineIgn: !isSquad && !hasGameInfo ? inlineIgn.trim() : undefined,
+          inlineUid: !isSquad && !hasGameInfo ? inlineUid.trim() : undefined,
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -859,6 +873,11 @@ export default function TournamentDetail() {
                 <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: '18px', color: '#2E2A26', marginBottom: '8px' }}>
                   Confirm Registration
                 </h2>
+                {joinError && !['full','insufficient','already_registered','closed','failed'].includes(joinError) && (
+                  <div style={{ background: '#FFEBEE', color: '#D9503F', padding: '10px 12px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px' }}>
+                    {joinError}
+                  </div>
+                )}
                 <div style={{
                   background: tournament?.registrationCharge > 0 ? '#FFF9F5' : '#E8F5E9',
                   borderRadius: '10px',
@@ -944,6 +963,22 @@ export default function TournamentDetail() {
                   </div>
                 )}
 
+                {/* IGN/UID prompt for solo players without game info */}
+                {!tournament?.matchType?.toLowerCase().includes('squad') && !userProfile?.games?.some(g => g.ign && g.uid) && (
+                  <div style={{ marginBottom: '16px', background: '#FFFBF8', padding: '14px', borderRadius: '12px', border: '1px solid #FFE0CC' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#2E2A26', marginBottom: '4px' }}>🎮 Enter your PUBG details</div>
+                    <p style={{ fontSize: '11px', color: '#8A8078', marginBottom: '10px' }}>Required to join. These will be saved to your profile.</p>
+                    <input type="text" placeholder="Your In-Game Name (IGN)" value={inlineIgn} onChange={e => setInlineIgn(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EBE4DA', fontSize: '13px', boxSizing: 'border-box', marginBottom: '8px' }} />
+                    <input type="text" inputMode="numeric" placeholder="Your PUBG UID (7-14 digits)" value={inlineUid} onChange={e => setInlineUid(e.target.value.replace(/\D/g, '').slice(0,14))}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EBE4DA', fontSize: '13px', boxSizing: 'border-box' }} />
+                    <a href="https://www.youtube.com/shorts/L5KtdDgm34Q" target="_blank" rel="noreferrer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '8px', fontSize: '11px', fontWeight: 600, color: '#FF6B4A', textDecoration: 'none' }}>
+                      ▶ How to find UID? Watch video
+                    </a>
+                  </div>
+                )}
+
                 <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '20px', cursor: 'pointer' }}>
                   <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: '2px' }} />
                   <span style={{ fontSize: '13px', color: '#2E2A26', fontWeight: 500 }}>
@@ -985,6 +1020,10 @@ export default function TournamentDetail() {
                     </>
                   ) : tournament?.registrationCharge > 0 ? 'Continue to Payment' : 'Register for Free'}
                 </button>
+                <a href="https://www.youtube.com/shorts/L5KtdDgm34Q" target="_blank" rel="noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '12px', fontSize: '12px', fontWeight: 600, color: '#8A8078', textDecoration: 'none' }}>
+                  ▶ How to join a tournament? Watch video
+                </a>
               </>
             )}
 

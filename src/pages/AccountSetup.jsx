@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, setDoc, collection, query, where, getDocs, serverTimestamp, getDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import { db } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { sounds } from '../utils/sounds';
 
@@ -12,30 +12,18 @@ export default function AccountSetup() {
   const [fullName, setFullName] = useState(user?.displayName || '');
   const [username, setUsername] = useState('');
   const [usernameStatus, setUsernameStatus] = useState('');
-  const [selectedGames, setSelectedGames] = useState([]);
   const [pubgUid, setPubgUid] = useState('');
   const [pubgIgn, setPubgIgn] = useState('');
-  const [ffUid, setFfUid] = useState('');
-  const [ffIgn, setFfIgn] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login', { replace: true });
-      return;
-    }
-    // If profile already exists, redirect to home
+    if (!user) { navigate('/login', { replace: true }); return; }
     const checkProfile = async () => {
       try {
         const docSnap = await getDoc(doc(db, 'users', user.uid));
-        if (docSnap.exists()) {
-          await refreshProfile();
-          navigate('/', { replace: true });
-        }
-      } catch (e) {
-        console.error('Profile check error:', e);
-      }
+        if (docSnap.exists()) { await refreshProfile(); navigate('/', { replace: true }); }
+      } catch (e) { console.error('Profile check error:', e); }
     };
     checkProfile();
   }, [user, navigate, refreshProfile]);
@@ -48,202 +36,101 @@ export default function AccountSetup() {
         const q = query(collection(db, 'users'), where('username', '==', username.toLowerCase()));
         const snapshot = await getDocs(q);
         if (!cancelled) setUsernameStatus(snapshot.empty ? 'available' : 'taken');
-      } catch {
-        // Rules issue — allow by default
-        if (!cancelled) setUsernameStatus('available');
-      }
+      } catch { if (!cancelled) setUsernameStatus('available'); }
     }, 500);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [username]);
 
-  const toggleGame = (game) => {
-    setSelectedGames(prev =>
-      prev.includes(game) ? prev.filter(g => g !== game) : [...prev, game]
-    );
-  };
-
   const isFormValid = () => {
     if (!fullName.trim() || !username.trim() || usernameStatus !== 'available') return false;
-    if (selectedGames.length === 0) return false;
-    if (selectedGames.includes('pubg')) {
-      if (!pubgUid || !pubgIgn.trim()) return false;
-      if (pubgUid.length < 7) return false;
-      if (pubgIgn.trim().length < 2) return false;
-    }
+    if (pubgUid && pubgUid.length < 7) return false;
+    if (pubgIgn.trim() && pubgIgn.trim().length < 2) return false;
     return true;
   };
 
   const handleSubmit = async () => {
     if (!isFormValid() || !user) return;
-    setLoading(true);
-    setError('');
-
+    setLoading(true); setError('');
     try {
       const games = [];
-      if (selectedGames.includes('pubg')) {
-        games.push({ game: 'pubg', uid: pubgUid, ign: pubgIgn.trim() });
+      if (pubgIgn.trim() || pubgUid) {
+        games.push({ game: 'pubg', uid: pubgUid || '', ign: pubgIgn.trim() || '' });
       }
-
       await setDoc(doc(db, 'users', user.uid), {
-        fullName: fullName.trim(),
-        username: username.toLowerCase(),
-        email: user.email,
-        photoURL: user.photoURL || '',
-        games,
-        walletBalance: 0,
-        totalWins: 0,
-        totalKills: 0,
-        tournamentsPlayed: 0,
-        createdAt: serverTimestamp(),
+        fullName: fullName.trim(), username: username.toLowerCase(),
+        email: user.email, photoURL: user.photoURL || '',
+        games, walletBalance: 0, totalWins: 0, totalKills: 0,
+        tournamentsPlayed: 0, createdAt: serverTimestamp(),
       });
-
-      await refreshProfile();
-      sounds.success();
-      navigate('/', { replace: true });
-    } catch {
-      setError('Failed to save profile. Please try again.');
-    }
+      await refreshProfile(); sounds.success(); navigate('/', { replace: true });
+    } catch { setError('Failed to save profile. Please try again.'); }
     setLoading(false);
   };
 
   return (
-    <div style={{ padding: '40px 20px', maxWidth: '400px', margin: '0 auto' }}>
-      <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: '24px', color: '#2E2A26', marginBottom: '24px' }}>
-        Your Profile
+    <div style={{ padding: '40px 20px 60px', maxWidth: '400px', margin: '0 auto' }}>
+      <h1 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 800, fontSize: '26px', color: '#2E2A26', marginBottom: '4px' }}>
+        Create Your Account
       </h1>
+      <p style={{ fontSize: '13px', color: '#8A8078', marginBottom: '28px' }}>
+        Quick setup — takes 30 seconds ⚡
+      </p>
 
       {error && (
-        <div style={{
-          background: 'rgba(217,80,63,0.1)', color: '#D9503F', padding: '12px',
-          borderRadius: '10px', fontSize: '13px', marginBottom: '16px', textAlign: 'center',
-        }}>
+        <div style={{ background: 'rgba(217,80,63,0.1)', color: '#D9503F', padding: '12px', borderRadius: '10px', fontSize: '13px', marginBottom: '16px', textAlign: 'center' }}>
           {error}
         </div>
       )}
 
-
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Full Name</label>
-        <input
-          type="text"
-          maxLength={40}
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value.slice(0, 40))}
-          placeholder="Your full name"
-          style={{
-            width: '100%', padding: '14px', background: '#FFFFFF', border: '1px solid #F0E6D8',
-            borderRadius: '12px', fontSize: '14px', outline: 'none',
-          }}
-        />
+        <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>Full Name *</label>
+        <input type="text" maxLength={40} value={fullName} onChange={(e) => setFullName(e.target.value.slice(0, 40))} placeholder="Your full name"
+          style={{ width: '100%', padding: '14px', background: '#FFFFFF', border: '1px solid #E8E0D4', borderRadius: '12px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
       </div>
 
-      <div style={{ marginBottom: '24px' }}>
-        <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>Username</label>
-        <input
-          type="text"
-          maxLength={20}
-          value={username}
+      <div style={{ marginBottom: '28px' }}>
+        <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#5E5851', marginBottom: '6px' }}>Username *</label>
+        <input type="text" maxLength={20} value={username}
           onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20).toLowerCase())}
-          placeholder="3-20 chars, alphanumeric + underscore"
-          style={{
-            width: '100%', padding: '14px', background: '#FFFFFF', border: '1px solid #F0E6D8',
-            borderRadius: '12px', fontSize: '14px', outline: 'none',
-          }}
-        />
+          placeholder="e.g. nabgamer99"
+          style={{ width: '100%', padding: '14px', background: '#FFFFFF', border: '1px solid #E8E0D4', borderRadius: '12px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
         {username.length >= 3 && (
           <div style={{ fontSize: '11px', marginTop: '6px', color: usernameStatus === 'available' ? '#3FA65C' : usernameStatus === 'taken' ? '#D9503F' : '#8A8078' }}>
-            {usernameStatus === 'checking' && 'Checking availability...'}
             {usernameStatus === 'available' && '✓ Username available'}
             {usernameStatus === 'taken' && '✕ Username already taken'}
           </div>
         )}
       </div>
 
-      <h2 style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: '18px', color: '#2E2A26', marginBottom: '16px' }}>
-        Game Details
-      </h2>
+      {/* PUBG Optional Section */}
+      <div style={{ marginBottom: '12px', padding: '16px', background: '#FFFBF8', borderRadius: '14px', border: '1px solid #F0E6D8' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <label style={{ fontSize: '14px', fontWeight: 700, color: '#2E2A26' }}>🎮 PUBG Mobile Details</label>
+          <span style={{ fontSize: '11px', color: '#8A8078', background: '#F0ECE4', padding: '2px 8px', borderRadius: '8px' }}>Optional</span>
+        </div>
+        <p style={{ fontSize: '12px', color: '#8A8078', marginBottom: '12px', marginTop: '4px', lineHeight: 1.5 }}>
+          Skip this now — we'll ask when you join a tournament.
+        </p>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-        {[
-          { key: 'pubg', label: 'PUBG Mobile' },
-        ].map(({ key, label }) => (
-          <button key={key} type="button" onClick={() => toggleGame(key)} style={{
-            flex: 1, padding: '16px', background: selectedGames.includes(key) ? '#FFF4EC' : '#FFFFFF',
-            border: selectedGames.includes(key) ? '2px solid #FF6B4A' : '1px solid #F0E6D8',
-            borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', color: '#2E2A26',
-          }}>
-            {label}
-          </button>
-        ))}
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '5px' }}>PUBG UID (7–14 digits)</label>
+        <input type="text" inputMode="numeric" maxLength={14} value={pubgUid}
+          onChange={(e) => setPubgUid(e.target.value.replace(/\D/g, '').slice(0, 14))} placeholder="e.g. 5123456789"
+          style={{ width: '100%', padding: '11px', background: '#FFFFFF', border: pubgUid.length > 0 ? (pubgUid.length >= 7 ? '1px solid #3FA65C' : '1px solid #D9503F') : '1px solid #E8E0D4', borderRadius: '10px', fontSize: '14px', outline: 'none', marginBottom: '10px', boxSizing: 'border-box' }} />
+
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#5E5851', marginBottom: '5px' }}>In-Game Name (IGN)</label>
+        <input type="text" maxLength={20} value={pubgIgn} onChange={(e) => setPubgIgn(e.target.value.slice(0, 20))} placeholder="Your in-game name"
+          style={{ width: '100%', padding: '11px', background: '#FFFFFF', border: pubgIgn.trim().length > 0 ? (pubgIgn.trim().length >= 2 ? '1px solid #3FA65C' : '1px solid #D9503F') : '1px solid #E8E0D4', borderRadius: '10px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
       </div>
 
-      {selectedGames.includes('pubg') && (
-        <div style={{ marginBottom: '16px', padding: '16px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid #F0E6D8' }}>
-          <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>PUBG Mobile UID (7-14 digits)</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={14}
-            value={pubgUid}
-            onChange={(e) => setPubgUid(e.target.value.replace(/\D/g, '').slice(0, 14))}
-            placeholder="e.g. 5123456789"
-            style={{
-              width: '100%', padding: '12px', background: '#FFF8F0',
-              border: pubgUid.length > 0
-                ? (pubgUid.length >= 7 ? '1px solid #3FA65C' : '1px solid #D9503F')
-                : '1px solid #F0E6D8',
-              borderRadius: '10px', fontSize: '14px', outline: 'none', marginBottom: '4px',
-            }}
-          />
-          {pubgUid.length > 0 && pubgUid.length < 7 && (
-            <div style={{ fontSize: '11px', color: '#D9503F', marginBottom: '8px' }}>
-              UID must be at least 7 digits ({7 - pubgUid.length} more needed)
-            </div>
-          )}
-          {pubgUid.length >= 7 && (
-            <div style={{ fontSize: '11px', color: '#3FA65C', marginBottom: '8px' }}>
-              ✓ Valid UID length
-            </div>
-          )}
-          <label style={{ display: 'block', fontSize: '13px', color: '#8A8078', marginBottom: '6px' }}>In-Game Name (IGN)</label>
-          <input
-            type="text"
-            maxLength={20}
-            value={pubgIgn}
-            onChange={(e) => setPubgIgn(e.target.value.slice(0, 20))}
-            placeholder="Your PUBG IGN (min 2 chars)"
-            style={{
-              width: '100%', padding: '12px', background: '#FFF8F0',
-              border: pubgIgn.trim().length > 0
-                ? (pubgIgn.trim().length >= 2 ? '1px solid #3FA65C' : '1px solid #D9503F')
-                : '1px solid #F0E6D8',
-              borderRadius: '10px', fontSize: '14px', outline: 'none',
-            }}
-          />
-          {pubgIgn.trim().length > 0 && pubgIgn.trim().length < 2 && (
-            <div style={{ fontSize: '11px', color: '#D9503F', marginTop: '4px' }}>
-              IGN must be at least 2 characters
-            </div>
-          )}
-        </div>
-      )}
+      {/* YouTube hint */}
+      <a href="https://www.youtube.com/shorts/L5KtdDgm34Q" target="_blank" rel="noreferrer"
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#FFF0EC', borderRadius: '10px', fontSize: '12px', fontWeight: 600, color: '#FF6B4A', textDecoration: 'none', marginBottom: '24px', border: '1px solid #FFD8CC' }}>
+        ▶ Watch: How to find your PUBG UID &amp; IGN
+      </a>
 
-      <p style={{ fontSize: '12px', color: '#8A8078', marginBottom: '24px' }}>
-        Make sure your UID and IGN are correct — this is how we verify your match results.
-      </p>
-
-      <button
-        onClick={handleSubmit}
-        disabled={!isFormValid() || loading}
-        style={{
-          width: '100%', padding: '14px',
-          background: isFormValid() && !loading ? '#FF6B4A' : '#C4BCB2',
-          color: '#FFFFFF', border: 'none', borderRadius: '12px', fontSize: '15px',
-          fontWeight: 600, cursor: isFormValid() && !loading ? 'pointer' : 'not-allowed',
-          boxShadow: isFormValid() ? '0 4px 16px rgba(255,107,74,0.3)' : 'none',
-        }}
-      >
-        {loading ? 'Creating account...' : 'Create Account →'}
+      <button onClick={handleSubmit} disabled={!isFormValid() || loading}
+        style={{ width: '100%', padding: '15px', background: isFormValid() && !loading ? '#FF6B4A' : '#C4BCB2', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: isFormValid() && !loading ? 'pointer' : 'not-allowed', boxShadow: isFormValid() ? '0 4px 16px rgba(255,107,74,0.3)' : 'none' }}>
+        {loading ? 'Creating account...' : 'Get Started →'}
       </button>
     </div>
   );

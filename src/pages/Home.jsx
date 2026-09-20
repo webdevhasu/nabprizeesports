@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { collection, doc, getDoc, onSnapshot, query, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
+import { useServerTime } from '../hooks/useServerTime';
 import { useNotifications } from '../hooks/useNotifications';
 import TopBar from '../components/TopBar';
 import TournamentCard from '../components/TournamentCard';
@@ -39,6 +40,9 @@ function ShimmerLight({ width = '100%', height = '20px', radius = '8px', style =
 
 export default function Home() {
   const { userProfile, loading: authLoading } = useAuth();
+  const { getNow } = useServerTime();
+  const [whatsappDismissed, setWhatsappDismissed] = useState(() => localStorage.getItem('wa_banner_dismissed') === '1');
+  const [nowMs, setNowMs] = useState(() => getNow());
   const { unreadCount, showPanel, setShowPanel } = useNotifications();
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [tournaments, setTournaments] = useState([]);
@@ -46,6 +50,12 @@ export default function Home() {
   const [filterGame, setFilterGame] = useState('all');
   const [registeredIds, setRegisteredIds] = useState(new Set());
   const [registeredLoading, setRegisteredLoading] = useState(true);
+
+  // Tick every 30s for match alerts
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(getNow()), 30000);
+    return () => clearInterval(t);
+  }, [getNow]);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(query(collection(db, 'tournaments'), limit(100)), (snapshot) => {
@@ -120,6 +130,22 @@ export default function Home() {
     { icon: <Gamepad2 size={18} color="#2E2A26" />, value: profileReady ? (userProfile?.tournamentsPlayed || 0) : null, label: 'Played', bg: '#F0ECE4' },
   ];
 
+  // Find soonest registered tournament that starts within 2 hours
+  const matchAlert = (() => {
+    if (registeredIds.size === 0) return null;
+    const twoHours = 2 * 60 * 60 * 1000;
+    const upcoming = tournaments
+      .filter(t => registeredIds.has(t.id) && t.startTime)
+      .map(t => {
+        const startMs = t.startTime?.toDate ? t.startTime.toDate().getTime() : new Date(t.startTime).getTime();
+        const diff = startMs - (10 * 60 * 1000) - nowMs; // reg close = startTime - 10min
+        return { ...t, diff };
+      })
+      .filter(t => t.diff > 0 && t.diff < twoHours)
+      .sort((a, b) => a.diff - b.diff);
+    return upcoming[0] || null;
+  })();
+
   const filteredTournaments = tournaments.filter(t => {
     if (filterGame === 'all') return true;
     return t.game === filterGame;
@@ -127,7 +153,7 @@ export default function Home() {
 
   return (
     <>
-      <style>{`@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
+      <style>{`@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.88} }`}</style>
       <TopBar
         title="NabPrize Esports"
         showNotification
@@ -140,6 +166,52 @@ export default function Home() {
         
         {/* PWA Install App Prompt Banner */}
         <InstallAppBanner />
+
+        {/* WhatsApp Channel Banner */}
+        {!whatsappDismissed && (
+          <div style={{
+            background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+            borderRadius: '14px', padding: '14px 16px', marginBottom: '12px',
+            display: 'flex', alignItems: 'center', gap: '12px',
+            boxShadow: '0 4px 12px rgba(37,211,102,0.25)',
+          }}>
+            <div style={{ fontSize: '28px', flexShrink: 0 }}>📣</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#FFFFFF', marginBottom: '2px' }}>Join our WhatsApp Channel!</div>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>Live updates, Room IDs & tournament alerts</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
+              <a href="https://whatsapp.com/channel/0029VaxNabPrize" target="_blank" rel="noreferrer"
+                style={{ padding: '7px 14px', background: '#FFFFFF', color: '#128C7E', borderRadius: '8px', fontSize: '12px', fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>
+                Join Now
+              </a>
+              <button onClick={() => { localStorage.setItem('wa_banner_dismissed','1'); setWhatsappDismissed(true); }}
+                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#FFFFFF', borderRadius: '8px', fontSize: '11px', padding: '4px 8px', cursor: 'pointer' }}>
+                Maybe later
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Match Day Alert */}
+        {matchAlert && (
+          <Link to={'/tournament/' + matchAlert.id} style={{ textDecoration: 'none' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
+              borderRadius: '14px', padding: '14px 16px', marginBottom: '12px',
+              display: 'flex', alignItems: 'center', gap: '12px',
+              boxShadow: '0 4px 12px rgba(255,107,74,0.35)', cursor: 'pointer',
+              animation: 'pulse 2s infinite',
+            }}>
+              <div style={{ fontSize: '28px', flexShrink: 0 }}>⚡</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#FFFFFF', marginBottom: '2px' }}>Your match starts soon!</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.9)' }}>{matchAlert.name} — Tap to see Room ID</div>
+              </div>
+              <div style={{ fontSize: '20px', flexShrink: 0 }}>→</div>
+            </div>
+          </Link>
+        )}
 
         {/* Hero Area: Wallet Card + Stats (Side-by-Side on Desktop) */}
         <div className="dashboard-hero-grid">
