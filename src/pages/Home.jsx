@@ -130,20 +130,45 @@ export default function Home() {
     { icon: <Gamepad2 size={18} color="#2E2A26" />, value: profileReady ? (userProfile?.tournamentsPlayed || 0) : null, label: 'Played', bg: '#F0ECE4' },
   ];
 
-  // Find soonest registered tournament that starts within 2 hours
+  // Find soonest registered tournament that starts within 2 hours or is room open / live
   const matchAlert = (() => {
     if (registeredIds.size === 0) return null;
     const twoHours = 2 * 60 * 60 * 1000;
-    const upcoming = tournaments
+    const candidates = tournaments
       .filter(t => registeredIds.has(t.id) && t.startTime)
       .map(t => {
-        const startMs = t.startTime?.toDate ? t.startTime.toDate().getTime() : new Date(t.startTime).getTime();
-        const diff = startMs - (10 * 60 * 1000) - nowMs; // reg close = startTime - 10min
-        return { ...t, diff };
+        const regCloseMs = t.startTime?.toDate ? t.startTime.toDate().getTime() : new Date(t.startTime).getTime();
+        const matchStartMs = regCloseMs + 10 * 60 * 1000;
+        const isLive = t.status === 'live';
+        const isRoomOpen = nowMs >= regCloseMs && nowMs <= matchStartMs;
+        const diff = regCloseMs - nowMs; // ms until room opens
+        const matchStartDiff = matchStartMs - nowMs;
+        const regCloseDate = new Date(regCloseMs);
+        const timeStr = regCloseDate.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true }) + ' PKT';
+        return {
+          ...t,
+          regCloseMs,
+          matchStartMs,
+          isLive,
+          isRoomOpen,
+          diff,
+          matchStartDiff,
+          timeStr,
+        };
       })
-      .filter(t => t.diff > 0 && t.diff < twoHours)
-      .sort((a, b) => a.diff - b.diff);
-    return upcoming[0] || null;
+      .filter(t => {
+        if (t.isLive) return true;
+        if (t.isRoomOpen) return true;
+        return t.diff > 0 && t.diff < twoHours;
+      })
+      .sort((a, b) => {
+        if (a.isLive && !b.isLive) return -1;
+        if (b.isLive && !a.isLive) return 1;
+        if (a.isRoomOpen && !b.isRoomOpen) return -1;
+        if (b.isRoomOpen && !a.isRoomOpen) return 1;
+        return a.diff - b.diff;
+      });
+    return candidates[0] || null;
   })();
 
   const filteredTournaments = tournaments.filter(t => {
@@ -181,7 +206,7 @@ export default function Home() {
               <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>Live updates, Room IDs & tournament alerts</div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
-              <a href="https://whatsapp.com/channel/0029VaxNabPrize" target="_blank" rel="noreferrer"
+              <a href="https://whatsapp.com/channel/0029VbDu0E99RZAXBm3W1V3h" target="_blank" rel="noreferrer"
                 style={{ padding: '7px 14px', background: '#FFFFFF', color: '#128C7E', borderRadius: '8px', fontSize: '12px', fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>
                 Join Now
               </a>
@@ -197,18 +222,37 @@ export default function Home() {
         {matchAlert && (
           <Link to={'/tournament/' + matchAlert.id} style={{ textDecoration: 'none' }}>
             <div style={{
-              background: 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
+              background: (matchAlert.isLive || matchAlert.isRoomOpen)
+                ? 'linear-gradient(135deg, #D9503F 0%, #B71C1C 100%)'
+                : 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)',
               borderRadius: '14px', padding: '14px 16px', marginBottom: '12px',
               display: 'flex', alignItems: 'center', gap: '12px',
-              boxShadow: '0 4px 12px rgba(255,107,74,0.35)', cursor: 'pointer',
+              boxShadow: (matchAlert.isLive || matchAlert.isRoomOpen)
+                ? '0 4px 16px rgba(217,80,63,0.45)'
+                : '0 4px 12px rgba(255,107,74,0.35)',
+              cursor: 'pointer',
               animation: 'pulse 2s infinite',
             }}>
-              <div style={{ fontSize: '28px', flexShrink: 0 }}>⚡</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 800, color: '#FFFFFF', marginBottom: '2px' }}>Your match starts soon!</div>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.9)' }}>{matchAlert.name} — Tap to see Room ID</div>
+              <div style={{ fontSize: '28px', flexShrink: 0 }}>
+                {matchAlert.isLive ? '🔴' : matchAlert.isRoomOpen ? '🎮' : '⚡'}
               </div>
-              <div style={{ fontSize: '20px', flexShrink: 0 }}>→</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#FFFFFF', marginBottom: '2px' }}>
+                  {matchAlert.isLive 
+                    ? 'Match is LIVE Now!' 
+                    : matchAlert.isRoomOpen 
+                    ? 'Room ID & Password are LIVE!' 
+                    : `Match Today at ${matchAlert.timeStr}`}
+                </div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.95)' }}>
+                  {matchAlert.isLive
+                    ? `${matchAlert.name} — Tap to view details`
+                    : matchAlert.isRoomOpen
+                    ? `${matchAlert.name} — Tap to copy Room ID & join PUBG!`
+                    : `${matchAlert.name} — Room opens in ${Math.max(1, Math.round(matchAlert.diff / 60000))} mins`}
+                </div>
+              </div>
+              <div style={{ fontSize: '20px', flexShrink: 0, color: '#FFFFFF' }}>→</div>
             </div>
           </Link>
         )}

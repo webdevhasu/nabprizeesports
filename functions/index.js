@@ -1,5 +1,5 @@
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
-const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
@@ -308,6 +308,8 @@ exports.registerForTournamentHttp = onRequest({
     const teamName = request.body?.teamName;
     const teamLogo = request.body?.teamLogo;
     const teammates = Array.isArray(request.body?.teammates) ? request.body.teammates : [];
+    const inlineIgn = typeof request.body?.inlineIgn === 'string' ? request.body.inlineIgn.trim() : '';
+    const inlineUid = typeof request.body?.inlineUid === 'string' ? request.body.inlineUid.trim() : '';
     if (typeof tournamentId !== 'string' || !tournamentId) return response.status(400).json({ error: 'Tournament is required.' });
 
     const tournamentRef = db.doc(`tournaments/${tournamentId}`);
@@ -328,14 +330,35 @@ exports.registerForTournamentHttp = onRequest({
       if (fee > 0 && Number(user.walletBalance || 0) < fee) throw new Error('Insufficient wallet balance.');
       const games = Array.isArray(user.games) ? user.games : [];
       const primaryGame = games.find((game) => game.game === tournament.game) || games[0] || {};
-      transaction.update(userRef, { ...(fee > 0 ? { walletBalance: FieldValue.increment(-fee) } : {}), tournamentsPlayed: FieldValue.increment(1) });
+
+      const playerIgn = inlineIgn || primaryGame.ign || user.username || 'Player';
+      const playerUid = inlineUid || primaryGame.uid || '';
+
+      const userUpdates = {
+        ...(fee > 0 ? { walletBalance: FieldValue.increment(-fee) } : {}),
+        tournamentsPlayed: FieldValue.increment(1),
+      };
+
+      if (inlineIgn && inlineUid) {
+        const gameName = tournament.game || 'pubg';
+        const existingIdx = games.findIndex(g => g.game === gameName);
+        let updatedGames;
+        if (existingIdx >= 0) {
+          updatedGames = games.map((g, idx) => idx === existingIdx ? { ...g, ign: inlineIgn, uid: inlineUid } : g);
+        } else {
+          updatedGames = [...games, { game: gameName, ign: inlineIgn, uid: inlineUid }];
+        }
+        userUpdates.games = updatedGames;
+      }
+
+      transaction.update(userRef, userUpdates);
       transaction.update(tournamentRef, { slotsFilled: FieldValue.increment(1) });
       transaction.set(playerRef, { 
         userId: token.uid, 
         username: user.username || 'Player', 
         photoURL: user.photoURL || '', 
-        ign: primaryGame.ign || 'Unknown', 
-        uid: primaryGame.uid || '', 
+        ign: playerIgn, 
+        uid: playerUid, 
         registeredAt: FieldValue.serverTimestamp(), 
         status: 'registered',
         isSquad: !!teamName,
@@ -635,3 +658,57 @@ exports.createWithdrawalLedgerEntry = onDocumentCreated(
     });
   }
 );
+
+// Push notification trigger when room credentials are added/updated or match goes live
+exports.onTournamentRoomPublished = onDocumentUpdated(
+  { document: 'tournaments/{tournamentId}' },
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    const roomIdNewlyAdded = !before.roomId && !!after.roomId;
+    const roomPasswordChanged = before.roomId && (before.roomId !== after.roomId || before.roomPassword !== after.roomPassword);
+    const becameLive = before.status !== 'live' && after.status === 'live';
+
+    if (!roomIdNewlyAdded && !roomPasswordChanged && !becameLive) return;
+
+    const tournamentId = event.params.tournamentId;
+    const tournamentName = after.name || 'Tournament';
+
+    try {
+      const playersSnap = await db.collection(`tournaments/${tournamentId}/players`).get();
+      if (playersSnap.empty) return;
+
+      const title = becameLive 
+        ? `🔴 Match is LIVE: ${tournamentName}!`
+        : `🎮 Room ID is LIVE: ${tournamentName}!`;
+      const body = after.roomId 
+        ? `Room ID: ${after.roomId}${after.roomPassword ? ` | Pass: ${after.roomPassword}` : ''}. Open PUBG to join now!`
+        : `Match is starting! Open the app to join now.`;
+
+      const batch = db.batch();
+      let count = 0;
+      for (const playerDoc of playersSnap.docs) {
+        const userId = playerDoc.id;
+        const notifRef = db.collection(`users/${userId}/notifications`).doc();
+        batch.set(notifRef, {
+          title,
+          body,
+          url: `/tournament/${tournamentId}`,
+          type: 'room_id',
+          createdAt: FieldValue.serverTimestamp(),
+          read: false,
+        });
+        count++;
+        if (count >= 450) break;
+      }
+      if (count > 0) {
+        await batch.commit();
+      }
+    } catch (err) {
+      console.error('Error sending room notifications:', err);
+    }
+  }
+);
+

@@ -170,12 +170,12 @@ export default function TournamentDetail() {
       return;
     }
 
-    // Check if solo player has IGN/UID — if not, require inline entry
+    // Check if player (solo or squad leader) has IGN/UID — if not, require inline entry
     const isSquad = tournament.matchType?.toLowerCase().includes('squad');
     const hasGameInfo = userProfile?.games?.some(g => g.ign && g.uid);
-    if (!isSquad && !hasGameInfo) {
+    if (!hasGameInfo) {
       if (!inlineIgn.trim() || !inlineUid.trim()) {
-        setJoinError('Please enter your PUBG IGN and UID to join.');
+        setJoinError('Please enter your PUBG IGN and UID to continue.');
         return;
       }
     }
@@ -215,8 +215,8 @@ export default function TournamentDetail() {
           teamName: isSquad ? teamName.trim() : undefined,
           teamLogo: logoUrl,
           teammates: isSquad ? teammates : undefined,
-          inlineIgn: !isSquad && !hasGameInfo ? inlineIgn.trim() : undefined,
-          inlineUid: !isSquad && !hasGameInfo ? inlineUid.trim() : undefined,
+          inlineIgn: !hasGameInfo ? inlineIgn.trim() : undefined,
+          inlineUid: !hasGameInfo ? inlineUid.trim() : undefined,
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -928,9 +928,25 @@ export default function TournamentDetail() {
                       Team Roster
                     </div>
                     
-                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#FF6B4A', marginBottom: '4px' }}>Player 1 (Leader - You)</div>
-                      <div style={{ fontSize: '12px', color: '#5E5851' }}>IGN: {userProfile?.games?.[0]?.ign || 'Set in profile'} | UID: {userProfile?.games?.[0]?.uid || 'Set in profile'}</div>
+                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '10px', borderRadius: '8px', border: hasGameInfo ? '1px solid #EBE4DA' : '1px solid #FFD8CC' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#FF6B4A', marginBottom: '4px' }}>Player 1 (Leader - You) *</div>
+                      {hasGameInfo ? (
+                        <div style={{ fontSize: '12px', color: '#5E5851' }}>
+                          IGN: <strong>{userProfile?.games?.find(g => g.ign)?.ign || userProfile?.games?.[0]?.ign}</strong> | UID: <code>{userProfile?.games?.find(g => g.uid)?.uid || userProfile?.games?.[0]?.uid}</code>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ fontSize: '11px', color: '#8A8078', marginBottom: '6px' }}>Enter your PUBG details (saved to your profile):</div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <input type="text" placeholder="Your IGN *" value={inlineIgn} onChange={e => setInlineIgn(e.target.value)} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                            <input type="text" inputMode="numeric" placeholder="Your UID *" value={inlineUid} onChange={e => setInlineUid(e.target.value.replace(/\D/g, '').slice(0,14))} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                          </div>
+                          <a href="https://www.youtube.com/shorts/L5KtdDgm34Q" target="_blank" rel="noreferrer"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', fontSize: '10px', fontWeight: 600, color: '#FF6B4A', textDecoration: 'none' }}>
+                            ▶ How to find UID? Watch video
+                          </a>
+                        </div>
+                      )}
                     </div>
 
                     {/* Player 2 (Required) */}
