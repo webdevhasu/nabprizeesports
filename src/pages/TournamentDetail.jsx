@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc, collection, query, onSnapshot, limit } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, onSnapshot, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
@@ -23,6 +23,21 @@ export default function TournamentDetail() {
   const [joinStep, setJoinStep] = useState(1);
   const [agreed, setAgreed] = useState(false);
   const [joining, setJoining] = useState(false);
+  // Auto-heal "Unknown" IGN/UID in tournament player record if profile has game info
+  useEffect(() => {
+    if (!currentUser || !id || registeredPlayers.length === 0) return;
+    const myPlayer = registeredPlayers.find(p => p.id === currentUser.uid || p.userId === currentUser.uid);
+    const profileGame = userProfile?.games?.find(g => g.ign && g.uid) || userProfile?.games?.[0];
+    if (myPlayer && profileGame?.ign && profileGame?.uid) {
+      if (!myPlayer.ign || myPlayer.ign === 'Unknown' || !myPlayer.uid) {
+        updateDoc(doc(db, 'tournaments', id, 'players', currentUser.uid), {
+          ign: profileGame.ign,
+          uid: profileGame.uid,
+        }).catch(() => {});
+      }
+    }
+  }, [currentUser, id, registeredPlayers, userProfile]);
+
   const [joinError, setJoinError] = useState('');
   const [copiedField, setCopiedField] = useState(null);
 
@@ -193,6 +208,25 @@ export default function TournamentDetail() {
     setJoining(true);
     setJoinError('');
     try {
+      // 1. Immediately save IGN & UID to the user profile in Firestore
+      const enteredIgn = inlineIgn.trim() || userProfile?.games?.[0]?.ign || '';
+      const enteredUid = inlineUid.trim() || userProfile?.games?.[0]?.uid || '';
+
+      if (inlineIgn.trim() && inlineUid.trim()) {
+        const gameName = tournament.game || 'pubg';
+        const existingGames = Array.isArray(userProfile?.games) ? userProfile.games : [];
+        const filteredGames = existingGames.filter(g => g.game !== gameName);
+        const updatedGames = [...filteredGames, { game: gameName, ign: inlineIgn.trim(), uid: inlineUid.trim() }];
+        try {
+          await updateDoc(doc(db, 'users', currentUser.uid), {
+            games: updatedGames
+          });
+          await refreshProfile();
+        } catch (saveErr) {
+          console.error('Error saving profile games:', saveErr);
+        }
+      }
+
       let logoUrl = null;
       if (isSquad && teamLogo) {
         setUploadingLogo(true);
@@ -221,6 +255,16 @@ export default function TournamentDetail() {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Registration failed.');
+
+      // 2. Ensure tournament player record has the correct IGN and UID
+      if (enteredIgn && enteredUid) {
+        try {
+          await updateDoc(doc(db, 'tournaments', id, 'players', currentUser.uid), {
+            ign: enteredIgn,
+            uid: enteredUid,
+          });
+        } catch (_) {}
+      }
 
       setJoinStep(3);
       await refreshProfile();
@@ -730,6 +774,13 @@ export default function TournamentDetail() {
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
               {registeredPlayers.map((player, i) => {
                 const hasSquadData = player.isSquad || player.teamName;
+                const isMe = player.userId === currentUser?.uid || player.id === currentUser?.uid;
+                const displayIgn = (!player.ign || player.ign === 'Unknown')
+                  ? (isMe ? (userProfile?.games?.[0]?.ign || inlineIgn.trim() || 'Player') : 'Player')
+                  : player.ign;
+                const displayUid = (!player.uid || player.uid === '—')
+                  ? (isMe ? (userProfile?.games?.[0]?.uid || inlineUid.trim() || '') : '')
+                  : player.uid;
                 return (
                 <div key={player.id} style={{
                   padding: '10px',
@@ -770,8 +821,8 @@ export default function TournamentDetail() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: '#FFFFFF', borderRadius: '8px', border: '1px solid #E8DEFF', marginBottom: '6px' }}>
                         <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: '#F4B740', color: '#FFF', flexShrink: 0 }}>LEADER</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: '12px', color: '#2E2A26' }}>{player.ign || 'Unknown'}</div>
-                          <div style={{ fontSize: '10px', color: '#8A8078', fontFamily: 'monospace' }}>UID: {player.uid || '—'}</div>
+                          <div style={{ fontWeight: 700, fontSize: '12px', color: '#2E2A26' }}>{displayIgn}</div>
+                          <div style={{ fontSize: '10px', color: '#8A8078', fontFamily: 'monospace' }}>UID: {displayUid || '—'}</div>
                         </div>
                         <span style={{ fontSize: '10px', color: '#8A8078' }}>@{player.username}</span>
                       </div>
@@ -799,8 +850,8 @@ export default function TournamentDetail() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: '13px', color: '#2E2A26' }}>@{player.username}</div>
                         <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>
-                          <span>IGN: <strong>{player.ign || 'Player'}</strong></span>
-                          {player.uid && <span>• UID: <code style={{ background: '#F0ECE4', padding: '1px 5px', borderRadius: '4px', fontSize: '10px' }}>{player.uid}</code></span>}
+                          <span>IGN: <strong>{displayIgn}</strong></span>
+                          {displayUid && <span>• UID: <code style={{ background: '#F0ECE4', padding: '1px 5px', borderRadius: '4px', fontSize: '10px' }}>{displayUid}</code></span>}
                         </div>
                       </div>
                     </div>
