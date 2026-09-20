@@ -55,6 +55,11 @@ export default function TournamentDetail() {
   const [currentTime, setCurrentTime] = useState(() => getNow());
   const [roomInfo, setRoomInfo] = useState(null);
 
+  const hasGameInfo = Boolean(userProfile?.games?.some(g => g.ign && g.uid));
+  const isSquad = Boolean(tournament?.matchType?.toLowerCase().includes('squad'));
+  const isDuo = Boolean(tournament?.matchType?.toLowerCase().includes('duo'));
+  const isTeam = isSquad || isDuo;
+
   // Tick every second using server-corrected time (anti-cheat)
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(getNow()), 1000);
@@ -186,10 +191,6 @@ export default function TournamentDetail() {
     }
 
     // Check if player (solo, duo, or squad leader) has IGN/UID — if not, require inline entry
-    const isSquad = tournament.matchType?.toLowerCase().includes('squad');
-    const isDuo = tournament.matchType?.toLowerCase().includes('duo');
-    const isTeam = isSquad || isDuo;
-    const hasGameInfo = userProfile?.games?.some(g => g.ign && g.uid);
     if (!hasGameInfo) {
       if (!inlineIgn.trim() || !inlineUid.trim()) {
         setJoinError('Please enter your PUBG IGN and UID to continue.');
@@ -1029,11 +1030,11 @@ export default function TournamentDetail() {
                 </div>
 
                 {/* TEAM (SQUAD / DUO) REGISTRATION FORM */}
-                {(tournament?.matchType?.toLowerCase().includes('squad') || tournament?.matchType?.toLowerCase().includes('duo')) && (
+                {isTeam && (
                   <div style={{ marginBottom: '20px', background: '#F8F6F1', padding: '16px', borderRadius: '12px', border: '1px solid #EBE4DA' }}>
                     <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#2E2A26', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Users size={16} color={tournament?.matchType?.toLowerCase().includes('duo') ? '#0284C7' : '#FF6B4A'} />
-                      {tournament?.matchType?.toLowerCase().includes('duo') ? 'Duo Details (2 Players)' : 'Squad Details (4 Players)'}
+                      {isDuo ? 'Duo Details (2 Players)' : 'Squad Details (4 Players)'}
                     </h3>
                     
                     <div style={{ marginBottom: '12px' }}>
@@ -1042,7 +1043,7 @@ export default function TournamentDetail() {
                         type="text" 
                         value={teamName} 
                         onChange={e => setTeamName(e.target.value)} 
-                        placeholder={tournament?.matchType?.toLowerCase().includes('duo') ? "Enter your Duo Team Name" : "Enter your Team/Clan Name"}
+                        placeholder={isDuo ? "Enter your Duo Team Name" : "Enter your Team/Clan Name"}
                         style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EBE4DA', fontSize: '13px', boxSizing: 'border-box' }}
                       />
                     </div>
@@ -1058,7 +1059,7 @@ export default function TournamentDetail() {
                     </div>
 
                     <div style={{ fontSize: '12px', fontWeight: 600, color: '#2E2A26', marginBottom: '8px', paddingBottom: '4px', borderBottom: '1px solid #EBE4DA' }}>
-                      {tournament?.matchType?.toLowerCase().includes('duo') ? 'Duo Roster (2 Players)' : 'Team Roster'}
+                      {isDuo ? 'Duo Roster (2 Players)' : 'Team Roster'}
                     </div>
                     
                     <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '10px', borderRadius: '8px', border: hasGameInfo ? '1px solid #EBE4DA' : '1px solid #FFD8CC' }}>
@@ -1085,7 +1086,7 @@ export default function TournamentDetail() {
                     {/* Player 2 (Required) */}
                     <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
                       <div style={{ fontSize: '11px', fontWeight: 700, color: '#2E2A26', marginBottom: '4px' }}>
-                        {tournament?.matchType?.toLowerCase().includes('duo') ? 'Player 2 (Teammate) *' : 'Player 2 (Required) *'}
+                        {isDuo ? 'Player 2 (Teammate) *' : 'Player 2 (Required) *'}
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <input type="text" placeholder="IGN" value={teammate1.ign} onChange={e => setTeammate1({...teammate1, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
@@ -1094,7 +1095,7 @@ export default function TournamentDetail() {
                     </div>
 
                     {/* Player 3 & 4 (Only for Squad) */}
-                    {!tournament?.matchType?.toLowerCase().includes('duo') && (
+                    {!isDuo && (
                       <>
                         {/* Player 3 (Optional) */}
                         <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
@@ -1120,7 +1121,7 @@ export default function TournamentDetail() {
                 )}
 
                 {/* IGN/UID prompt for solo players without game info */}
-                {!tournament?.matchType?.toLowerCase().includes('squad') && !tournament?.matchType?.toLowerCase().includes('duo') && !userProfile?.games?.some(g => g.ign && g.uid) && (
+                {!isTeam && !hasGameInfo && (
                   <div style={{ marginBottom: '16px', background: '#FFFBF8', padding: '14px', borderRadius: '12px', border: '1px solid #FFE0CC' }}>
                     <div style={{ fontSize: '13px', fontWeight: 700, color: '#2E2A26', marginBottom: '4px' }}>🎮 Enter your PUBG details</div>
                     <p style={{ fontSize: '11px', color: '#8A8078', marginBottom: '10px' }}>Required to join. These will be saved to your profile.</p>

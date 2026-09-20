@@ -134,6 +134,8 @@ export default function HallOfFame() {
         lastTimestampMs: tTime,
         game: r.game,
         isSquad: r.isSquad || false,
+        isDuo: r.isDuo || false,
+        isTeam: r.isSquad || r.isDuo || !!r.teamName,
         teamName: r.teamName || '',
         teamLogo: r.teamLogo || '',
         teammates: Array.isArray(r.teammates) ? r.teammates : [],
@@ -306,7 +308,7 @@ export default function HallOfFame() {
                       }}>
                         <Trophy size={24} color="#FFFFFF" />
                       </div>
-                      <PlayerAvatar photoURL={mostRecentWinner.photoURL} name={mostRecentWinner.isSquad ? (mostRecentWinner.teamName || mostRecentWinner.username) : mostRecentWinner.username} size={48} teamLogo={mostRecentWinner.teamLogo} isSquad={mostRecentWinner.isSquad} />
+                      <PlayerAvatar photoURL={mostRecentWinner.photoURL} name={mostRecentWinner.isSquad ? (mostRecentWinner.teamName || mostRecentWinner.username) : mostRecentWinner.username} size={48} teamLogo={mostRecentWinner.teamLogo} isSquad={mostRecentWinner.isSquad} isDuo={mostRecentWinner.isDuo} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {mostRecentWinner.isSquad ? (
                           <>
@@ -372,7 +374,7 @@ export default function HallOfFame() {
                             fontWeight: 800, fontSize: i < 3 ? '18px' : '12px', color: rank.color, flexShrink: 0,
                           }}>{rank.icon}</div>
 
-                           <PlayerAvatar photoURL={player.photoURL} name={player.isSquad ? (player.teamName || player.username) : player.username} teamLogo={player.teamLogo} isSquad={player.isSquad} />
+                           <PlayerAvatar photoURL={player.photoURL} name={player.isSquad ? (player.teamName || player.username) : player.username} teamLogo={player.teamLogo} isSquad={player.isSquad} isDuo={player.isDuo} />
 
                            <div style={{ flex: 1, minWidth: 0 }}>
                               {player.isSquad ? (
