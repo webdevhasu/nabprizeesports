@@ -185,8 +185,10 @@ export default function TournamentDetail() {
       return;
     }
 
-    // Check if player (solo or squad leader) has IGN/UID — if not, require inline entry
+    // Check if player (solo, duo, or squad leader) has IGN/UID — if not, require inline entry
     const isSquad = tournament.matchType?.toLowerCase().includes('squad');
+    const isDuo = tournament.matchType?.toLowerCase().includes('duo');
+    const isTeam = isSquad || isDuo;
     const hasGameInfo = userProfile?.games?.some(g => g.ign && g.uid);
     if (!hasGameInfo) {
       if (!inlineIgn.trim() || !inlineUid.trim()) {
@@ -194,13 +196,13 @@ export default function TournamentDetail() {
         return;
       }
     }
-    if (isSquad) {
+    if (isTeam) {
       if (!teamName || !teamName.trim()) {
-        setJoinError('Team Name is required for Squad matches.');
+        setJoinError(`Team Name is required for ${isDuo ? 'Duo' : 'Squad'} matches.`);
         return;
       }
       if (!teammate1.ign.trim() || !teammate1.uid.trim()) {
-        setJoinError('At least one teammate (Player 2) is required.');
+        setJoinError(`Teammate (Player 2) IGN and UID are required.`);
         return;
       }
     }
@@ -228,7 +230,7 @@ export default function TournamentDetail() {
       }
 
       let logoUrl = null;
-      if (isSquad && teamLogo) {
+      if (isTeam && teamLogo) {
         setUploadingLogo(true);
         const storageRef = ref(storage, `tournaments/${id}/teams/${currentUser.uid}_${Date.now()}`);
         await uploadBytes(storageRef, teamLogo);
@@ -236,7 +238,9 @@ export default function TournamentDetail() {
         setUploadingLogo(false);
       }
       
-      const teammates = isSquad 
+      const teammates = isDuo
+        ? (teammate1.ign.trim() && teammate1.uid.trim() ? [teammate1] : [])
+        : isSquad 
         ? [teammate1, teammate2, teammate3].filter(t => t.ign.trim() && t.uid.trim())
         : [];
 
@@ -246,9 +250,9 @@ export default function TournamentDetail() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({ 
           tournamentId: id,
-          teamName: isSquad ? teamName.trim() : undefined,
+          teamName: isTeam ? teamName.trim() : undefined,
           teamLogo: logoUrl,
-          teammates: isSquad ? teammates : undefined,
+          teammates: isTeam ? teammates : undefined,
           inlineIgn: !hasGameInfo ? inlineIgn.trim() : undefined,
           inlineUid: !hasGameInfo ? inlineUid.trim() : undefined,
         }),
@@ -773,7 +777,8 @@ export default function TournamentDetail() {
           ) : (
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
               {registeredPlayers.map((player, i) => {
-                const hasSquadData = player.isSquad || player.teamName;
+                const isMatchDuo = tournament?.matchType?.toLowerCase().includes('duo') || player.isDuo;
+                const hasSquadData = player.isSquad || player.isDuo || player.teamName;
                 const isMe = player.userId === currentUser?.uid || player.id === currentUser?.uid;
                 const displayIgn = (!player.ign || player.ign === 'Unknown')
                   ? (isMe ? (userProfile?.games?.[0]?.ign || inlineIgn.trim() || 'Player') : 'Player')
@@ -813,8 +818,8 @@ export default function TournamentDetail() {
                             Team #{player.teamSlot || i + 1}
                           </div>
                         </div>
-                        <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', background: '#F3EEFF', color: '#7B4FE0' }}>
-                          SQUAD
+                        <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', background: isMatchDuo ? '#E0F2FE' : '#F3EEFF', color: isMatchDuo ? '#0284C7' : '#7B4FE0' }}>
+                          {isMatchDuo ? 'DUO' : 'SQUAD'}
                         </span>
                       </div>
                       {/* Leader Card */}
@@ -1023,11 +1028,12 @@ export default function TournamentDetail() {
                   Room ID will be released at <strong>{timeline?.regCloseStr}</strong> with a 10-minute joining window before match starts at <strong>{timeline?.matchStartStr}</strong>.
                 </div>
 
-                {/* SQUAD REGISTRATION FORM */}
-                {tournament?.matchType?.toLowerCase().includes('squad') && (
+                {/* TEAM (SQUAD / DUO) REGISTRATION FORM */}
+                {(tournament?.matchType?.toLowerCase().includes('squad') || tournament?.matchType?.toLowerCase().includes('duo')) && (
                   <div style={{ marginBottom: '20px', background: '#F8F6F1', padding: '16px', borderRadius: '12px', border: '1px solid #EBE4DA' }}>
                     <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#2E2A26', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Users size={16} color="#FF6B4A" /> Squad Details
+                      <Users size={16} color={tournament?.matchType?.toLowerCase().includes('duo') ? '#0284C7' : '#FF6B4A'} />
+                      {tournament?.matchType?.toLowerCase().includes('duo') ? 'Duo Details (2 Players)' : 'Squad Details (4 Players)'}
                     </h3>
                     
                     <div style={{ marginBottom: '12px' }}>
@@ -1036,7 +1042,7 @@ export default function TournamentDetail() {
                         type="text" 
                         value={teamName} 
                         onChange={e => setTeamName(e.target.value)} 
-                        placeholder="Enter your Team/Clan Name"
+                        placeholder={tournament?.matchType?.toLowerCase().includes('duo') ? "Enter your Duo Team Name" : "Enter your Team/Clan Name"}
                         style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EBE4DA', fontSize: '13px', boxSizing: 'border-box' }}
                       />
                     </div>
@@ -1052,7 +1058,7 @@ export default function TournamentDetail() {
                     </div>
 
                     <div style={{ fontSize: '12px', fontWeight: 600, color: '#2E2A26', marginBottom: '8px', paddingBottom: '4px', borderBottom: '1px solid #EBE4DA' }}>
-                      Team Roster
+                      {tournament?.matchType?.toLowerCase().includes('duo') ? 'Duo Roster (2 Players)' : 'Team Roster'}
                     </div>
                     
                     <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '10px', borderRadius: '8px', border: hasGameInfo ? '1px solid #EBE4DA' : '1px solid #FFD8CC' }}>
@@ -1078,36 +1084,43 @@ export default function TournamentDetail() {
 
                     {/* Player 2 (Required) */}
                     <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#2E2A26', marginBottom: '4px' }}>Player 2 (Required) *</div>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#2E2A26', marginBottom: '4px' }}>
+                        {tournament?.matchType?.toLowerCase().includes('duo') ? 'Player 2 (Teammate) *' : 'Player 2 (Required) *'}
+                      </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <input type="text" placeholder="IGN" value={teammate1.ign} onChange={e => setTeammate1({...teammate1, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
                         <input type="text" placeholder="UID" value={teammate1.uid} onChange={e => setTeammate1({...teammate1, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
                       </div>
                     </div>
 
-                    {/* Player 3 (Optional) */}
-                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#8A8078', marginBottom: '4px' }}>Player 3 (Optional)</div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input type="text" placeholder="IGN" value={teammate2.ign} onChange={e => setTeammate2({...teammate2, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
-                        <input type="text" placeholder="UID" value={teammate2.uid} onChange={e => setTeammate2({...teammate2, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
-                      </div>
-                    </div>
+                    {/* Player 3 & 4 (Only for Squad) */}
+                    {!tournament?.matchType?.toLowerCase().includes('duo') && (
+                      <>
+                        {/* Player 3 (Optional) */}
+                        <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: '#8A8078', marginBottom: '4px' }}>Player 3 (Optional)</div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <input type="text" placeholder="IGN" value={teammate2.ign} onChange={e => setTeammate2({...teammate2, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                            <input type="text" placeholder="UID" value={teammate2.uid} onChange={e => setTeammate2({...teammate2, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                          </div>
+                        </div>
 
-                    {/* Player 4 (Optional) */}
-                    <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#8A8078', marginBottom: '4px' }}>Player 4 (Optional)</div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input type="text" placeholder="IGN" value={teammate3.ign} onChange={e => setTeammate3({...teammate3, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
-                        <input type="text" placeholder="UID" value={teammate3.uid} onChange={e => setTeammate3({...teammate3, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
-                      </div>
-                    </div>
+                        {/* Player 4 (Optional) */}
+                        <div style={{ marginBottom: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '8px', border: '1px solid #EBE4DA' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: '#8A8078', marginBottom: '4px' }}>Player 4 (Optional)</div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <input type="text" placeholder="IGN" value={teammate3.ign} onChange={e => setTeammate3({...teammate3, ign: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                            <input type="text" placeholder="UID" value={teammate3.uid} onChange={e => setTeammate3({...teammate3, uid: e.target.value})} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #EBE4DA', fontSize: '12px' }} />
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                   </div>
                 )}
 
                 {/* IGN/UID prompt for solo players without game info */}
-                {!tournament?.matchType?.toLowerCase().includes('squad') && !userProfile?.games?.some(g => g.ign && g.uid) && (
+                {!tournament?.matchType?.toLowerCase().includes('squad') && !tournament?.matchType?.toLowerCase().includes('duo') && !userProfile?.games?.some(g => g.ign && g.uid) && (
                   <div style={{ marginBottom: '16px', background: '#FFFBF8', padding: '14px', borderRadius: '12px', border: '1px solid #FFE0CC' }}>
                     <div style={{ fontSize: '13px', fontWeight: 700, color: '#2E2A26', marginBottom: '4px' }}>🎮 Enter your PUBG details</div>
                     <p style={{ fontSize: '11px', color: '#8A8078', marginBottom: '10px' }}>Required to join. These will be saved to your profile.</p>

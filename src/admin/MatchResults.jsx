@@ -131,7 +131,8 @@ export default function MatchResults() {
     setPlayerKills(prev => ({ ...prev, [playerId]: val }));
   };
 
-  const isSquadTournament = selectedTournament?.matchType === 'Squad' || registeredPlayers.some(p => p.isSquad);
+  const isSquadTournament = selectedTournament?.matchType === 'Squad' || selectedTournament?.matchType === 'Duo' || registeredPlayers.some(p => p.isSquad || p.isDuo || p.teamName);
+  const isDuoTournament = selectedTournament?.matchType === 'Duo' || registeredPlayers.some(p => p.isDuo);
 
   const topFraggers = registeredPlayers
     .filter(p => (playerKills[p.id] || 0) > 0)

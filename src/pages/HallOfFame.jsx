@@ -6,12 +6,13 @@ import TopBar from '../components/TopBar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Trophy, Crown, Medal, Flame, Copy, Check, Users, Star } from 'lucide-react';
 
-function PlayerAvatar({ photoURL, name, size = 36, teamLogo, isSquad }) {
-  const src = isSquad ? (teamLogo || photoURL) : photoURL;
+function PlayerAvatar({ photoURL, name, size = 36, teamLogo, isSquad, isDuo }) {
+  const isTeam = isSquad || isDuo;
+  const src = isTeam ? (teamLogo || photoURL) : photoURL;
   return src ? (
-    <img src={src} alt={`${name || 'Player'} avatar`} referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: isSquad ? '8px' : '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #FFFFFF', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }} />
+    <img src={src} alt={`${name || 'Player'} avatar`} referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: (isSquad || isDuo) ? '8px' : '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #FFFFFF', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }} />
   ) : (
-    <div style={{ width: size, height: size, borderRadius: isSquad ? '8px' : '50%', background: isSquad ? 'linear-gradient(135deg, #7B4FE0 0%, #5B2FBF 100%)' : 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: Math.max(12, Math.round(size * 0.38)), flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: isSquad ? '8px' : '50%', background: isDuo ? 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)' : isSquad ? 'linear-gradient(135deg, #7B4FE0 0%, #5B2FBF 100%)' : 'linear-gradient(135deg, #FF6B4A 0%, #E8552F 100%)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: Math.max(12, Math.round(size * 0.38)), flexShrink: 0 }}>
       {(name || 'P').charAt(0).toUpperCase()}
     </div>
   );
@@ -310,7 +311,7 @@ export default function HallOfFame() {
                         {mostRecentWinner.isSquad ? (
                           <>
                             <div style={{ fontWeight: 800, fontSize: '16px', color: '#2E2A26' }}>🏆 {mostRecentWinner.teamName || mostRecentWinner.username}</div>
-                            <div style={{ fontSize: '11px', color: '#7B4FE0', marginTop: '2px', fontWeight: 700 }}>Squad Team · {mostRecentWinner.tournamentName}</div>
+                            <div style={{ fontSize: '11px', color: mostRecentWinner.isDuo ? '#0284C7' : '#7B4FE0', marginTop: '2px', fontWeight: 700 }}>{mostRecentWinner.isDuo ? 'Duo Team' : 'Squad Team'} · {mostRecentWinner.tournamentName}</div>
                             <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '3px' }}>Leader: {mostRecentWinner.ign || mostRecentWinner.username}</div>
                             {mostRecentWinner.teammates && mostRecentWinner.teammates.filter(t => t.ign).map((t, i) => (
                               <div key={i} style={{ fontSize: '10px', color: '#8A8078', marginTop: '1px' }}>P{i + 2}: {t.ign}</div>
@@ -377,7 +378,7 @@ export default function HallOfFame() {
                               {player.isSquad ? (
                                 <>
                                   <div style={{ fontWeight: 700, fontSize: '14px', color: '#2E2A26' }}>{player.teamName || player.username}</div>
-                                  <div style={{ fontSize: '11px', color: '#7B4FE0', fontWeight: 600, marginTop: '2px' }}>Squad Team</div>
+                                  <div style={{ fontSize: '11px', color: player.isDuo ? '#0284C7' : '#7B4FE0', fontWeight: 600, marginTop: '2px' }}>{player.isDuo ? 'Duo Team' : 'Squad Team'}</div>
                                   <div style={{ fontSize: '11px', color: '#8A8078', marginTop: '2px' }}>Leader: {player.ign || player.username} · {player.lastTournament}</div>
                                   {player.teammates && player.teammates.filter(t => t.ign).map((t, i) => (
                                     <div key={i} style={{ fontSize: '10px', color: '#8A8078', marginTop: '1px' }}>P{i + 2}: {t.ign}</div>
